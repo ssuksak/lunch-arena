@@ -755,7 +755,7 @@ function drawGameMap() {
 
     const isElem = s.type?.includes('초');
     const isMid = s.type?.includes('중');
-    const size = mapScale > 2 ? 8 : mapScale > 1.2 ? 6 : 4;
+    const size = mapScale > 2 ? 10 : mapScale > 1.2 ? 7 : 5;
 
     // 성 아이콘 (삼국지 스타일)
     ctx.fillStyle = isElem ? '#22c55e' : isMid ? '#3b82f6' : '#8b5cf6';
@@ -797,7 +797,7 @@ function drawGameMap() {
 }
 
 async function loadMapSchools() {
-  const data = await sb('schools?select=id,name,type,lat,lng,atpt_code,school_code,address&not.lat=is.null&not.lng=is.null&limit=5000');
+  const data = await sb('schools?select=id,name,type,lat,lng,atpt_code,school_code,address&lat=not.is.null&lng=not.is.null&limit=5000');
   if (!data) return;
   mapSchools = data;
   drawGameMap();
