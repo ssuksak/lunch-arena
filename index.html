@@ -387,7 +387,7 @@ async function selectSchool(id, atpt, code, name, type, addr) {
     const wrap = document.getElementById('game-map-wrap');
     const w = wrap.clientWidth, h = wrap.clientHeight;
     const [tx, ty] = geoToCanvas(sData[0].lat, sData[0].lng, w, h);
-    mapScale = 14;
+    mapScale = 20; // 최대 줌
     mapOffX = w/2 - tx * mapScale;
     mapOffY = h/2 - ty * mapScale;
     drawGameMap();
@@ -890,7 +890,7 @@ function zoomMap(dir) {
   const cx = wrap.clientWidth / 2;
   const cy = wrap.clientHeight / 2;
   const oldScale = mapScale;
-  mapScale = Math.max(0.5, Math.min(8, mapScale * (dir > 0 ? 1.5 : 0.67)));
+  mapScale = Math.max(0.5, Math.min(20, mapScale * (dir > 0 ? 1.5 : 0.67)));
   // 중심점 유지
   mapOffX = cx - (cx - mapOffX) * (mapScale / oldScale);
   mapOffY = cy - (cy - mapOffY) * (mapScale / oldScale);
@@ -955,7 +955,7 @@ function initMapInteraction() {
       const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
       if (lastDist > 0) {
         const delta = dist / lastDist;
-        mapScale = Math.max(0.5, Math.min(8, mapScale * delta));
+        mapScale = Math.max(0.5, Math.min(20, mapScale * delta));
         drawGameMap();
       }
       lastDist = dist;
