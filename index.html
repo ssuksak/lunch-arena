@@ -155,13 +155,17 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 
 .section-title{font-size:16px;font-weight:800;letter-spacing:-0.3px;margin:20px 0 12px 4px}
 
-/* 지도 (홈 내장) */
+/* 게임맵 */
 .map-card{background:var(--surface);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1.5px solid var(--border);margin-bottom:14px;position:relative}
-#kakao-map{width:100%;height:45vh;min-height:240px;max-height:380px;filter:saturate(0.3) brightness(1.1) contrast(0.9) sepia(0.25)}
-.map-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,248,240,0.3);pointer-events:none;z-index:1;mix-blend-mode:overlay}
+.game-map-wrap{position:relative;width:100%;height:55vh;min-height:320px;max-height:480px;background:#e8dcc8;overflow:hidden;cursor:grab;touch-action:none}
+.game-map-wrap:active{cursor:grabbing}
+.game-map-inner{position:absolute;top:0;left:0;width:100%;height:100%;transform-origin:0 0}
+.game-map-canvas{width:100%;height:100%}
+.map-zoom-btns{position:absolute;bottom:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:5}
+.map-zoom-btn{width:36px;height:36px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);color:var(--text2)}
+.map-zoom-btn:active{background:var(--bg)}
 .map-hint-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-size:12px;color:var(--text3);border-top:1px solid var(--border)}
-.map-loc-btn{padding:4px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--text2)}
-.map-loc-btn:active{background:var(--border)}
+.map-region-label{position:absolute;font-size:10px;font-weight:700;color:rgba(120,100,70,0.5);pointer-events:none;letter-spacing:1px;z-index:2}
 
 /* 바텀시트 */
 .bottom-sheet{position:absolute;bottom:0;left:0;right:0;z-index:20;background:var(--surface);border-radius:20px 20px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,.1);transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);max-height:60vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0)}
@@ -230,15 +234,18 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
       <div class="search-results" id="search-results"></div>
     </div>
 
-    <!-- 지도 -->
+    <!-- 게임맵 -->
     <div class="map-card">
-      <div style="position:relative">
-        <div id="kakao-map"></div>
-        <div class="map-overlay"></div>
+      <div class="game-map-wrap" id="game-map-wrap">
+        <canvas class="game-map-canvas" id="game-map"></canvas>
+        <div class="map-zoom-btns">
+          <button class="map-zoom-btn" onclick="zoomMap(1)">+</button>
+          <button class="map-zoom-btn" onclick="zoomMap(-1)">-</button>
+        </div>
       </div>
       <div class="map-hint-bar">
-        <span>🗺 지도를 탭해서 학교를 선택하세요</span>
-        <button class="map-loc-btn" onclick="goMyLocation()">📍 내 위치</button>
+        <span>🏰 학교를 탭해서 급식을 확인하세요</span>
+        <span id="map-school-count">0개 학교</span>
       </div>
     </div>
 
@@ -292,7 +299,6 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   </div>
 </div>
 
-<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=9b2d956d02e8bd8ad58de3641a8c8c62&libraries=services,clusterer&autoload=false"></script>
 <script>
 // ===== CONFIG =====
 const SUPABASE_URL = 'https://puwthqzbounohrdmacgo.supabase.co';
@@ -374,9 +380,14 @@ async function selectSchool(id, atpt, code, name, type, addr) {
   loadMeal();
   // 지도에서도 해당 학교로 이동
   const sData = await sb(`schools?id=eq.${id}&select=lat,lng`);
-  if (sData && sData[0] && sData[0].lat && kakaoMap) {
-    kakaoMap.setCenter(new kakao.maps.LatLng(sData[0].lat, sData[0].lng));
-    kakaoMap.setLevel(4);
+  if (sData && sData[0] && sData[0].lat) {
+    const wrap = document.getElementById('game-map-wrap');
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    const [tx, ty] = geoToCanvas(sData[0].lat, sData[0].lng, w, h);
+    mapScale = 4;
+    mapOffX = w/2 - tx * mapScale;
+    mapOffY = h/2 - ty * mapScale;
+    drawGameMap();
   }
 }
 
@@ -621,74 +632,263 @@ async function init() {
   }
 }
 
-// ===== MAP =====
-let kakaoMap = null;
-let clusterer = null;
-let mapMarkers = [];
+// ===== GAME MAP =====
+let mapSchools = [];
+let mapScale = 1;
+let mapOffX = 0, mapOffY = 0;
+let isDragging = false, dragStartX, dragStartY, dragOffX, dragOffY;
+const LAT_MIN = 33.0, LAT_MAX = 38.8, LNG_MIN = 125.5, LNG_MAX = 131.5;
 
-function initKakaoMap() {
-  kakao.maps.load(async function() {
-    const container = document.getElementById('kakao-map');
-    kakaoMap = new kakao.maps.Map(container, {
-      center: new kakao.maps.LatLng(36.5, 127.5),
-      level: 13
-    });
+// 한반도 해안선 (간략화 폴리곤)
+const KOREA_OUTLINE = [
+  [126.1,38.6],[126.6,37.8],[126.3,37.5],[126.5,37.0],[126.3,36.6],
+  [126.5,36.2],[126.4,35.8],[126.8,35.1],[126.5,34.8],[126.9,34.3],
+  [127.5,34.5],[127.8,34.8],[128.5,35.0],[128.8,35.1],[129.0,35.1],
+  [129.2,35.2],[129.3,35.5],[129.4,35.8],[129.5,36.0],[129.5,36.5],
+  [129.4,37.0],[129.2,37.5],[128.5,38.3],[128.0,38.5],[127.5,38.7],
+  [127.0,38.8],[126.5,38.7],[126.1,38.6]
+];
 
-    clusterer = new kakao.maps.MarkerClusterer({
-      map: kakaoMap,
-      averageCenter: true,
-      minLevel: 6,
-      disableClickZoom: false,
-      styles: [
-        { width: '44px', height: '44px', background: 'linear-gradient(135deg, #3182f6, #8b5cf6)', borderRadius: '22px', color: '#fff', textAlign: 'center', lineHeight: '44px', fontSize: '14px', fontWeight: '800', boxShadow: '0 2px 8px rgba(0,0,0,.2)' },
-        { width: '52px', height: '52px', background: 'linear-gradient(135deg, #3182f6, #8b5cf6)', borderRadius: '26px', color: '#fff', textAlign: 'center', lineHeight: '52px', fontSize: '15px', fontWeight: '800', boxShadow: '0 2px 8px rgba(0,0,0,.2)' },
-        { width: '60px', height: '60px', background: 'linear-gradient(135deg, #f04452, #ff6b2c)', borderRadius: '30px', color: '#fff', textAlign: 'center', lineHeight: '60px', fontSize: '16px', fontWeight: '800', boxShadow: '0 2px 8px rgba(0,0,0,.2)' },
-      ]
-    });
+// 제주도
+const JEJU_OUTLINE = [
+  [126.1,33.2],[126.2,33.5],[126.6,33.5],[126.9,33.4],[126.9,33.2],[126.5,33.1],[126.1,33.2]
+];
 
-    loadMapSchools();
+// 시도 중심 좌표 (라벨용)
+const REGIONS = [
+  { name: '서울', lat: 37.56, lng: 127.0 },
+  { name: '경기', lat: 37.3, lng: 127.1 },
+  { name: '인천', lat: 37.45, lng: 126.7 },
+  { name: '강원', lat: 37.8, lng: 128.2 },
+  { name: '충북', lat: 36.8, lng: 127.7 },
+  { name: '충남', lat: 36.5, lng: 126.8 },
+  { name: '대전', lat: 36.35, lng: 127.4 },
+  { name: '세종', lat: 36.5, lng: 127.0 },
+  { name: '전북', lat: 35.8, lng: 127.1 },
+  { name: '전남', lat: 34.8, lng: 126.9 },
+  { name: '광주', lat: 35.15, lng: 126.85 },
+  { name: '경북', lat: 36.2, lng: 128.8 },
+  { name: '대구', lat: 35.87, lng: 128.6 },
+  { name: '경남', lat: 35.3, lng: 128.3 },
+  { name: '부산', lat: 35.15, lng: 129.05 },
+  { name: '울산', lat: 35.55, lng: 129.3 },
+  { name: '제주', lat: 33.35, lng: 126.55 },
+];
+
+function geoToCanvas(lat, lng, w, h) {
+  const x = ((lng - LNG_MIN) / (LNG_MAX - LNG_MIN)) * w;
+  const y = ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * h;
+  return [x, y];
+}
+
+function drawGameMap() {
+  const canvas = document.getElementById('game-map');
+  const wrap = document.getElementById('game-map-wrap');
+  const dpr = window.devicePixelRatio || 1;
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.save();
+  ctx.translate(mapOffX, mapOffY);
+  ctx.scale(mapScale, mapScale);
+
+  // 배경 (바다)
+  ctx.fillStyle = '#d4e4c8';
+  ctx.fillRect(-1000, -1000, w + 2000, h + 2000);
+
+  // 바다
+  ctx.fillStyle = '#b8d4e8';
+  ctx.fillRect(0, 0, w, h);
+
+  // 한반도 (땅)
+  ctx.beginPath();
+  ctx.fillStyle = '#e8dcc0';
+  ctx.strokeStyle = '#c4b896';
+  ctx.lineWidth = 2;
+  KOREA_OUTLINE.forEach((p, i) => {
+    const [x, y] = geoToCanvas(p[1], p[0], w, h);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // 제주도
+  ctx.beginPath();
+  JEJU_OUTLINE.forEach((p, i) => {
+    const [x, y] = geoToCanvas(p[1], p[0], w, h);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // 지역 라벨
+  ctx.font = '700 10px Pretendard Variable, sans-serif';
+  ctx.fillStyle = 'rgba(140,120,80,0.4)';
+  ctx.textAlign = 'center';
+  REGIONS.forEach(r => {
+    const [x, y] = geoToCanvas(r.lat, r.lng, w, h);
+    ctx.fillText(r.name, x, y);
+  });
+
+  // 학교 마커
+  const visibleSchools = [];
+  for (const s of mapSchools) {
+    const [x, y] = geoToCanvas(s.lat, s.lng, w, h);
+    // 화면 밖이면 스킵
+    const sx = x * mapScale + mapOffX;
+    const sy = y * mapScale + mapOffY;
+    if (sx < -20 || sx > w + 20 || sy < -20 || sy > h + 20) continue;
+
+    // 줌 레벨에 따라 표시 제한
+    if (mapScale < 1.5 && visibleSchools.length > 200) continue;
+    if (mapScale < 3 && visibleSchools.length > 500) continue;
+
+    visibleSchools.push({ ...s, cx: x, cy: y });
+
+    const isElem = s.type?.includes('초');
+    const isMid = s.type?.includes('중');
+    const size = mapScale > 2 ? 8 : mapScale > 1.2 ? 6 : 4;
+
+    // 성 아이콘 (삼국지 스타일)
+    ctx.fillStyle = isElem ? '#22c55e' : isMid ? '#3b82f6' : '#8b5cf6';
+
+    if (mapScale > 1.5) {
+      // 줌인: 성 모양
+      // 성벽
+      ctx.fillRect(x - size, y - size * 0.6, size * 2, size * 1.2);
+      // 탑
+      ctx.fillRect(x - size * 0.3, y - size * 1.2, size * 0.6, size * 0.6);
+      // 깃발
+      ctx.fillStyle = isElem ? '#16a34a' : isMid ? '#2563eb' : '#7c3aed';
+      ctx.beginPath();
+      ctx.moveTo(x, y - size * 1.2);
+      ctx.lineTo(x + size * 0.8, y - size * 1.5);
+      ctx.lineTo(x, y - size * 1.8);
+      ctx.fill();
+      // 성벽 테두리
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(x - size, y - size * 0.6, size * 2, size * 1.2);
+    } else {
+      // 줌아웃: 점
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+
+  document.getElementById('map-school-count').textContent = visibleSchools.length + '개 학교';
+
+  // 클릭 영역 저장
+  canvas._visibleSchools = visibleSchools;
 }
 
 async function loadMapSchools() {
-  const data = await sb('schools?select=id,name,type,lat,lng,atpt_code,school_code,address&not.lat=is.null&not.lng=is.null&limit=3000');
-  if (!data || data.length === 0) return;
+  const data = await sb('schools?select=id,name,type,lat,lng,atpt_code,school_code,address&not.lat=is.null&not.lng=is.null&limit=5000');
+  if (!data) return;
+  mapSchools = data;
+  drawGameMap();
+}
 
-  const markers = data.map(s => {
-    const pos = new kakao.maps.LatLng(s.lat, s.lng);
-    const isElem = s.type?.includes('초');
-    const isMid = s.type?.includes('중');
-    const iconClass = isElem ? 'elem' : isMid ? 'mid' : 'high';
-    const emoji = isElem ? '🌱' : isMid ? '📘' : '🎓';
+function zoomMap(dir) {
+  const wrap = document.getElementById('game-map-wrap');
+  const cx = wrap.clientWidth / 2;
+  const cy = wrap.clientHeight / 2;
+  const oldScale = mapScale;
+  mapScale = Math.max(0.5, Math.min(8, mapScale * (dir > 0 ? 1.5 : 0.67)));
+  // 중심점 유지
+  mapOffX = cx - (cx - mapOffX) * (mapScale / oldScale);
+  mapOffY = cy - (cy - mapOffY) * (mapScale / oldScale);
+  drawGameMap();
+}
 
-    const content = document.createElement('div');
-    content.className = 'school-marker';
-    content.innerHTML = `<div class="sm-icon ${iconClass}">${emoji}</div>`;
+// 드래그/패닝
+function initMapInteraction() {
+  const wrap = document.getElementById('game-map-wrap');
+  const canvas = document.getElementById('game-map');
 
-    const overlay = new kakao.maps.CustomOverlay({
-      position: pos,
-      content: content,
-      yAnchor: 1
-    });
+  function onStart(x, y) {
+    isDragging = true;
+    dragStartX = x; dragStartY = y;
+    dragOffX = mapOffX; dragOffY = mapOffY;
+  }
+  function onMove(x, y) {
+    if (!isDragging) return;
+    mapOffX = dragOffX + (x - dragStartX);
+    mapOffY = dragOffY + (y - dragStartY);
+    drawGameMap();
+  }
+  function onEnd() { isDragging = false; }
 
-    content.addEventListener('click', () => {
-      openBottomSheet(s);
-      kakaoMap.setCenter(pos);
-      kakaoMap.setLevel(4);
-    });
+  wrap.addEventListener('mousedown', e => onStart(e.clientX, e.clientY));
+  window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+  window.addEventListener('mouseup', onEnd);
 
-    const marker = new kakao.maps.Marker({ position: pos });
-    kakao.maps.event.addListener(marker, 'click', () => {
-      openBottomSheet(s);
-      kakaoMap.setCenter(pos);
-    });
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) onStart(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  wrap.addEventListener('touchmove', e => {
+    if (e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  wrap.addEventListener('touchend', onEnd);
 
-    return marker;
+  // 클릭으로 학교 선택
+  canvas.addEventListener('click', e => {
+    if (Math.abs(e.clientX - dragStartX) > 5 || Math.abs(e.clientY - dragStartY) > 5) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left - mapOffX) / mapScale;
+    const my = (e.clientY - rect.top - mapOffY) / mapScale;
+    const schools = canvas._visibleSchools || [];
+    const hitSize = mapScale > 2 ? 12 : 8;
+    for (const s of schools) {
+      if (Math.abs(s.cx - mx) < hitSize && Math.abs(s.cy - my) < hitSize) {
+        openBottomSheet(s);
+        return;
+      }
+    }
   });
 
-  clusterer.addMarkers(markers);
-  mapMarkers = markers;
+  // 핀치 줌
+  let lastDist = 0;
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    }
+  }, { passive: true });
+  wrap.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      if (lastDist > 0) {
+        const delta = dist / lastDist;
+        mapScale = Math.max(0.5, Math.min(8, mapScale * delta));
+        drawGameMap();
+      }
+      lastDist = dist;
+    }
+  }, { passive: true });
+
+  // 마우스 휠 줌
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    zoomMap(e.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
 }
+
+// 리사이즈 대응
+window.addEventListener('resize', () => { if (mapSchools.length) drawGameMap(); });
 
 async function openBottomSheet(school) {
   const bs = document.getElementById('bottom-sheet');
@@ -772,23 +972,19 @@ function closeBottomSheet() {
 function goMyLocation() {
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(pos => {
-    const latlng = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-    kakaoMap.setCenter(latlng);
-    kakaoMap.setLevel(5);
+    const wrap = document.getElementById('game-map-wrap');
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    const [tx, ty] = geoToCanvas(pos.coords.latitude, pos.coords.longitude, w, h);
+    mapScale = 4;
+    mapOffX = w/2 - tx * mapScale;
+    mapOffY = h/2 - ty * mapScale;
+    drawGameMap();
   });
 }
 
-// 검색에서 학교 선택 시 지도 포커스
-function focusMapSchool(school) {
-  if (kakaoMap && school.lat && school.lng) {
-    kakaoMap.setCenter(new kakao.maps.LatLng(school.lat, school.lng));
-    kakaoMap.setLevel(3);
-    openBottomSheet(school);
-  }
-}
-
 // 맵 초기화
-kakao.maps.load(function() { initKakaoMap(); });
+initMapInteraction();
+loadMapSchools();
 
 init();
 </script>
