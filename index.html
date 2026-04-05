@@ -747,6 +747,7 @@ function drawGameMap() {
 
   // 학교 마커
   const visibleSchools = [];
+  let gridSet = new Set();
   for (const s of mapSchools) {
     const [x, y] = geoToCanvas(s.lat, s.lng, w, h);
     // 화면 밖이면 스킵
@@ -754,44 +755,46 @@ function drawGameMap() {
     const sy = y * mapScale + mapOffY;
     if (sx < -20 || sx > w + 20 || sy < -20 || sy > h + 20) continue;
 
-    // 줌 레벨에 따라 표시 제한
-    if (mapScale < 1.5 && visibleSchools.length > 200) continue;
-    if (mapScale < 3 && visibleSchools.length > 500) continue;
-
     visibleSchools.push({ ...s, cx: x, cy: y });
 
     const isElem = s.type?.includes('초');
     const isMid = s.type?.includes('중');
-    const size = mapScale > 2 ? 10 : mapScale > 1.2 ? 7 : 5;
+    // 줌 레벨별 크기 & 간격 조절
+    const size = mapScale > 4 ? 8 : mapScale > 2 ? 5 : mapScale > 1 ? 3 : 2;
 
-    // 성 아이콘 (삼국지 스타일)
+    // 줌아웃 시 겹침 방지: 그리드 기반 솎아내기
+    if (mapScale < 2) {
+      const gridKey = Math.floor(x / (8 / mapScale)) + ',' + Math.floor(y / (8 / mapScale));
+      if (!gridSet) gridSet = new Set();
+      if (gridSet.has(gridKey)) continue;
+      gridSet.add(gridKey);
+    }
+
     ctx.fillStyle = isElem ? '#22c55e' : isMid ? '#3b82f6' : '#8b5cf6';
 
-    if (mapScale > 1.5) {
+    if (mapScale > 3) {
       // 줌인: 성 모양
-      // 성벽
       ctx.fillRect(x - size, y - size * 0.6, size * 2, size * 1.2);
-      // 탑
       ctx.fillRect(x - size * 0.3, y - size * 1.2, size * 0.6, size * 0.6);
-      // 깃발
       ctx.fillStyle = isElem ? '#16a34a' : isMid ? '#2563eb' : '#7c3aed';
       ctx.beginPath();
       ctx.moveTo(x, y - size * 1.2);
       ctx.lineTo(x + size * 0.8, y - size * 1.5);
       ctx.lineTo(x, y - size * 1.8);
       ctx.fill();
-      // 성벽 테두리
-      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
       ctx.lineWidth = 0.5;
       ctx.strokeRect(x - size, y - size * 0.6, size * 2, size * 1.2);
     } else {
-      // 줌아웃: 점
+      // 줌아웃: 작은 점
       ctx.beginPath();
       ctx.arc(x, y, size, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      if (mapScale > 1) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
     }
   }
 
