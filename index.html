@@ -387,7 +387,7 @@ async function selectSchool(id, atpt, code, name, type, addr) {
     const wrap = document.getElementById('game-map-wrap');
     const w = wrap.clientWidth, h = wrap.clientHeight;
     const [tx, ty] = geoToCanvas(sData[0].lat, sData[0].lng, w, h);
-    mapScale = 6;
+    mapScale = 14;
     mapOffX = w/2 - tx * mapScale;
     mapOffY = h/2 - ty * mapScale;
     drawGameMap();
@@ -762,11 +762,11 @@ function drawGameMap() {
     const isElem = s.type?.includes('초');
     const isMid = s.type?.includes('중');
     // 줌 레벨별 크기 & 간격 조절
-    const size = mapScale > 4 ? 4 : mapScale > 2 ? 2.5 : mapScale > 1 ? 1.5 : 1;
+    const size = mapScale > 8 ? 3 : mapScale > 4 ? 2 : 1;
 
     // 줌아웃 시 겹침 방지: 그리드 기반 솎아내기
-    if (mapScale < 2) {
-      const gridKey = Math.floor(x / (8 / mapScale)) + ',' + Math.floor(y / (8 / mapScale));
+    if (mapScale < 4) {
+      const gridKey = Math.floor(x / (6 / mapScale)) + ',' + Math.floor(y / (6 / mapScale));
       if (!gridSet) gridSet = new Set();
       if (gridSet.has(gridKey)) continue;
       gridSet.add(gridKey);
@@ -776,9 +776,9 @@ function drawGameMap() {
     const lightColor = isElem ? '#86efac' : isMid ? '#93c5fd' : '#c4b5fd';
     const darkColor = isElem ? '#16a34a' : isMid ? '#2563eb' : '#7c3aed';
 
-    if (mapScale > 6) {
+    if (mapScale > 12) {
       // 줌인 많이: 귀여운 학교 건물
-      const s = 4;
+      const s = 3;
       // 그림자
       ctx.fillStyle = 'rgba(0,0,0,0.08)';
       ctx.beginPath();
@@ -818,9 +818,9 @@ function drawGameMap() {
       ctx.lineTo(x + s * 1.6, y - s * 1.9);
       ctx.lineTo(x + s * 0.8, y - s * 1.6);
       ctx.fill();
-    } else if (mapScale > 3) {
+    } else if (mapScale > 6) {
       // 중간 줌: 핀 마커
-      const s = 3;
+      const s = 2.5;
       // 그림자
       ctx.fillStyle = 'rgba(0,0,0,0.1)';
       ctx.beginPath();
