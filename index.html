@@ -770,31 +770,88 @@ function drawGameMap() {
       gridSet.add(gridKey);
     }
 
-    ctx.fillStyle = isElem ? '#22c55e' : isMid ? '#3b82f6' : '#8b5cf6';
+    const mainColor = isElem ? '#22c55e' : isMid ? '#3b82f6' : '#8b5cf6';
+    const lightColor = isElem ? '#86efac' : isMid ? '#93c5fd' : '#c4b5fd';
+    const darkColor = isElem ? '#16a34a' : isMid ? '#2563eb' : '#7c3aed';
 
-    if (mapScale > 3) {
-      // 줌인: 성 모양
-      ctx.fillRect(x - size, y - size * 0.6, size * 2, size * 1.2);
-      ctx.fillRect(x - size * 0.3, y - size * 1.2, size * 0.6, size * 0.6);
-      ctx.fillStyle = isElem ? '#16a34a' : isMid ? '#2563eb' : '#7c3aed';
+    if (mapScale > 4) {
+      // 줌인 많이: 귀여운 학교 건물
+      const s = 6;
+      // 그림자
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
       ctx.beginPath();
-      ctx.moveTo(x, y - size * 1.2);
-      ctx.lineTo(x + size * 0.8, y - size * 1.5);
-      ctx.lineTo(x, y - size * 1.8);
+      ctx.ellipse(x, y + s * 1.1, s * 1.2, s * 0.3, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(x - size, y - size * 0.6, size * 2, size * 1.2);
+      // 건물 몸체
+      ctx.fillStyle = mainColor;
+      ctx.beginPath();
+      ctx.roundRect(x - s, y - s * 0.8, s * 2, s * 1.6, 2);
+      ctx.fill();
+      // 지붕 (삼각형)
+      ctx.fillStyle = darkColor;
+      ctx.beginPath();
+      ctx.moveTo(x - s * 1.3, y - s * 0.8);
+      ctx.lineTo(x, y - s * 1.8);
+      ctx.lineTo(x + s * 1.3, y - s * 0.8);
+      ctx.fill();
+      // 창문
+      ctx.fillStyle = lightColor;
+      ctx.fillRect(x - s * 0.6, y - s * 0.4, s * 0.4, s * 0.4);
+      ctx.fillRect(x + s * 0.2, y - s * 0.4, s * 0.4, s * 0.4);
+      // 문
+      ctx.fillStyle = darkColor;
+      ctx.beginPath();
+      ctx.roundRect(x - s * 0.25, y + s * 0.1, s * 0.5, s * 0.7, [2, 2, 0, 0]);
+      ctx.fill();
+      // 깃발
+      ctx.strokeStyle = darkColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + s * 0.8, y - s * 0.8);
+      ctx.lineTo(x + s * 0.8, y - s * 2.2);
+      ctx.stroke();
+      ctx.fillStyle = mainColor;
+      ctx.beginPath();
+      ctx.moveTo(x + s * 0.8, y - s * 2.2);
+      ctx.lineTo(x + s * 1.6, y - s * 1.9);
+      ctx.lineTo(x + s * 0.8, y - s * 1.6);
+      ctx.fill();
+    } else if (mapScale > 2) {
+      // 중간 줌: 핀 마커
+      const s = 4;
+      // 그림자
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 1, s * 0.8, s * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // 핀 꼬리
+      ctx.fillStyle = mainColor;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - s * 0.5, y - s);
+      ctx.lineTo(x + s * 0.5, y - s);
+      ctx.fill();
+      // 핀 머리 (원)
+      ctx.beginPath();
+      ctx.arc(x, y - s, s * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      // 내부 원 (하이라이트)
+      ctx.fillStyle = lightColor;
+      ctx.beginPath();
+      ctx.arc(x, y - s, s * 0.35, 0, Math.PI * 2);
+      ctx.fill();
     } else {
-      // 줌아웃: 작은 점
+      // 줌아웃: 글로우 도트
+      // 후광
+      ctx.fillStyle = mainColor + '30';
+      ctx.beginPath();
+      ctx.arc(x, y, size + 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      // 점
+      ctx.fillStyle = mainColor;
       ctx.beginPath();
       ctx.arc(x, y, size, 0, Math.PI * 2);
       ctx.fill();
-      if (mapScale > 1) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-      }
     }
   }
 
