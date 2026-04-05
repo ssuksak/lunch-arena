@@ -305,16 +305,17 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   </div>
 </div>
 
-<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=9b2d956d02e8bd8ad58de3641a8c8c62&libraries=services,clusterer&autoload=false"></script>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=9b2d956d02e8bd8ad58de3641a8c8c62&libraries=services,clusterer&autoload=false"></script>
 <script>
 // ===== CONFIG =====
 const SUPABASE_URL = 'https://puwthqzbounohrdmacgo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1d3RocXpib3Vub2hyZG1hY2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjA2MzMsImV4cCI6MjA5MDg5NjYzM30.AxUjNNTnLv2xVNC_UMFE3o0x0-s_tFJnRcMr7mBNOy0';
 
-const sb = (path, opts = {}) => fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-  ...opts,
-  headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': opts.prefer || '', ...opts.headers }
-}).then(r => r.json());
+const sb = (path, opts = {}) => {
+  const headers = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', ...opts.headers };
+  if (opts.prefer) headers['Prefer'] = opts.prefer;
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers }).then(r => r.json());
+};
 
 const edge = (fn, body) => fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
   method: 'POST',
@@ -713,7 +714,11 @@ function goMyLocation() {
 }
 
 // 맵 초기화
-kakao.maps.load(function() { initKakaoMap(); });
+try {
+  kakao.maps.load(function() { initKakaoMap(); });
+} catch(e) {
+  console.error('Kakao Maps load failed:', e);
+}
 
 init();
 </script>
