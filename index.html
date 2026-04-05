@@ -613,7 +613,11 @@ async function init() {
   ]);
 
   // 카운트는 Content-Range에서 가져와야 하지만, 간단히 표시
-  document.getElementById('stat-schools').textContent = '7,712';
+  // 학교 수 동적 로드
+  const schoolCount = await fetch(`${SUPABASE_URL}/rest/v1/schools?select=id`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' }
+  }).then(r => { const cr = r.headers.get('content-range'); return cr ? cr.split('/')[1] : '?'; });
+  document.getElementById('stat-schools').textContent = Number(schoolCount).toLocaleString();
   document.getElementById('stat-meals').textContent = '-';
   document.getElementById('stat-ratings').textContent = '-';
 
