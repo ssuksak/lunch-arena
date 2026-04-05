@@ -157,9 +157,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 
 /* 지도 (홈 내장) */
 .map-card{background:var(--surface);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1.5px solid var(--border);margin-bottom:14px;position:relative}
-#kakao-map{width:100%;height:45vh;min-height:240px;max-height:380px}
-#kakao-map::after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,248,240,0.15);pointer-events:none;z-index:1}
-.map-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,248,240,0.12);pointer-events:none;z-index:1}
+#kakao-map{width:100%;height:45vh;min-height:240px;max-height:380px;filter:saturate(0.3) brightness(1.1) contrast(0.9) sepia(0.25)}
+.map-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,248,240,0.3);pointer-events:none;z-index:1;mix-blend-mode:overlay}
 .map-hint-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-size:12px;color:var(--text3);border-top:1px solid var(--border)}
 .map-loc-btn{padding:4px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--text2)}
 .map-loc-btn:active{background:var(--border)}
@@ -184,7 +183,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 /* 커스텀 마커 */
 .school-marker{display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s}
 .school-marker:hover{transform:scale(1.15)}
-.sm-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.15);border:2px solid white}
+.sm-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,.25);border:2.5px solid white;filter:saturate(3) brightness(1)}
 .sm-icon.elem{background:#22c55e}
 .sm-icon.mid{background:#3b82f6}
 .sm-icon.high{background:#8b5cf6}
