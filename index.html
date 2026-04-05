@@ -797,7 +797,7 @@ function drawGameMap() {
 }
 
 async function loadMapSchools() {
-  const data = await sb('schools?select=id,name,type,lat,lng,atpt_code,school_code,address&lat=not.is.null&lng=not.is.null&limit=5000');
+  const data = await sb('schools?select=id,name,type,lat,lng,atpt_code,school_code,address&lat=not.is.null&lng=not.is.null&limit=12000');
   if (!data) return;
   mapSchools = data;
   drawGameMap();
