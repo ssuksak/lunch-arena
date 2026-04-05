@@ -108,11 +108,11 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 /* 평가 */
 .rating-section{background:var(--surface);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border:1.5px solid var(--border);margin-bottom:14px}
 .rating-title{font-size:15px;font-weight:700;margin-bottom:12px}
-.stars{display:flex;gap:8px;justify-content:center;margin-bottom:12px;padding:8px 0}
-.star{font-size:28px;cursor:pointer;transition:transform .1s;line-height:1}
-.star:active{transform:scale(1.2)}
-.star.filled{filter:none}
-.star.empty{filter:grayscale(1);opacity:.3}
+.stars{display:flex;gap:6px;justify-content:center;margin-bottom:12px;padding:8px 0}
+.star{width:36px;height:36px;cursor:pointer;transition:transform .1s;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:8px;background:var(--bg)}
+.star:active{transform:scale(1.15)}
+.star.filled{background:var(--yellow-l)}
+.star.empty{opacity:.4}
 .comment-input{width:100%;padding:12px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;resize:none;height:44px}
 .comment-input:focus{outline:none;border-color:var(--blue)}
 .btn-rate{width:100%;padding:14px;background:var(--blue);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:10px}
@@ -381,16 +381,18 @@ async function selectSchool(id, atpt, code, name, type, addr) {
   mealDate = fixWeekend(new Date());
   renderSchoolDetail();
   loadMeal();
-  // 지도에서도 해당 학교로 이동
+  // 지도에서도 해당 학교로 확대 이동
   const sData = await sb(`schools?id=eq.${id}&select=lat,lng`);
   if (sData && sData[0] && sData[0].lat) {
     const wrap = document.getElementById('game-map-wrap');
     const w = wrap.clientWidth, h = wrap.clientHeight;
     const [tx, ty] = geoToCanvas(sData[0].lat, sData[0].lng, w, h);
-    mapScale = 4;
+    mapScale = 6;
     mapOffX = w/2 - tx * mapScale;
     mapOffY = h/2 - ty * mapScale;
     drawGameMap();
+    // 지도 카드로 스크롤
+    document.querySelector('.map-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
 
