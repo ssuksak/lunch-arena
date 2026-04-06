@@ -237,60 +237,108 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .filter-row::-webkit-scrollbar{display:none}
 .chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;white-space:nowrap;color:var(--text3)}
 .chip.active{background:var(--blue);border-color:var(--blue);color:white}
+
+/* 홈 히어로 */
+.home-hero{padding:28px 0 16px;text-align:center}
+.home-hero-emoji{font-size:52px;animation:wiggle 2s ease-in-out infinite}
+.home-hero-title{font-size:22px;font-weight:900;letter-spacing:-.6px;margin:8px 0 4px}
+.home-hero-title em{font-style:normal;background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.home-hero-sub{font-size:13px;color:var(--text3)}
+.home-search-big{position:relative;margin:16px 0}
+.home-search-big input{width:100%;padding:16px 16px 16px 46px;background:var(--surface);border:2px solid var(--border);border-radius:16px;font-size:16px;font-family:inherit;color:var(--text);box-shadow:var(--shadow-lg)}
+.home-search-big input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 4px rgba(49,130,246,.12)}
+.home-search-big .si{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:20px}
+
+/* 공유 버튼 */
+.btn-share{width:100%;padding:12px;background:linear-gradient(135deg,var(--blue),var(--purple));color:white;border:none;border-radius:12px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-share:active{opacity:.85}
+
+/* 랭크 이펙트 오버레이 */
+.rank-effect{position:fixed;inset:0;pointer-events:none;z-index:400;display:flex;align-items:center;justify-content:center}
+.rank-effect.hide{display:none}
+/* 컨페티 */
+.confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:401;overflow:hidden}
+@keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+.cp{position:absolute;top:-10px;width:10px;height:10px;border-radius:2px;animation:confettiFall linear forwards}
+/* 눈물 */
+@keyframes tearFall{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(60px) scale(0.5);opacity:0}}
+.tear{position:absolute;font-size:24px;animation:tearFall 1.5s ease-in forwards}
+/* 랭크 팝업 */
+@keyframes rankPop{0%{transform:scale(0.3);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+.rank-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:402;background:white;border-radius:24px;padding:32px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:rankPop .5s cubic-bezier(.34,1.56,.64,1) forwards;pointer-events:none}
+.rank-popup.hide{display:none}
+.rp-emoji{font-size:64px;display:block;margin-bottom:8px}
+.rp-rank{font-size:48px;font-weight:900;background:linear-gradient(135deg,#ffd700,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.rp-label{font-size:16px;font-weight:700;color:var(--text3);margin-top:4px}
+
+/* 배틀 AI vs 여론 */
+.battle-verdict{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.verdict-ai{font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.verdict-result{font-size:15px;font-weight:900}
+.verdict-win{color:var(--blue)} .verdict-lose{color:var(--text4)}
+.battle-opinion{padding:14px 16px;border-top:1px solid var(--border)}
+.opinion-title{font-size:12px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.opinion-live{font-size:10px;background:var(--red);color:white;padding:2px 6px;border-radius:4px;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
 </style>
 </head>
 <body>
 
-<!-- ===== 온보딩 ===== -->
-<div class="onboarding" id="onboarding">
-  <div class="ob-emoji">🏟</div>
-  <div class="ob-title">급식아레나에 온 걸<br>환영해!</div>
-  <div class="ob-sub">내 학교를 설정하면<br>오늘 급식 점수와 배틀을 바로 볼 수 있어</div>
-  <div class="ob-search">
-    <span class="ob-icon">🔍</span>
-    <input type="text" class="ob-input" id="ob-search" placeholder="학교 이름으로 검색" autocomplete="off" oninput="onObSearch(this.value)">
-    <div class="ob-results" id="ob-results"></div>
+<!-- ===== 내 학교 설정 바텀시트 ===== -->
+<div class="bottom-sheet" id="school-set-sheet">
+  <div class="bs-handle"></div>
+  <div class="bs-content">
+    <div style="font-size:18px;font-weight:900;margin-bottom:4px">내 학교 설정</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">설정하면 배틀탭에서 내 학교 배틀을 볼 수 있어!</div>
+    <div style="position:relative;margin-bottom:8px">
+      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px">🔍</span>
+      <input type="text" style="width:100%;padding:14px 14px 14px 42px;background:var(--bg);border:1.5px solid var(--border);border-radius:14px;font-size:15px;font-family:inherit;color:var(--text)" id="set-school-input" placeholder="학교 이름 검색" autocomplete="off" oninput="onSetSchoolSearch(this.value)">
+    </div>
+    <div id="set-school-results"></div>
   </div>
-  <div style="font-size:13px;color:var(--text3)">일단 둘러보고 싶으면 <span style="cursor:pointer;color:var(--blue);font-weight:700" onclick="skipOnboarding()">건너뛰기</span></div>
+</div>
+
+<!-- ===== 랭크 이펙트 레이어 ===== -->
+<div class="confetti-wrap hide" id="confetti-wrap"></div>
+<div class="rank-popup hide" id="rank-popup">
+  <span class="rp-emoji" id="rp-emoji"></span>
+  <div class="rp-rank" id="rp-rank"></div>
+  <div class="rp-label" id="rp-label"></div>
 </div>
 
 <!-- ===== 앱바 ===== -->
 <div class="appbar">
   <div class="appbar-logo">🍱 급식아레나</div>
   <div class="appbar-right">
-    <div id="appbar-school" style="font-size:13px;font-weight:700;color:var(--text3);cursor:pointer" onclick="showOnboarding()"></div>
+    <div id="appbar-school" style="font-size:12px;font-weight:700;background:var(--blue-l);color:var(--blue);padding:6px 12px;border-radius:20px;cursor:pointer" onclick="openSchoolSetSheet()">내 학교 설정</div>
   </div>
 </div>
 
 <!-- ===== 홈 ===== -->
 <div class="page active" id="page-home">
-  <div class="container" style="padding-top:16px">
-    <!-- 내 학교 없을 때 -->
-    <div id="home-no-school" class="hide">
-      <div class="empty">
-        <div class="empty-emoji">🏫</div>
-        <div>내 학교를 설정하면<br>오늘 급식 점수를 바로 볼 수 있어!</div>
-        <button onclick="showOnboarding()" style="margin-top:16px;padding:12px 24px;background:var(--blue);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">내 학교 설정하기</button>
-      </div>
+  <div class="container">
+    <!-- 히어로 + 검색 -->
+    <div class="home-hero">
+      <div class="home-hero-emoji">🍱</div>
+      <div class="home-hero-title">우리 학교 급식<br><em>오늘 몇 점?</em></div>
+      <div class="home-hero-sub">전국 11,623개 학교 급식 점수 실시간 공개</div>
     </div>
-    <!-- 내 학교 카드 -->
-    <div id="my-school-card" class="hide"></div>
-    <!-- 내 학교 급식 -->
-    <div id="my-school-meal" class="hide"></div>
-    <!-- 전국 스탯 -->
-    <div class="stat-row">
-      <div class="stat-card"><div class="stat-num" id="stat-schools">-</div><div class="stat-label">등록 학교</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-meals">-</div><div class="stat-label">오늘 급식</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-ratings">-</div><div class="stat-label">리뷰</div></div>
-    </div>
-    <!-- 검색 -->
-    <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="home-search" placeholder="다른 학교 검색" autocomplete="off" oninput="onHomeSearch(this.value)">
+    <div class="home-search-big">
+      <span class="si">🔍</span>
+      <input type="text" id="home-search" placeholder="학교 이름으로 바로 검색" autocomplete="off" oninput="onHomeSearch(this.value)">
       <div class="search-results" id="home-results"></div>
     </div>
     <!-- 검색된 학교 상세 -->
     <div id="school-detail-wrap"></div>
+    <!-- 내 학교 카드 (설정된 경우) -->
+    <div id="my-school-card" class="hide"></div>
+    <div id="my-school-meal" class="hide"></div>
+    <!-- 전국 스탯 -->
+    <div class="stat-row" style="margin-top:8px">
+      <div class="stat-card"><div class="stat-num" id="stat-schools">-</div><div class="stat-label">등록 학교</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-meals">-</div><div class="stat-label">오늘 급식</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-ratings">-</div><div class="stat-label">리뷰</div></div>
+    </div>
     <!-- 오늘 급식왕 -->
     <div class="section-title">🏆 오늘의 급식왕 <span class="section-more" onclick="switchTab('ranking')">더보기</span></div>
     <div id="today-ranking"><div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">랭킹 준비 중...</div></div></div>
@@ -439,70 +487,203 @@ function switchTab(tab) {
   if (tab === 'battle') loadBattle();
 }
 
-// ===== ONBOARDING / MY SCHOOL =====
+// ===== MY SCHOOL =====
 function loadMySchool() {
   const raw = localStorage.getItem('arena_school');
-  if (raw) {
-    mySchool = JSON.parse(raw);
-    applyMySchool();
-    document.getElementById('onboarding').classList.add('hide');
-  } else {
-    document.getElementById('onboarding').classList.remove('hide');
-  }
+  if (raw) { mySchool = JSON.parse(raw); applyMySchool(); }
 }
 function applyMySchool() {
   const s = mySchool;
-  document.getElementById('home-no-school').classList.add('hide');
   const card = document.getElementById('my-school-card');
   card.classList.remove('hide');
-  const iconBg = s.type?.includes('초') ? '#22c55e' : s.type?.includes('중') ? '#3b82f6' : '#8b5cf6';
   card.innerHTML = `
     <div class="my-school-card">
       <div class="msc-wave"></div>
-      <div class="msc-top">
-        <div class="msc-label">내 학교</div>
-        <button class="msc-change" onclick="showOnboarding()">변경</button>
-      </div>
-      <div style="font-size:28px;margin-bottom:6px">${s.type?.includes('초') ? '🌱' : s.type?.includes('중') ? '📘' : '🎓'}</div>
+      <div class="msc-top"><div class="msc-label">내 학교</div><button class="msc-change" onclick="openSchoolSetSheet()">변경</button></div>
+      <div style="font-size:28px;margin-bottom:6px">${s.type?.includes('초')?'🌱':s.type?.includes('중')?'📘':'🎓'}</div>
       <div class="msc-name">${s.name}</div>
-      <div class="msc-type">${s.type || ''} · ${(s.address || '').split(' ').slice(0,2).join(' ')}</div>
-      <div class="msc-score-row">
-        <div class="msc-score" id="msc-score">-</div>
-        <div id="msc-rank-badge" class="msc-rank-badge" style="display:none"></div>
-      </div>
+      <div class="msc-type">${s.type||''} · ${(s.address||'').split(' ').slice(0,2).join(' ')}</div>
+      <div class="msc-score-row"><div class="msc-score" id="msc-score">-</div><div id="msc-rank-badge" class="msc-rank-badge" style="display:none"></div></div>
       <div id="msc-streak" style="display:none" class="msc-streak"></div>
-    </div>
-  `;
-  document.getElementById('appbar-school').textContent = s.name;
+    </div>`;
+  const ab = document.getElementById('appbar-school');
+  ab.textContent = s.name;
+  ab.style.background = 'var(--green-l)';
+  ab.style.color = 'var(--green)';
   loadMySchoolMeal();
   loadMySchoolStats();
 }
-function showOnboarding() {
-  document.getElementById('onboarding').classList.remove('hide');
-  document.getElementById('ob-search').value = '';
-  document.getElementById('ob-results').classList.remove('show');
-  document.getElementById('ob-results').innerHTML = '';
+function openSchoolSetSheet() {
+  document.getElementById('school-set-sheet').classList.add('show');
+  document.getElementById('set-school-input').value = '';
+  document.getElementById('set-school-results').innerHTML = '';
+  setTimeout(() => document.getElementById('set-school-input').focus(), 300);
 }
-function skipOnboarding() {
-  document.getElementById('onboarding').classList.add('hide');
-  document.getElementById('home-no-school').classList.remove('hide');
+function closeSchoolSetSheet() {
+  document.getElementById('school-set-sheet').classList.remove('show');
 }
 function selectMySchool(s) {
   mySchool = s;
   localStorage.setItem('arena_school', JSON.stringify(s));
-  document.getElementById('onboarding').classList.add('hide');
+  closeSchoolSetSheet();
   applyMySchool();
 }
-async function onObSearch(q) {
-  clearTimeout(searchTimer);
-  const box = document.getElementById('ob-results');
-  if (!q || q.length < 2) { box.classList.remove('show'); return; }
-  searchTimer = setTimeout(async () => {
+let setSchoolTimer = null;
+async function onSetSchoolSearch(q) {
+  clearTimeout(setSchoolTimer);
+  const box = document.getElementById('set-school-results');
+  if (!q || q.length < 2) { box.innerHTML = ''; return; }
+  setSchoolTimer = setTimeout(async () => {
     const data = await sb(`schools?name=ilike.*${encodeURIComponent(q)}*&limit=10&select=id,name,type,address,atpt_code,school_code`);
-    if (!data || data.length === 0) { box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3)">검색 결과 없음</div>'; }
+    if (!data || data.length === 0) { box.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3);font-size:14px">검색 결과 없음</div>'; }
     else { box.innerHTML = data.map(s => schoolItemHtml(s, `selectMySchool(${JSON.stringify(s).replace(/"/g,'&quot;')})`)).join(''); }
-    box.classList.add('show');
   }, 250);
+}
+
+// ===== RANK EFFECTS =====
+function showRankEffect(rank, score) {
+  const popup = document.getElementById('rank-popup');
+  const emojiEl = document.getElementById('rp-emoji');
+  const rankEl = document.getElementById('rp-rank');
+  const labelEl = document.getElementById('rp-label');
+  if (rank === 'S') {
+    emojiEl.textContent = '🏆';
+    rankEl.textContent = 'S랭크!';
+    rankEl.style.cssText = 'font-size:48px;font-weight:900;background:linear-gradient(135deg,#ffd700,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent';
+    labelEl.textContent = '전설의 급식 달성! ' + score + '점';
+    popup.classList.remove('hide');
+    launchConfetti();
+    setTimeout(() => popup.classList.add('hide'), 2800);
+  } else if (rank === 'D') {
+    emojiEl.textContent = '😭';
+    rankEl.textContent = 'D랭크...';
+    rankEl.style.cssText = 'font-size:48px;font-weight:900;color:var(--text3)';
+    labelEl.textContent = '아쉬운 급식이네요 ' + score + '점';
+    popup.classList.remove('hide');
+    launchTears();
+    setTimeout(() => popup.classList.add('hide'), 2000);
+  } else if (rank === 'A') {
+    emojiEl.textContent = '✨';
+    rankEl.textContent = 'A랭크!';
+    rankEl.style.cssText = 'font-size:48px;font-weight:900;color:var(--purple)';
+    labelEl.textContent = '갓급식! ' + score + '점';
+    popup.classList.remove('hide');
+    setTimeout(() => popup.classList.add('hide'), 1800);
+  }
+}
+function launchConfetti() {
+  const wrap = document.getElementById('confetti-wrap');
+  wrap.classList.remove('hide');
+  wrap.innerHTML = '';
+  const colors = ['#ffd700','#ff4757','#3182f6','#7c3aed','#03b26c','#ff9f1c'];
+  for (let i = 0; i < 60; i++) {
+    const cp = document.createElement('div');
+    cp.className = 'cp';
+    cp.style.left = Math.random() * 100 + 'vw';
+    cp.style.background = colors[Math.floor(Math.random() * colors.length)];
+    cp.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+    cp.style.animationDelay = (Math.random() * 0.5) + 's';
+    cp.style.width = cp.style.height = (8 + Math.random() * 10) + 'px';
+    wrap.appendChild(cp);
+  }
+  setTimeout(() => { wrap.innerHTML = ''; wrap.classList.add('hide'); }, 3500);
+}
+function launchTears() {
+  const wrap = document.getElementById('confetti-wrap');
+  wrap.classList.remove('hide');
+  wrap.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const t = document.createElement('div');
+    t.className = 'tear';
+    t.textContent = '💧';
+    t.style.left = (10 + Math.random() * 80) + 'vw';
+    t.style.top = (10 + Math.random() * 40) + 'vh';
+    t.style.animationDelay = (Math.random() * 0.8) + 's';
+    wrap.appendChild(t);
+  }
+  setTimeout(() => { wrap.innerHTML = ''; wrap.classList.add('hide'); }, 2500);
+}
+
+// ===== SHARE CARD =====
+async function generateShareCard(schoolName, score, rank, menu, rankObj) {
+  const canvas = document.createElement('canvas');
+  const W = 900, H = 900;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  // 배경 그라디언트
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  if (rankObj.r === 'S') { grad.addColorStop(0,'#1a1a2e'); grad.addColorStop(1,'#16213e'); }
+  else if (rankObj.r === 'A') { grad.addColorStop(0,'#3b1a8f'); grad.addColorStop(1,'#1e0a5e'); }
+  else if (rankObj.r === 'B') { grad.addColorStop(0,'#1a3a8f'); grad.addColorStop(1,'#0a1e5e'); }
+  else if (rankObj.r === 'D') { grad.addColorStop(0,'#2a2a2a'); grad.addColorStop(1,'#1a1a1a'); }
+  else { grad.addColorStop(0,'#5e4a1e'); grad.addColorStop(1,'#3a2e0e'); }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  // 상단 태그
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.roundRect(W/2-80, 50, 160, 44, 22); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = 'bold 18px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('급식아레나', W/2, 78);
+  // 이모지 + 랭크
+  const emoji = rankObj.r==='S'?'🏆':rankObj.r==='A'?'✨':rankObj.r==='D'?'😭':'🍱';
+  ctx.font = '90px serif';
+  ctx.fillText(emoji, W/2, 200);
+  // 랭크 텍스트
+  ctx.font = 'bold 72px Arial, sans-serif';
+  if (rankObj.r === 'S') {
+    const g2 = ctx.createLinearGradient(W/2-80, 0, W/2+80, 0);
+    g2.addColorStop(0,'#ffd700'); g2.addColorStop(1,'#ff9500');
+    ctx.fillStyle = g2;
+  } else { ctx.fillStyle = 'white'; }
+  ctx.fillText(rankObj.r + '랭크', W/2, 295);
+  // 학교명
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.font = 'bold 44px Arial, sans-serif';
+  ctx.fillText(schoolName, W/2, 370);
+  // 점수
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 96px Arial, sans-serif';
+  ctx.fillText(score + '점', W/2, 480);
+  // 구분선
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(60, 510); ctx.lineTo(W-60, 510); ctx.stroke();
+  // 메뉴 목록
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.font = '28px Arial, sans-serif';
+  const menuItems = menu.slice(0, 4);
+  menuItems.forEach((item, i) => { ctx.fillText(item, W/2, 555 + i * 44); });
+  // 하단 태그
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '22px Arial, sans-serif';
+  ctx.fillText(`#급식아레나 #${schoolName} #${rankObj.l}`, W/2, 780);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '18px Arial, sans-serif';
+  ctx.fillText('ssuksak.github.io/lunch-arena', W/2, 820);
+  return canvas.toDataURL('image/png');
+}
+async function shareCard(schoolName, score, rankObj, menu) {
+  try {
+    const dataUrl = await generateShareCard(schoolName, score, null, menu, rankObj);
+    // 이미지 저장 시도
+    const blob = await (await fetch(dataUrl)).blob();
+    const file = new File([blob], '급식아레나.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: `${schoolName} 오늘 급식 ${rankObj.r}랭크!`, text: `${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n#급식아레나` });
+    } else {
+      // 이미지 다운로드 fallback
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `급식아레나_${schoolName}_${score}점.png`;
+      a.click();
+    }
+  } catch(e) {
+    // 카카오/링크 공유 fallback
+    const text = `[급식아레나] ${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\nhttps://ssuksak.github.io/lunch-arena/`;
+    if (navigator.clipboard) { await navigator.clipboard.writeText(text); alert('링크가 복사됐어요! 단톡에 붙여넣기 해봐 😊'); }
+  }
 }
 
 // ===== MY SCHOOL MEAL =====
@@ -536,11 +717,21 @@ async function loadMySchoolMeal() {
       <ul class="menu-list">${items}</ul>
       <div class="meal-footer"><span>🔥 ${meal.calories || '?'} kcal</span><span style="font-size:11px">${fmtDateKR(mealDate)}</span></div>
     </div>
+    <button class="btn-share" onclick="shareCard('${mySchool.name}',${meal.auto_score},${JSON.stringify(rank).replace(/"/g,"'")},${JSON.stringify(meal.menu)})">
+      📤 카드 공유하기 · 단톡에 보내기
+    </button>
     <div id="ms-rating-wrap"></div>
     <div id="ms-reviews-wrap"></div>
   `;
   renderRating(meal.id, document.getElementById('ms-rating-wrap'));
   loadReviews(meal.id, document.getElementById('ms-reviews-wrap'));
+  // S/D 랭크 이펙트 (처음 로드 시만)
+  if (!sessionStorage.getItem('effect_shown_' + meal.id)) {
+    if (rank.r === 'S' || rank.r === 'D' || rank.r === 'A') {
+      setTimeout(() => showRankEffect(rank.r, meal.auto_score), 600);
+      sessionStorage.setItem('effect_shown_' + meal.id, '1');
+    }
+  }
 }
 async function loadMySchoolStats() {
   const data = await sb(`school_stats?school_id=eq.${mySchool.id}`);
@@ -564,8 +755,10 @@ function onHomeSearch(q) {
   }, 250);
 }
 document.addEventListener('click', e => {
-  if (!e.target.closest('.search-wrap')) document.getElementById('home-results').classList.remove('show');
-  if (!e.target.closest('.ob-search')) { const box = document.getElementById('ob-results'); if(box) box.classList.remove('show'); }
+  if (!e.target.closest('.home-search-big')) document.getElementById('home-results').classList.remove('show');
+  // 바텀시트 배경 클릭 닫기
+  if (e.target.id === 'school-set-sheet') closeSchoolSetSheet();
+  if (e.target.id === 'bottom-sheet') closeBottomSheet();
 });
 function selectDetailSchool(s) {
   document.getElementById('home-results').classList.remove('show');
@@ -624,9 +817,18 @@ async function loadDetailMeal() {
     </div>
     <ul class="menu-list">${meal.menu.map(m => menuItemHtml(m)).join('')}</ul>
     <div class="meal-footer"><span>🔥 ${meal.calories||'?'} kcal</span><span>${result.cached?'캐시됨':'방금 조회'}</span></div>
+    <button class="btn-share" style="margin-top:14px" onclick="shareCard('${currentSchool.name}',${meal.auto_score},${JSON.stringify(rank).replace(/"/g,"'")},${JSON.stringify(meal.menu)})">
+      📤 카드 공유하기 · 단톡에 보내기
+    </button>
   `;
   renderRating(meal.id, document.getElementById('detail-rating-wrap'));
   loadReviews(meal.id, document.getElementById('detail-reviews-wrap'));
+  if (!sessionStorage.getItem('effect_shown_' + meal.id)) {
+    if (rank.r === 'S' || rank.r === 'D' || rank.r === 'A') {
+      setTimeout(() => showRankEffect(rank.r, meal.auto_score), 600);
+      sessionStorage.setItem('effect_shown_' + meal.id, '1');
+    }
+  }
 }
 
 // ===== MEAL HELPERS =====
@@ -898,9 +1100,22 @@ function renderBattleCard(battle) {
   const menuB = (mB?.menu || []).slice(0, 5).map(m => `<li>${m}</li>`).join('');
   const scoreA = battle.score_a || mA?.auto_score || 0;
   const scoreB = battle.score_b || mB?.auto_score || 0;
-  const winA = scoreA > scoreB;
+  const winA = scoreA > scoreB, tie = scoreA === scoreB;
+  // AI 판정 텍스트
+  const aiVerdict = tie ? '🤝 동점' : `🏆 AI 판정: ${winA ? sA.name : sB.name} 승`;
+  // 여론 vs AI 역전 여부
+  const opinionWinA = pctA > pctB;
+  const reversed = totalVotes >= 5 && ((winA && !opinionWinA) || (!winA && opinionWinA && !tie));
+  const reverseText = reversed ? '⚡ 여론 역전!' : '';
+
   document.getElementById('battle-content').innerHTML = `
     <div class="vs-card">
+      <!-- AI 판정 -->
+      <div class="battle-verdict">
+        <div class="verdict-ai">AI 판정</div>
+        <div class="verdict-result">${aiVerdict}</div>
+      </div>
+      <!-- 메뉴 비교 -->
       <div class="vs-top">
         <div class="vs-school">
           <div class="vs-school-icon" style="background:${bgA}">${iconA}</div>
@@ -911,26 +1126,40 @@ function renderBattleCard(battle) {
         <div class="vs-school b">
           <div class="vs-school-icon" style="background:${bgB};margin-left:auto">${iconB}</div>
           <div class="vs-school-name">${sB.name}</div>
-          <div class="vs-score${!winA?' win':' lose'}">${scoreB}점</div>
+          <div class="vs-score${!winA&&!tie?' win':tie?'':' lose'}">${scoreB}점</div>
         </div>
       </div>
       <div class="vs-menu-row">
-        <div class="vs-menu"><ul>${menuA}</ul></div>
-        <div class="vs-menu b"><ul>${menuB}</ul></div>
+        <div class="vs-menu"><ul>${menuA||'<li style="color:var(--text3)">급식 없음</li>'}</ul></div>
+        <div class="vs-menu b"><ul>${menuB||'<li style="color:var(--text3)">급식 없음</li>'}</ul></div>
       </div>
-      ${voted ? `
-        <div class="vote-result">
-          <div class="vote-bar-labels"><span>${sA.name} ${pctA}%</span><span>${pctB}% ${sB.name}</span></div>
-          <div class="vote-bar-bg"><div class="vote-bar-a" style="width:${pctA}%"></div><div class="vote-bar-b" style="width:${pctB}%"></div></div>
-          <div class="vote-winner">${winA ? '🏆 ' + sA.name + ' 우세!' : scoreA === scoreB ? '🤝 동점!' : '🏆 ' + sB.name + ' 우세!'}</div>
-          <button class="vote-share-btn" onclick="shareBattle(${battle.id},'${sA.name}','${sB.name}',${scoreA},${scoreB})">📤 결과 공유하기</button>
-        </div>` :
-        `<div class="vs-vote-row">
-          <button class="btn-vote a" onclick="voteBattle(${battle.id},'${sA.id}','a')">👆 ${sA.name}</button>
-          <button class="btn-vote b" onclick="voteBattle(${battle.id},'${sB.id}','b')">👆 ${sB.name}</button>
-        </div>`}
+      <!-- 여론 섹션 -->
+      <div class="battle-opinion">
+        <div class="opinion-title">
+          💬 여론은?
+          ${voted ? `<span style="color:var(--green);font-size:11px">✓ 투표 완료</span>` : `<span class="opinion-live">LIVE</span>`}
+          ${reverseText ? `<span style="color:var(--battle-red);font-weight:800">${reverseText}</span>` : ''}
+        </div>
+        ${totalVotes > 0 ? `
+          <div class="vote-bar-labels" style="margin-bottom:6px">
+            <span style="color:var(--blue);font-weight:800">${sA.name} ${pctA}%</span>
+            <span style="color:var(--text3);font-size:11px">${totalVotes}명 투표</span>
+            <span style="color:var(--purple);font-weight:800">${pctB}% ${sB.name}</span>
+          </div>
+          <div class="vote-bar-bg">
+            <div class="vote-bar-a" style="width:${pctA}%"></div>
+            <div class="vote-bar-b" style="width:${pctB}%"></div>
+          </div>` :
+          `<div style="font-size:13px;color:var(--text3);margin-bottom:8px">아직 아무도 안 했어요! 첫 투표 주인공이 되세요</div>`}
+        ${!voted ? `
+          <div class="vs-vote-row" style="margin-top:10px">
+            <button class="btn-vote a" onclick="voteBattle(${battle.id},'${sA.id}','a')">👆 ${sA.name}</button>
+            <button class="btn-vote b" onclick="voteBattle(${battle.id},'${sB.id}','b')">👆 ${sB.name}</button>
+          </div>` : ''}
+        ${voted ? `<button class="vote-share-btn" onclick="shareBattle('${sA.name}','${sB.name}',${scoreA},${scoreB},${pctA},${pctB})">📤 이 결과 공유하기</button>` : ''}
+      </div>
     </div>
-    <div style="text-align:center;font-size:13px;color:var(--text3);margin-top:8px">AI 점수 기준 · 매일 자동 매칭</div>
+    <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px;padding-bottom:4px">매일 자동 매칭 · AI 점수 기준</div>
   `;
 }
 async function voteBattle(battleId, schoolId, side) {
@@ -959,9 +1188,11 @@ async function voteBattle(battleId, schoolId, side) {
   const fresh = await sb(`battles?id=eq.${battleId}&select=*,school_a:schools!battles_school_a_id_fkey(id,name,type),school_b:schools!battles_school_b_id_fkey(id,name,type),meal_a:meals!battles_meal_a_id_fkey(menu,auto_score),meal_b:meals!battles_meal_b_id_fkey(menu,auto_score)&limit=1`);
   if (fresh && fresh.length > 0) renderBattleCard(fresh[0]);
 }
-function shareBattle(id, nameA, nameB, scoreA, scoreB) {
-  const winner = scoreA > scoreB ? nameA : scoreB > scoreA ? nameB : '동점';
-  const text = `[급식아레나] ${nameA} ${scoreA}점 vs ${nameB} ${scoreB}점\n🏆 ${winner} 우세!\nhttps://ssuksak.github.io/lunch-arena/`;
+function shareBattle(nameA, nameB, scoreA, scoreB, pctA, pctB) {
+  const aiWinner = scoreA > scoreB ? nameA : scoreB > scoreA ? nameB : '동점';
+  const opinionWinner = pctA > pctB ? nameA : pctB > pctA ? nameB : '동점';
+  const reversed = aiWinner !== opinionWinner && aiWinner !== '동점';
+  const text = `⚔️ [급식아레나] 오늘의 배틀\n${nameA} ${scoreA}점 vs ${nameB} ${scoreB}점\n\n🤖 AI 판정: ${aiWinner} 승\n💬 여론: ${opinionWinner} ${pctA > pctB ? pctA : pctB}%${reversed ? '\n⚡ 여론 역전!' : ''}\n\nhttps://ssuksak.github.io/lunch-arena/`;
   if (navigator.share) navigator.share({ title: '급식아레나 배틀 결과', text });
   else { navigator.clipboard?.writeText(text); alert('결과가 클립보드에 복사됐어요!'); }
 }
