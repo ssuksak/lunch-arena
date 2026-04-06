@@ -665,13 +665,17 @@ async function generateShareCard(schoolName, score, rank, menu, rankObj) {
   return canvas.toDataURL('image/png');
 }
 async function shareCard(schoolName, score, rankObj, menu) {
+  const school = currentSchool || mySchool;
+  const shareUrl = school?.id
+    ? `https://ssuksak.github.io/lunch-arena/?school=${school.id}`
+    : `https://ssuksak.github.io/lunch-arena/`;
   try {
     const dataUrl = await generateShareCard(schoolName, score, null, menu, rankObj);
     // 이미지 저장 시도
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], '급식아레나.png', { type: 'image/png' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: `${schoolName} 오늘 급식 ${rankObj.r}랭크!`, text: `${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n#급식아레나` });
+      await navigator.share({ files: [file], title: `${schoolName} 오늘 급식 ${rankObj.r}랭크!`, text: `${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n#급식아레나\n${shareUrl}` });
     } else {
       // 이미지 다운로드 fallback
       const a = document.createElement('a');
@@ -680,8 +684,8 @@ async function shareCard(schoolName, score, rankObj, menu) {
       a.click();
     }
   } catch(e) {
-    // 카카오/링크 공유 fallback
-    const text = `[급식아레나] ${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\nhttps://ssuksak.github.io/lunch-arena/`;
+    // 링크 복사 fallback
+    const text = `[급식아레나] ${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n${shareUrl}`;
     if (navigator.clipboard) { await navigator.clipboard.writeText(text); alert('링크가 복사됐어요! 단톡에 붙여넣기 해봐 😊'); }
   }
 }
@@ -1308,9 +1312,33 @@ async function init() {
   }
 }
 
+// ===== URL 파라미터 처리 (바이럴 루프) =====
+async function handleUrlParam() {
+  const params = new URLSearchParams(location.search);
+  let schoolId = params.get('school');
+  // hash fallback: #school=123
+  if (!schoolId && location.hash.startsWith('#school=')) {
+    schoolId = location.hash.slice(8);
+  }
+  if (!schoolId) return;
+
+  // 학교 정보 조회
+  const schools = await sb(`schools?id=eq.${encodeURIComponent(schoolId)}&limit=1`);
+  if (!schools || schools.length === 0) return;
+
+  const school = schools[0];
+  // 홈 탭으로 이동 후 해당 학교 상세 오픈
+  switchTab('home');
+  selectDetailSchool(school);
+
+  // URL 파라미터 제거 (뒤로가기 시 재실행 방지)
+  const cleanUrl = location.pathname;
+  history.replaceState(null, '', cleanUrl);
+}
+
 // 카카오맵 지연 로드 (홈 탭엔 지도 없음, 지도 탭 진입 시 로드)
 try { kakao.maps.load(function() {}); } catch(e) {}
-init();
+init().then(() => handleUrlParam());
 </script>
 </body>
 </html>
