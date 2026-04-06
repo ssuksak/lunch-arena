@@ -705,6 +705,58 @@ async function loadMapSchools() {
   clusterer.addMarkers(markers);
 }
 
+async function openBottomSheet(school) {
+  const bs = document.getElementById('bottom-sheet');
+  const bsc = document.getElementById('bs-content');
+  const isElem = school.type?.includes('초');
+  const isMid = school.type?.includes('중');
+  const bgColor = isElem ? 'var(--green-l)' : isMid ? 'var(--blue-l)' : 'var(--purple-l)';
+  const emoji = isElem ? '🌱' : isMid ? '📘' : '🎓';
+
+  bsc.innerHTML = `
+    <div class="bs-header">
+      <div class="bs-icon" style="background:${bgColor}">${emoji}</div>
+      <div><div class="bs-name">${school.name}</div><div class="bs-meta">${school.type||''} · ${school.address||''}</div></div>
+      <button class="bs-close" onclick="closeBottomSheet()">✕</button>
+    </div>
+    <div style="text-align:center;padding:12px;color:var(--text3)"><div style="font-size:24px">🍳</div><div style="font-size:13px;margin-top:4px">급식 불러오는 중...</div></div>`;
+  bs.classList.add('show');
+
+  const dateStr = fmtDate(fixWeekend(new Date()));
+  const result = await edge('sync-meals', { atpt_code: school.atpt_code, school_code: school.school_code, date: dateStr });
+
+  if (result.meal) {
+    const m = result.meal;
+    const rank = getRank(m.auto_score);
+    const menuHtml = m.menu.map(item => `<li>${item}</li>`).join('');
+    bsc.innerHTML = `
+      <div class="bs-header">
+        <div class="bs-icon" style="background:${bgColor}">${emoji}</div>
+        <div><div class="bs-name">${school.name}</div><div class="bs-meta">${school.type||''} · ${school.address||''}</div></div>
+        <button class="bs-close" onclick="closeBottomSheet()">✕</button>
+      </div>
+      <div class="bs-menu-title"><span>${fmtDateKR(fixWeekend(new Date()))} 급식</span>
+        <span class="meal-rank-badge ${rank.c}" style="font-size:11px;padding:3px 8px">${rank.r} · ${m.auto_score}점</span>
+      </div>
+      <ul class="bs-menu-list">${menuHtml}</ul>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px">🔥 ${m.calories||'?'} kcal</div>
+      <button class="bs-btn" onclick="selectSchool(${school.id},'${school.atpt_code}','${school.school_code}','${school.name}','${school.type||''}','${(school.address||'').replace(/'/g,"\\'")}');closeBottomSheet()">상세보기 · 평가하기</button>`;
+  } else {
+    bsc.innerHTML = `
+      <div class="bs-header">
+        <div class="bs-icon" style="background:${bgColor}">${emoji}</div>
+        <div><div class="bs-name">${school.name}</div><div class="bs-meta">${school.type||''} · ${school.address||''}</div></div>
+        <button class="bs-close" onclick="closeBottomSheet()">✕</button>
+      </div>
+      <div style="text-align:center;padding:12px;color:var(--text3)"><div style="font-size:24px">😢</div><div style="font-size:13px">오늘 급식 정보가 없어요</div></div>
+      <button class="bs-btn" onclick="selectSchool(${school.id},'${school.atpt_code}','${school.school_code}','${school.name}','${school.type||''}','${(school.address||'').replace(/'/g,"\\'")}');closeBottomSheet()">다른 날짜 확인하기</button>`;
+  }
+}
+
+function closeBottomSheet() {
+  document.getElementById('bottom-sheet').classList.remove('show');
+}
+
 function goMyLocation() {
   if (!navigator.geolocation || !kakaoMap) return;
   navigator.geolocation.getCurrentPosition(pos => {
