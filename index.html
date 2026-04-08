@@ -696,7 +696,7 @@ async function loadMySchoolMeal() {
   wrap.classList.remove('hide');
   wrap.innerHTML = '<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">오늘 급식 불러오는 중...</div></div>';
   const today = fmtDate(mealDate);
-  const result = await edge('sync-meals', { atpt_code: mySchool.atpt, school_code: mySchool.code, date: today });
+  const result = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: today });
   if (!result.meal) {
     wrap.innerHTML = `<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>오늘 급식 정보가 없어요</div></div></div>`;
     document.getElementById('msc-score').textContent = '-';
@@ -804,7 +804,7 @@ async function loadDetailMeal() {
   if (!mc) return;
   mc.innerHTML = '<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">급식 불러오는 중...</div></div>';
   const s = currentSchool;
-  const result = await edge('sync-meals', { atpt_code: s.atpt, school_code: s.code, date: fmtDate(mealDate) });
+  const result = await edge('sync-meals', { atpt_code: s.atpt_code, school_code: s.school_code, date: fmtDate(mealDate) });
   if (!result.meal) {
     mc.innerHTML = `<div class="empty"><div class="empty-emoji">😢</div><div>이 날은 급식 정보가 없어요</div></div>`;
     document.getElementById('detail-rating-wrap').innerHTML = '';
@@ -1033,7 +1033,7 @@ async function loadBattle() {
   const existing = await sb(`battles?battle_date=eq.${today}&select=*,school_a:schools!battles_school_a_id_fkey(id,name,type,address),school_b:schools!battles_school_b_id_fkey(id,name,type,address),meal_a:meals!battles_meal_a_id_fkey(menu,auto_score),meal_b:meals!battles_meal_b_id_fkey(menu,auto_score)&or=(school_a_id.eq.${mySchool.id},school_b_id.eq.${mySchool.id})&limit=1`);
   if (existing && existing.length > 0) { renderBattleCard(existing[0]); return; }
   // 2. 내 학교 급식 로드
-  const myMealResult = await edge('sync-meals', { atpt_code: mySchool.atpt, school_code: mySchool.code, date: today });
+  const myMealResult = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: today });
   if (!myMealResult.meal) {
     wrap.innerHTML = `<div class="empty"><div class="empty-emoji">😢</div><div>오늘 내 학교 급식 정보가 없어서<br>배틀을 만들 수 없어요</div></div>`;
     return;
