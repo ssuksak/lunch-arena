@@ -264,8 +264,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 @keyframes tearFall{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(60px) scale(0.5);opacity:0}}
 .tear{position:absolute;font-size:24px;animation:tearFall 1.5s ease-in forwards}
 /* 랭크 팝업 */
-@keyframes rankPop{0%{transform:scale(0.3);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
-.rank-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:402;background:white;border-radius:24px;padding:32px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:rankPop .5s cubic-bezier(.34,1.56,.64,1) forwards;pointer-events:none}
+@keyframes rankPop{0%{transform:translate(-50%,-50%) scale(0.3);opacity:0}60%{transform:translate(-50%,-50%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.rank-popup{position:fixed;top:50%;left:50%;z-index:402;background:white;border-radius:24px;padding:32px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:rankPop .5s cubic-bezier(.34,1.56,.64,1) forwards;pointer-events:none;max-width:calc(100vw - 48px);width:max-content;box-sizing:border-box}
 .rank-popup.hide{display:none}
 .rp-emoji{font-size:64px;display:block;margin-bottom:8px}
 .rp-rank{font-size:48px;font-weight:900;background:linear-gradient(135deg,#ffd700,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
