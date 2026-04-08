@@ -795,7 +795,15 @@ function renderSchoolDetail() {
   `;
 }
 function changeDetailDate(delta) {
-  mealDate.setDate(mealDate.getDate() + delta); fixWeekend(mealDate);
+  mealDate.setDate(mealDate.getDate() + delta);
+  const dow = mealDate.getDay();
+  if (delta > 0) {
+    if (dow === 6) mealDate.setDate(mealDate.getDate() + 2); // 토 → 월
+    else if (dow === 0) mealDate.setDate(mealDate.getDate() + 1); // 일 → 월
+  } else {
+    if (dow === 0) mealDate.setDate(mealDate.getDate() - 2); // 일 → 금
+    else if (dow === 6) mealDate.setDate(mealDate.getDate() - 1); // 토 → 금
+  }
   document.getElementById('detail-date').textContent = fmtDateKR(mealDate);
   loadDetailMeal();
 }
@@ -981,7 +989,15 @@ async function loadReviews(mealId, targetEl) {
 
 // ===== RANKING =====
 function changeRankDate(delta) {
-  rankDate.setDate(rankDate.getDate() + delta); fixWeekend(rankDate);
+  rankDate.setDate(rankDate.getDate() + delta);
+  const dow = rankDate.getDay();
+  if (delta > 0) {
+    if (dow === 6) rankDate.setDate(rankDate.getDate() + 2);
+    else if (dow === 0) rankDate.setDate(rankDate.getDate() + 1);
+  } else {
+    if (dow === 0) rankDate.setDate(rankDate.getDate() - 2);
+    else if (dow === 6) rankDate.setDate(rankDate.getDate() - 1);
+  }
   document.getElementById('rank-date').textContent = fmtDateKR(rankDate);
   loadFullRanking();
 }
