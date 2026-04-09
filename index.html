@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#fff8f0">
-<title>급식아레나 - 전국 학교급식 배틀</title>
+<title>오늘급식 - 우리 학교 급식 점수는?</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <style>
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
@@ -308,7 +308,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 
 <!-- ===== 앱바 ===== -->
 <div class="appbar">
-  <div class="appbar-logo">🍱 급식아레나</div>
+  <div class="appbar-logo">🍱 오늘급식</div>
   <div class="appbar-right">
     <div id="appbar-school" style="font-size:12px;font-weight:700;background:var(--blue-l);color:var(--blue);padding:6px 12px;border-radius:20px;cursor:pointer" onclick="openSchoolSetSheet()">내 학교 설정</div>
   </div>
@@ -437,7 +437,7 @@ function getFingerprint() {
     const ctx = canvas.getContext('2d');
     ctx.textBaseline = 'top';
     ctx.font = '14px Arial';
-    ctx.fillText('급식아레나', 2, 2);
+    ctx.fillText('오늘급식', 2, 2);
     const cv = canvas.toDataURL().slice(-50);
     const raw = cv + screen.width + 'x' + screen.height + (Intl.DateTimeFormat().resolvedOptions().timeZone || '') + (navigator.language || '');
     fp = btoa(unescape(encodeURIComponent(raw))).replace(/[^a-z0-9]/gi,'').slice(0, 32);
@@ -626,7 +626,7 @@ async function generateShareCard(schoolName, score, rank, menu, rankObj) {
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
   ctx.font = 'bold 18px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('급식아레나', W/2, 78);
+  ctx.fillText('오늘급식', W/2, 78);
   // 이모지 + 랭크
   const emoji = rankObj.r==='S'?'🏆':rankObj.r==='A'?'✨':rankObj.r==='D'?'😭':'🍱';
   ctx.font = '90px serif';
@@ -659,7 +659,7 @@ async function generateShareCard(schoolName, score, rank, menu, rankObj) {
   // 하단 태그
   ctx.fillStyle = 'rgba(255,255,255,0.4)';
   ctx.font = '22px Arial, sans-serif';
-  ctx.fillText(`#급식아레나 #${schoolName} #${rankObj.l}`, W/2, 780);
+  ctx.fillText(`#오늘급식 #${schoolName} #${rankObj.l}`, W/2, 780);
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.font = '18px Arial, sans-serif';
   ctx.fillText('ssuksak.github.io/lunch-arena', W/2, 820);
@@ -675,18 +675,18 @@ async function shareCurrentCard() {
   try {
     const dataUrl = await generateShareCard(schoolName, score, null, menu, rankObj);
     const blob = await (await fetch(dataUrl)).blob();
-    const file = new File([blob], '급식아레나.png', { type: 'image/png' });
+    const file = new File([blob], '오늘급식.png', { type: 'image/png' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: `${schoolName} 오늘 급식 ${rankObj.r}랭크!`, text: `${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n#급식아레나\n${shareUrl}` });
+      await navigator.share({ files: [file], title: `${schoolName} 오늘 급식 ${rankObj.r}랭크!`, text: `${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n#오늘급식\n${shareUrl}` });
     } else {
       const a = document.createElement('a');
       a.href = dataUrl;
-      a.download = `급식아레나_${schoolName}_${score}점.png`;
+      a.download = `오늘급식_${schoolName}_${score}점.png`;
       a.click();
     }
   } catch(e) {
     // canvas/share 실패 시 링크 복사 fallback
-    const text = `[급식아레나] ${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n${shareUrl}`;
+    const text = `[오늘급식] ${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n${shareUrl}`;
     try {
       await navigator.clipboard.writeText(text);
       alert('링크가 복사됐어요! 단톡에 붙여넣기 해봐 😊');
@@ -1220,8 +1220,8 @@ function shareBattle(nameA, nameB, scoreA, scoreB, pctA, pctB) {
   const aiWinner = scoreA > scoreB ? nameA : scoreB > scoreA ? nameB : '동점';
   const opinionWinner = pctA > pctB ? nameA : pctB > pctA ? nameB : '동점';
   const reversed = aiWinner !== opinionWinner && aiWinner !== '동점';
-  const text = `⚔️ [급식아레나] 오늘의 배틀\n${nameA} ${scoreA}점 vs ${nameB} ${scoreB}점\n\n🤖 AI 판정: ${aiWinner} 승\n💬 여론: ${opinionWinner} ${pctA > pctB ? pctA : pctB}%${reversed ? '\n⚡ 여론 역전!' : ''}\n\nhttps://ssuksak.github.io/lunch-arena/`;
-  if (navigator.share) navigator.share({ title: '급식아레나 배틀 결과', text });
+  const text = `⚔️ [오늘급식] 오늘의 배틀\n${nameA} ${scoreA}점 vs ${nameB} ${scoreB}점\n\n🤖 AI 판정: ${aiWinner} 승\n💬 여론: ${opinionWinner} ${pctA > pctB ? pctA : pctB}%${reversed ? '\n⚡ 여론 역전!' : ''}\n\nhttps://ssuksak.github.io/lunch-arena/`;
+  if (navigator.share) navigator.share({ title: '오늘급식 배틀 결과', text });
   else { navigator.clipboard?.writeText(text); alert('결과가 클립보드에 복사됐어요!'); }
 }
 
