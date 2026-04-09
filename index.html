@@ -453,6 +453,7 @@ let mealDate = new Date();
 let rankDate = new Date();
 let rankFilter = 'all';
 let currentSchool = null;
+let pendingShare = null; // 공유 버튼용 데이터 캐시
 let searchTimer = null;
 let selectedRating = 0;
 let selectedPhotoFile = null;
@@ -664,29 +665,34 @@ async function generateShareCard(schoolName, score, rank, menu, rankObj) {
   ctx.fillText('ssuksak.github.io/lunch-arena', W/2, 820);
   return canvas.toDataURL('image/png');
 }
-async function shareCard(schoolName, score, rankObj, menu) {
+async function shareCurrentCard() {
+  if (!pendingShare) return;
+  const { schoolName, score, rankObj, menu } = pendingShare;
   const school = currentSchool || mySchool;
   const shareUrl = school?.id
     ? `https://ssuksak.github.io/lunch-arena/?school=${school.id}`
     : `https://ssuksak.github.io/lunch-arena/`;
   try {
     const dataUrl = await generateShareCard(schoolName, score, null, menu, rankObj);
-    // 이미지 저장 시도
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], '급식아레나.png', { type: 'image/png' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: `${schoolName} 오늘 급식 ${rankObj.r}랭크!`, text: `${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n#급식아레나\n${shareUrl}` });
     } else {
-      // 이미지 다운로드 fallback
       const a = document.createElement('a');
       a.href = dataUrl;
       a.download = `급식아레나_${schoolName}_${score}점.png`;
       a.click();
     }
   } catch(e) {
-    // 링크 복사 fallback
+    // canvas/share 실패 시 링크 복사 fallback
     const text = `[급식아레나] ${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n${shareUrl}`;
-    if (navigator.clipboard) { await navigator.clipboard.writeText(text); alert('링크가 복사됐어요! 단톡에 붙여넣기 해봐 😊'); }
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('링크가 복사됐어요! 단톡에 붙여넣기 해봐 😊');
+    } catch {
+      alert(`공유할 링크:\n${shareUrl}`);
+    }
   }
 }
 
@@ -704,6 +710,7 @@ async function loadMySchoolMeal() {
   }
   const meal = result.meal;
   const rank = getRank(meal.auto_score);
+  pendingShare = { schoolName: mySchool.name, score: meal.auto_score, rankObj: rank, menu: meal.menu };
   // 카드 점수 업데이트
   const scoreEl = document.getElementById('msc-score');
   if (scoreEl) scoreEl.textContent = meal.auto_score;
@@ -721,7 +728,7 @@ async function loadMySchoolMeal() {
       <ul class="menu-list">${items}</ul>
       <div class="meal-footer"><span>🔥 ${meal.calories || '?'} kcal</span><span style="font-size:11px">${fmtDateKR(mealDate)}</span></div>
     </div>
-    <button class="btn-share" onclick="shareCard('${mySchool.name}',${meal.auto_score},${JSON.stringify(rank).replace(/"/g,"'")},${JSON.stringify(meal.menu)})">
+    <button class="btn-share" onclick="shareCurrentCard()">
       📤 카드 공유하기 · 단톡에 보내기
     </button>
     <div id="ms-rating-wrap"></div>
@@ -821,6 +828,7 @@ async function loadDetailMeal() {
   }
   const meal = result.meal;
   const rank = getRank(meal.auto_score);
+  pendingShare = { schoolName: currentSchool.name, score: meal.auto_score, rankObj: rank, menu: meal.menu };
   const scoreColor = meal.auto_score >= 75 ? 'var(--blue)' : meal.auto_score >= 55 ? 'var(--green)' : 'var(--yellow)';
   mc.innerHTML = `
     <div class="meal-score-row">
@@ -829,7 +837,7 @@ async function loadDetailMeal() {
     </div>
     <ul class="menu-list">${meal.menu.map(m => menuItemHtml(m)).join('')}</ul>
     <div class="meal-footer"><span>🔥 ${meal.calories||'?'} kcal</span><span>${result.cached?'캐시됨':'방금 조회'}</span></div>
-    <button class="btn-share" style="margin-top:14px" onclick="shareCard('${currentSchool.name}',${meal.auto_score},${JSON.stringify(rank).replace(/"/g,"'")},${JSON.stringify(meal.menu)})">
+    <button class="btn-share" style="margin-top:14px" onclick="shareCurrentCard()">
       📤 카드 공유하기 · 단톡에 보내기
     </button>
   `;
