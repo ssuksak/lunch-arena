@@ -1,51 +1,87 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1a1a2e"/>
-      <stop offset="100%" stop-color="#3b1a8f"/>
+      <stop offset="0%" stop-color="#EEF2FF"/>
+      <stop offset="100%" stop-color="#DDD6FE"/>
     </linearGradient>
-    <linearGradient id="bowl-shine" x1="20%" y1="10%" x2="80%" y2="90%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#ddd0ff"/>
+    <linearGradient id="school-wall" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
     </linearGradient>
-    <linearGradient id="text-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#c4b5fd"/>
+    <linearGradient id="bowl-g" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#EDE9FE"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
-  <ellipse cx="256" cy="210" rx="170" ry="150" fill="rgba(120,80,255,0.2)"/>
-  <g fill="rgba(255,255,255,0.5)">
-    <circle cx="90" cy="100" r="4"/>
-    <circle cx="415" cy="130" r="3"/>
-    <circle cx="78" cy="200" r="2.5"/>
-    <circle cx="430" cy="220" r="2"/>
-    <circle cx="108" cy="310" r="2"/>
+
+  <!-- 배경 -->
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+
+  <!-- ===== 학교 건물 (상단 배경) ===== -->
+  <!-- 건물 본체 -->
+  <rect x="60" y="130" width="392" height="200" rx="6" fill="#C4B5FD" opacity="0.6"/>
+  <!-- 지붕 (평지붕 + 탑) -->
+  <rect x="50" y="110" width="412" height="30" rx="4" fill="#7C3AED" opacity="0.75"/>
+  <!-- 중앙 탑 -->
+  <rect x="214" y="70" width="84" height="50" rx="4" fill="#6D28D9" opacity="0.8"/>
+  <rect x="228" y="58" width="56" height="20" rx="3" fill="#5B21B6" opacity="0.8"/>
+  <!-- 깃발 -->
+  <line x1="256" y1="30" x2="256" y2="62" stroke="#5B21B6" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+  <polygon points="256,30 284,40 256,50" fill="#F59E0B" opacity="0.85"/>
+  <!-- 창문 행 1 -->
+  <g fill="rgba(255,255,255,0.8)">
+    <rect x="82" y="148" width="52" height="44" rx="5"/>
+    <rect x="154" y="148" width="52" height="44" rx="5"/>
+    <rect x="226" y="148" width="60" height="44" rx="5"/>
+    <rect x="306" y="148" width="52" height="44" rx="5"/>
+    <rect x="378" y="148" width="52" height="44" rx="5"/>
   </g>
-  <path d="M420 85 L423 93 L432 93 L425 98 L428 107 L420 102 L412 107 L415 98 L408 93 L417 93 Z" fill="rgba(255,255,255,0.45)"/>
-  <path d="M75 150 L77 156 L83 156 L78 160 L80 166 L75 162 L70 166 L72 160 L67 156 L73 156 Z" fill="rgba(255,255,255,0.35)"/>
-  <ellipse cx="256" cy="305" rx="120" ry="16" fill="rgba(0,0,0,0.25)"/>
-  <path d="M136 240 Q136 310 256 310 Q376 310 376 240 Z" fill="url(#bowl-shine)" opacity="0.96"/>
-  <ellipse cx="256" cy="240" rx="120" ry="22" fill="url(#bowl-shine)" opacity="0.96"/>
-  <ellipse cx="256" cy="240" rx="104" ry="17" fill="#cfc0f5"/>
-  <ellipse cx="256" cy="235" rx="88" ry="13" fill="white" opacity="0.92"/>
-  <ellipse cx="250" cy="229" rx="65" ry="9" fill="white" opacity="0.7"/>
-  <g stroke="rgba(255,255,255,0.65)" stroke-width="5.5" stroke-linecap="round" fill="none">
-    <path d="M208 208 Q213 192 208 176 Q203 160 208 145"/>
-    <path d="M256 202 Q261 184 256 168 Q251 152 256 136"/>
-    <path d="M304 208 Q309 192 304 176 Q299 160 304 145"/>
+  <!-- 창문 살 -->
+  <g stroke="#A78BFA" stroke-width="2" fill="none" opacity="0.7">
+    <line x1="108" y1="148" x2="108" y2="192"/><line x1="82" y1="170" x2="134" y2="170"/>
+    <line x1="180" y1="148" x2="180" y2="192"/><line x1="154" y1="170" x2="206" y2="170"/>
+    <line x1="256" y1="148" x2="256" y2="192"/><line x1="226" y1="170" x2="286" y2="170"/>
+    <line x1="332" y1="148" x2="332" y2="192"/><line x1="306" y1="170" x2="358" y2="170"/>
+    <line x1="404" y1="148" x2="404" y2="192"/><line x1="378" y1="170" x2="430" y2="170"/>
   </g>
-  <text x="256" y="400" text-anchor="middle"
+  <!-- 출입구 -->
+  <rect x="216" y="254" width="80" height="76" rx="8" fill="rgba(255,255,255,0.6)"/>
+  <rect x="252" y="254" width="8" height="76" fill="rgba(167,139,250,0.3)"/>
+
+  <!-- ===== 그릇 (앞면, 크게) ===== -->
+  <!-- 그릇 그림자 -->
+  <ellipse cx="256" cy="360" rx="112" ry="14" fill="rgba(109,40,217,0.2)"/>
+  <!-- 그릇 몸통 -->
+  <path d="M148 300 Q148 358 256 358 Q364 358 364 300 Z" fill="url(#bowl-g)"/>
+  <!-- 그릇 테두리 -->
+  <ellipse cx="256" cy="300" rx="108" ry="20" fill="white"/>
+  <!-- 그릇 내부 -->
+  <ellipse cx="256" cy="300" rx="92" ry="15" fill="#EDE9FE"/>
+  <!-- 밥 -->
+  <ellipse cx="256" cy="294" rx="78" ry="11" fill="#FFFBEB"/>
+  <ellipse cx="252" cy="287" rx="56" ry="8" fill="white" opacity="0.9"/>
+
+  <!-- 수증기 (그릇 위) -->
+  <g stroke="#F59E0B" stroke-width="5.5" stroke-linecap="round" fill="none" opacity="0.8">
+    <path d="M215 258 Q219 244 215 230 Q211 216 215 203"/>
+    <path d="M256 252 Q260 237 256 222 Q252 207 256 194"/>
+    <path d="M297 258 Q301 244 297 230 Q293 216 297 203"/>
+  </g>
+
+  <!-- 텍스트 오늘급식 -->
+  <text x="256" y="418"
+        text-anchor="middle"
         font-family="NanumGothic,sans-serif"
-        font-size="76" font-weight="900"
-        fill="url(#text-grad)" letter-spacing="-2">오늘급식</text>
-  <g fill="rgba(255,255,255,0.4)">
-    <circle cx="140" cy="425" r="3.5"/>
-    <circle cx="372" cy="425" r="3.5"/>
-  </g>
-  <line x1="172" y1="422" x2="340" y2="422" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
-  <text x="256" y="452" text-anchor="middle"
+        font-size="68" font-weight="900"
+        fill="#4C1D95" letter-spacing="-1">오늘급식</text>
+  <text x="256" y="456" text-anchor="middle"
         font-family="Arial,sans-serif"
-        font-size="20" font-weight="600"
-        fill="rgba(255,255,255,0.4)" letter-spacing="4">TODAY'S LUNCH</text>
+        font-size="18" font-weight="700"
+        fill="#7C3AED" opacity="0.55" letter-spacing="4">TODAY'S LUNCH</text>
+
+  <!-- 별 포인트 -->
+  <g fill="#F59E0B" opacity="0.8">
+    <circle cx="76" cy="438" r="5"/>
+    <circle cx="436" cy="438" r="5"/>
+  </g>
 </svg>
