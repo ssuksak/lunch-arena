@@ -32,7 +32,7 @@
 
   <!-- 점수 배지 (우상단) -->
   <rect x="340" y="110" width="96" height="42" rx="21" fill="rgba(255,200,60,0.92)"/>
-  <text x="388" y="137" text-anchor="middle" font-family="'Apple SD Gothic Neo','Noto Sans KR',Arial,sans-serif" font-size="22" font-weight="900" fill="#1a1a2e">S랭크</text>
+  <text x="388" y="137" text-anchor="middle" font-family="NanumGothic,'맑은 고딕',sans-serif" font-size="22" font-weight="900" fill="#1a1a2e">S랭크</text>
 
   <!-- 그릇 몸체 -->
   <ellipse cx="256" cy="295" rx="130" ry="22" fill="rgba(255,255,255,0.15)"/>
@@ -54,7 +54,7 @@
 
   <!-- 텍스트: 오늘급식 -->
   <text x="256" y="408" text-anchor="middle"
-        font-family="'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',Arial,sans-serif"
+        font-family="NanumGothic,'맑은 고딕',sans-serif"
         font-size="62" font-weight="900" fill="white" letter-spacing="-1">오늘급식</text>
   <!-- 텍스트 서브 -->
   <text x="256" y="445" text-anchor="middle"
