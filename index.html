@@ -1209,6 +1209,15 @@ async function loadBattle() {
     wrap.innerHTML = `<div class="empty"><div class="empty-emoji">🏫</div><div>내 학교를 설정하면<br>오늘의 배틀을 볼 수 있어요!</div><button onclick="showOnboarding()" style="margin-top:16px;padding:12px 24px;background:var(--blue);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">내 학교 설정하기</button></div>`;
     return;
   }
+  // mySchool에 lat/lng 없으면 schools 테이블에서 가져와서 보강 (상대 변경용)
+  if (!mySchool.lat || !mySchool.lng) {
+    const geo = await sb(`schools?id=eq.${mySchool.id}&select=lat,lng`);
+    if (geo?.[0]?.lat && geo?.[0]?.lng) {
+      mySchool.lat = geo[0].lat;
+      mySchool.lng = geo[0].lng;
+      localStorage.setItem('arena_school', JSON.stringify(mySchool));
+    }
+  }
   const today = fmtDate(fixWeekend(new Date()));
   // 1. 기존 배틀 확인
   const existing = await sb(`battles?battle_date=eq.${today}&select=*,school_a:schools!battles_school_a_id_fkey(id,name,type,address),school_b:schools!battles_school_b_id_fkey(id,name,type,address),meal_a:meals!battles_meal_a_id_fkey(menu,auto_score),meal_b:meals!battles_meal_b_id_fkey(menu,auto_score)&or=(school_a_id.eq.${mySchool.id},school_b_id.eq.${mySchool.id})&limit=1`);
@@ -1380,6 +1389,15 @@ async function openBattleOppSheet(battleId, totalVotes) {
   if (!window.BATTLE_CANDIDATES || window.BATTLE_CANDIDATES.length === 0) {
     const today = fmtDate(fixWeekend(new Date()));
     const myTypeKey = mySchool.type?.includes('초') ? '초' : mySchool.type?.includes('중') ? '중' : '고';
+    // lat/lng 없으면 schools 테이블에서 가져옴
+    if (!mySchool.lat || !mySchool.lng) {
+      const geo = await sb(`schools?id=eq.${mySchool.id}&select=lat,lng`);
+      if (geo?.[0]?.lat && geo?.[0]?.lng) {
+        mySchool.lat = geo[0].lat;
+        mySchool.lng = geo[0].lng;
+        localStorage.setItem('arena_school', JSON.stringify(mySchool));
+      }
+    }
     if (mySchool.lat && mySchool.lng) {
       const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/find_battle_opponents`, {
         method: 'POST',
