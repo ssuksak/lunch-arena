@@ -549,10 +549,11 @@ async function loadMySchool() {
 }
 
 // Supabase user_schools 테이블에 현재 mySchool 저장 (upsert)
+// 반환: { ok: true } | { ok: false, code: 'LIMIT', message, status } | { ok: false, code: 'NET', ... }
 async function saveMySchoolToDb() {
-  if (!window.USER || !mySchool || !mySchool.id) return;
+  if (!window.USER || !mySchool || !mySchool.id) return { ok: true };
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_hash`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_hash`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
@@ -572,7 +573,39 @@ async function saveMySchoolToDb() {
         updated_at: new Date().toISOString()
       })
     });
-  } catch (e) { /* 저장 실패해도 localStorage는 유지됨 */ }
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      if (text.includes('SCHOOL_CHANGE_LIMIT_EXCEEDED')) {
+        return { ok: false, code: 'LIMIT', message: text };
+      }
+      return { ok: false, code: 'NET', status: res.status, message: text };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, code: 'NET', message: String(e) };
+  }
+}
+
+// 변경 가능 횟수/다음 가능일 조회 (get_school_change_status RPC)
+async function fetchSchoolChangeStatus() {
+  if (!window.USER) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_school_change_status`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_user_hash: window.USER.id })
+    });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row) return { used_count: 0, remaining_count: 3, next_available_at: null };
+    window.SCHOOL_CHANGE_STATUS = row;
+    return row;
+  } catch (e) { return null; }
 }
 function applyMySchool() {
   const s = mySchool;
@@ -595,7 +628,17 @@ function applyMySchool() {
   loadMySchoolMeal();
   loadMySchoolStats();
 }
-function openSchoolSetSheet() {
+async function openSchoolSetSheet() {
+  // 이미 등록된 사용자의 "변경" 시도 시 한도 체크 (첫 등록은 mySchool이 null이므로 통과)
+  if (mySchool && mySchool.id) {
+    const st = await fetchSchoolChangeStatus();
+    if (st && st.remaining_count === 0 && st.next_available_at) {
+      const dt = new Date(st.next_available_at);
+      const dateStr = `${dt.getMonth()+1}월 ${dt.getDate()}일`;
+      alert(`학교 변경은 30일에 최대 3번까지 가능해요 🙂\n\n다음 변경 가능일: ${dateStr}`);
+      return;
+    }
+  }
   document.getElementById('school-set-sheet').classList.add('show');
   document.getElementById('set-school-input').value = '';
   document.getElementById('set-school-results').innerHTML = '';
@@ -604,12 +647,33 @@ function openSchoolSetSheet() {
 function closeSchoolSetSheet() {
   document.getElementById('school-set-sheet').classList.remove('show');
 }
-function selectMySchool(s) {
+async function selectMySchool(s) {
+  // 같은 학교면 그냥 닫기
+  if (mySchool && mySchool.id === s.id) {
+    closeSchoolSetSheet();
+    return;
+  }
+  const isChange = !!(mySchool && mySchool.id);
+  const prev = mySchool;
   mySchool = s;
   localStorage.setItem('arena_school', JSON.stringify(s));
-  saveMySchoolToDb(); // Supabase 저장 (토스/fingerprint 기반 기기 간 동기화)
+  const result = await saveMySchoolToDb();
+  if (!result.ok && result.code === 'LIMIT') {
+    // 서버에서 차단됨 → 롤백
+    mySchool = prev;
+    if (prev) localStorage.setItem('arena_school', JSON.stringify(prev));
+    // 최신 상태 재조회해서 다음 가능일 안내
+    const st = await fetchSchoolChangeStatus();
+    const dateStr = st && st.next_available_at
+      ? (() => { const dt = new Date(st.next_available_at); return `${dt.getMonth()+1}월 ${dt.getDate()}일`; })()
+      : '-';
+    alert(`학교 변경은 30일에 최대 3번까지 가능해요 🙂\n\n다음 변경 가능일: ${dateStr}`);
+    closeSchoolSetSheet();
+    return;
+  }
   closeSchoolSetSheet();
   applyMySchool();
+  if (isChange) await fetchSchoolChangeStatus(); // 카운트 갱신
 }
 let setSchoolTimer = null;
 async function onSetSchoolSearch(q) {
