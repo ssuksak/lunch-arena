@@ -25,12 +25,13 @@ export default defineConfig({
     commands: {
       // 정적 사이트라 별도 빌드 없음. dev는 단순 http 서버
       dev: 'npx http-server -p 5173 -c-1',
-      build: 'echo "Static site, nothing to build"',
+      // AIT build가 outdir를 정리하므로 루트를 outdir로 두면 위험함
+      build: 'mkdir -p dist && cp index.html privacy.html icon_600.png icon.png icon.svg thumbnail_1932x828.png dist/ && cp -r migrations dist/migrations',
     },
   },
 
-  // 빌드 산출물 위치 (정적 사이트라 루트 그대로)
-  outdir: '.',
+  // 빌드 산출물 위치
+  outdir: 'dist',
 
   // 미니앱 카테고리 (게임이 아니므로 partner)
   webViewProps: {
