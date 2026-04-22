@@ -1,0 +1,17 @@
+{
+  "name": "oneulgeupshik",
+  "version": "1.0.0",
+  "description": "오늘급식 - 우리 학교 급식 점수는?",
+  "private": true,
+  "scripts": {
+    "dev": "ait dev",
+    "build": "ait build",
+    "start": "npx http-server -p 5173 -c-1"
+  },
+  "dependencies": {
+    "@apps-in-toss/web-framework": "^2.4.5"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
