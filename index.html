@@ -447,6 +447,30 @@ function getFingerprint() {
 }
 const FP = getFingerprint();
 
+// ===== USER IDENTITY (Toss hash key 우선, fingerprint fallback) =====
+// 토스 미니앱에서는 getAnonymousKey()로 기기간 동일한 사용자 식별 가능
+// 일반 브라우저는 기존 fingerprint 사용
+window.USER = null; // {id, source}
+async function getUserId() {
+  if (window.USER) return window.USER;
+  // 1순위: 토스 앱 내부 실행 시 — @apps-in-toss/web-framework의 getAnonymousKey()
+  try {
+    const mod = await import('https://esm.sh/@apps-in-toss/web-framework@^2.4.5');
+    if (mod && typeof mod.getAnonymousKey === 'function') {
+      const key = await mod.getAnonymousKey();
+      if (key && typeof key === 'string') {
+        window.USER = { id: 'toss_' + key, source: 'toss' };
+        return window.USER;
+      }
+    }
+  } catch (e) {
+    // 토스앱 밖이거나 SDK 로드 실패 → fingerprint로 폴백
+  }
+  // 2순위: 브라우저 fingerprint
+  window.USER = { id: 'fp_' + FP, source: 'fp' };
+  return window.USER;
+}
+
 // ===== STATE =====
 let mySchool = null;
 let mealDate = new Date();
@@ -489,9 +513,66 @@ function switchTab(tab) {
 }
 
 // ===== MY SCHOOL =====
-function loadMySchool() {
+// 우선순위: Supabase user_schools → localStorage (기존 사용자 호환)
+async function loadMySchool() {
+  await getUserId(); // window.USER 준비
+
+  // 1순위: Supabase에서 user_hash로 조회
+  try {
+    const rows = await sb(`user_schools?user_hash=eq.${encodeURIComponent(window.USER.id)}&select=*`);
+    if (Array.isArray(rows) && rows.length > 0) {
+      const r = rows[0];
+      mySchool = {
+        id: r.school_id,
+        name: r.school_name,
+        type: r.school_type,
+        atpt_code: r.atpt_code,
+        school_code: r.school_code,
+        address: r.address
+      };
+      localStorage.setItem('arena_school', JSON.stringify(mySchool));
+      applyMySchool();
+      return;
+    }
+  } catch (e) { /* 네트워크 오류 → localStorage로 폴백 */ }
+
+  // 2순위: localStorage (기존 사용자)
   const raw = localStorage.getItem('arena_school');
-  if (raw) { mySchool = JSON.parse(raw); applyMySchool(); }
+  if (raw) {
+    try {
+      mySchool = JSON.parse(raw);
+      applyMySchool();
+      // 기존 localStorage 값을 Supabase에도 마이그레이션
+      saveMySchoolToDb();
+    } catch (e) {}
+  }
+}
+
+// Supabase user_schools 테이블에 현재 mySchool 저장 (upsert)
+async function saveMySchoolToDb() {
+  if (!window.USER || !mySchool || !mySchool.id) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_hash`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({
+        user_hash: window.USER.id,
+        source: window.USER.source,
+        school_id: mySchool.id,
+        school_name: mySchool.name || null,
+        school_type: mySchool.type || null,
+        atpt_code: mySchool.atpt_code || null,
+        school_code: mySchool.school_code || null,
+        address: mySchool.address || null,
+        updated_at: new Date().toISOString()
+      })
+    });
+  } catch (e) { /* 저장 실패해도 localStorage는 유지됨 */ }
 }
 function applyMySchool() {
   const s = mySchool;
@@ -526,6 +607,7 @@ function closeSchoolSetSheet() {
 function selectMySchool(s) {
   mySchool = s;
   localStorage.setItem('arena_school', JSON.stringify(s));
+  saveMySchoolToDb(); // Supabase 저장 (토스/fingerprint 기반 기기 간 동기화)
   closeSchoolSetSheet();
   applyMySchool();
 }
@@ -1313,7 +1395,7 @@ function goMyLocation() {
 
 // ===== INIT =====
 async function init() {
-  loadMySchool();
+  await loadMySchool();
   // 스탯 카운트
   const [schoolCount, mealCount, ratingCount] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/schools?select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
