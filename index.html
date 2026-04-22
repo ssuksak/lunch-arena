@@ -495,6 +495,12 @@ let selectedPhotoUrl = null;
 let kakaoMap = null, mapSchools = [], clusterer = null;
 let mapLoaded = false;
 
+// XSS 방어: 사용자 입력값 HTML 이스케이프
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function fixWeekend(d) {
   if (d.getDay() === 0) d.setDate(d.getDate() - 2);
   if (d.getDay() === 6) d.setDate(d.getDate() - 1);
@@ -1146,7 +1152,7 @@ async function loadReviews(mealId, targetEl) {
       ${data.map(r => `
         <div class="review-item">
           <div class="review-header"><span class="review-stars">${'⭐'.repeat(r.score)}</span><span class="review-time">${timeAgo(r.created_at)}</span></div>
-          ${r.comment ? `<div class="review-text">${r.comment}</div>` : ''}
+          ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
           ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
         </div>`).join('')}
     </div>`;
