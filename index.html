@@ -298,6 +298,16 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   </div>
 </div>
 
+<!-- ===== 배틀 상대 변경 바텀시트 ===== -->
+<div class="bottom-sheet" id="battle-opp-sheet">
+  <div class="bs-handle"></div>
+  <div class="bs-content">
+    <div style="font-size:18px;font-weight:900;margin-bottom:4px">상대 학교 변경</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">내 학교 근처 동일 학교급 중에서 골라봐</div>
+    <div id="battle-opp-list"></div>
+  </div>
+</div>
+
 <!-- ===== 랭크 이펙트 레이어 ===== -->
 <div class="confetti-wrap hide" id="confetti-wrap"></div>
 <div class="rank-popup hide" id="rank-popup">
@@ -915,6 +925,7 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.home-search-big')) document.getElementById('home-results').classList.remove('show');
   // 바텀시트 배경 클릭 닫기
   if (e.target.id === 'school-set-sheet') closeSchoolSetSheet();
+  if (e.target.id === 'battle-opp-sheet') closeBattleOppSheet();
   if (e.target.id === 'bottom-sheet') closeBottomSheet();
 });
 function selectDetailSchool(s) {
@@ -1208,20 +1219,34 @@ async function loadBattle() {
     wrap.innerHTML = `<div class="empty"><div class="empty-emoji">😢</div><div>오늘 내 학교 급식 정보가 없어서<br>배틀을 만들 수 없어요</div></div>`;
     return;
   }
-  // 3. 오늘 다른 학교 급식 찾기
-  const otherMeals = await sb(`meals?meal_date=eq.${today}&school_id=neq.${mySchool.id}&select=id,auto_score,school_id,schools(id,name,type,address,atpt_code,school_code)&limit=10`);
-  let oppSchool = null, oppMeal = null;
+  // 3. 근처 동일 학교급 상대 찾기 (RPC, 거리순)
   const myTypeKey = mySchool.type?.includes('초') ? '초' : mySchool.type?.includes('중') ? '중' : '고';
-  const myCity = (mySchool.address || '').split(' ')[0];
-  if (otherMeals && otherMeals.length > 0) {
-    // 같은 유형 + 같은 도시 우선
-    let best = otherMeals.find(o => o.schools?.type?.includes(myTypeKey) && (o.schools?.address||'').startsWith(myCity));
-    if (!best) best = otherMeals.find(o => o.schools?.type?.includes(myTypeKey));
-    if (!best) best = otherMeals[0];
-    if (best) { oppSchool = best.schools; oppMeal = { id: best.id, auto_score: best.auto_score, menu: best.menu }; }
+  let oppSchool = null, oppMeal = null;
+  window.BATTLE_CANDIDATES = [];
+
+  if (mySchool.lat && mySchool.lng) {
+    const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/find_battle_opponents`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_my_lat: mySchool.lat, p_my_lng: mySchool.lng,
+        p_my_type: myTypeKey, p_my_id: mySchool.id,
+        p_date: today, p_limit: 20
+      })
+    }).then(r => r.ok ? r.json() : []);
+    window.BATTLE_CANDIDATES = Array.isArray(rpcRes) ? rpcRes : [];
+    if (window.BATTLE_CANDIDATES.length > 0) {
+      const picked = window.BATTLE_CANDIDATES[0]; // 가장 가까운 학교 자동 선정
+      oppSchool = {
+        id: picked.school_id, name: picked.school_name, type: picked.school_type,
+        address: picked.address, atpt_code: picked.atpt_code, school_code: picked.school_code
+      };
+      oppMeal = { id: picked.meal_id, auto_score: picked.auto_score, menu: picked.menu };
+    }
   }
+
   if (!oppSchool) {
-    // 학교 테이블에서 같은 유형 학교 찾아서 급식 캐시
+    // 폴백: 같은 학교급 아무나 + 급식 캐시
     const candidates = await sb(`schools?type=ilike.*${encodeURIComponent(myTypeKey)}*&id=neq.${mySchool.id}&limit=5&select=id,name,type,address,atpt_code,school_code`);
     for (const cand of (candidates || [])) {
       const r = await edge('sync-meals', { atpt_code: cand.atpt_code, school_code: cand.school_code, date: today });
@@ -1333,8 +1358,100 @@ function renderBattleCard(battle) {
         ${voted ? `<button class="vote-share-btn" onclick="shareBattle('${sA.name}','${sB.name}',${scoreA},${scoreB},${pctA},${pctB})">📤 이 결과 공유하기</button>` : ''}
       </div>
     </div>
-    <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px;padding-bottom:4px">매일 자동 매칭 · AI 점수 기준</div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:12px;padding-bottom:4px">
+      <button onclick="openBattleOppSheet(${battle.id}, ${totalVotes})" style="padding:10px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-weight:700;color:var(--text2);font-family:inherit;cursor:pointer">🔄 상대 바꾸기</button>
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px;padding-bottom:4px">내 학교 근처 · 같은 학교급 자동 매칭</div>
   `;
+}
+
+// 배틀 상대 변경 시트 열기
+async function openBattleOppSheet(battleId, totalVotes) {
+  if (totalVotes > 0) {
+    alert('이미 투표가 있어서 상대를 바꿀 수 없어요 🙏\n내일 새로운 배틀을 만나보세요!');
+    return;
+  }
+  const sheet = document.getElementById('battle-opp-sheet');
+  const list = document.getElementById('battle-opp-list');
+  list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">근처 학교 찾는 중...</div>';
+  sheet.classList.add('show');
+
+  // 후보가 캐시에 없으면 다시 조회
+  if (!window.BATTLE_CANDIDATES || window.BATTLE_CANDIDATES.length === 0) {
+    const today = fmtDate(fixWeekend(new Date()));
+    const myTypeKey = mySchool.type?.includes('초') ? '초' : mySchool.type?.includes('중') ? '중' : '고';
+    if (mySchool.lat && mySchool.lng) {
+      const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/find_battle_opponents`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          p_my_lat: mySchool.lat, p_my_lng: mySchool.lng,
+          p_my_type: myTypeKey, p_my_id: mySchool.id,
+          p_date: today, p_limit: 20
+        })
+      }).then(r => r.ok ? r.json() : []);
+      window.BATTLE_CANDIDATES = Array.isArray(rpcRes) ? rpcRes : [];
+    }
+  }
+
+  if (!window.BATTLE_CANDIDATES || window.BATTLE_CANDIDATES.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">근처에 급식 정보 있는 학교를 찾지 못했어요 😢</div>';
+    return;
+  }
+
+  list.innerHTML = window.BATTLE_CANDIDATES.map((c, i) => {
+    const icon = c.school_type?.includes('초') ? '🌱' : c.school_type?.includes('중') ? '📘' : '🎓';
+    const rankBadge = c.auto_rank ? `<span style="padding:2px 8px;background:var(--${c.auto_rank==='S'?'purple':c.auto_rank==='A'?'blue':c.auto_rank==='B'?'green':c.auto_rank==='C'?'yellow':'orange'}-l);color:var(--${c.auto_rank==='S'?'purple':c.auto_rank==='A'?'blue':c.auto_rank==='B'?'green':c.auto_rank==='C'?'yellow':'orange'});border-radius:6px;font-size:11px;font-weight:800;margin-left:6px">${c.auto_rank}</span>` : '';
+    const km = c.distance_km < 1 ? `${Math.round(c.distance_km * 1000)}m` : `${c.distance_km.toFixed(1)}km`;
+    return `<div onclick="pickBattleOpponent(${battleId}, ${c.school_id}, ${c.meal_id}, ${c.auto_score})" style="padding:14px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:15px;font-weight:800">${icon} ${c.school_name}${rankBadge}</div>
+        <div style="font-size:13px;color:var(--blue);font-weight:800">${c.auto_score}점</div>
+      </div>
+      <div style="font-size:12px;color:var(--text3)">${(c.address||'').split(' ').slice(0,3).join(' ')} · ${km}</div>
+    </div>`;
+  }).join('');
+}
+
+function closeBattleOppSheet() {
+  document.getElementById('battle-opp-sheet').classList.remove('show');
+}
+
+// 선택한 상대로 배틀 교체
+async function pickBattleOpponent(oldBattleId, newOppId, newMealId, newScore) {
+  closeBattleOppSheet();
+  const wrap = document.getElementById('battle-content');
+  wrap.innerHTML = '<div class="loading"><div class="loading-emoji">🔄</div><div class="loading-text">상대 바꾸는 중...</div></div>';
+
+  // 기존 배틀 삭제 (투표 없는 경우에만)
+  await fetch(`${SUPABASE_URL}/rest/v1/battles?id=eq.${oldBattleId}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+
+  // 내 학교 meal 재조회 (현재 날짜)
+  const today = fmtDate(fixWeekend(new Date()));
+  const myMealResult = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: today });
+  if (!myMealResult.meal) { loadBattle(); return; }
+
+  const aId = Math.min(mySchool.id, newOppId);
+  const bId = Math.max(mySchool.id, newOppId);
+  const isA = mySchool.id === aId;
+
+  await fetch(`${SUPABASE_URL}/rest/v1/battles`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({
+      battle_date: today,
+      school_a_id: aId, school_b_id: bId,
+      meal_a_id: isA ? myMealResult.meal.id : newMealId,
+      meal_b_id: isA ? newMealId : myMealResult.meal.id,
+      score_a: isA ? myMealResult.meal.auto_score : newScore,
+      score_b: isA ? newScore : myMealResult.meal.auto_score,
+    })
+  });
+
+  loadBattle();
 }
 async function voteBattle(battleId, schoolId, side) {
   const voted = localStorage.getItem(`voted_battle_${battleId}`);
