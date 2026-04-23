@@ -6,7 +6,7 @@ import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
   // 콘솔에 등록한 앱 ID (영문 소문자/하이픈)
-  appName: 'oneulgeupshik',
+  appName: 'lunch-arena',
 
   brand: {
     // 콘솔 등록명과 동일해야 함
