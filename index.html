@@ -152,6 +152,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .review-school{font-size:13px;font-weight:800;color:var(--text);cursor:pointer}
 .review-school:active{color:var(--blue)}
 .review-nick{font-size:12px;font-weight:800;color:var(--purple);background:var(--purple-l);padding:2px 7px;border-radius:8px;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.review-meal{margin-top:5px;font-size:12px;color:var(--text3);line-height:1.4;background:var(--bg);border-radius:8px;padding:7px 9px}
+.review-meal-date{font-weight:800;color:var(--text2);margin-right:4px}
 .review-text{font-size:13px;color:var(--text2);margin-top:6px;line-height:1.45}
 .review-photo{margin-top:6px;border-radius:8px;max-width:200px;max-height:150px;object-fit:cover}
 .review-actions{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
@@ -201,6 +203,12 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .nickname-input:focus{outline:none;border-color:var(--blue)}
 .nickname-save{border:none;background:var(--blue);color:white;border-radius:10px;padding:0 14px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
 .nickname-help{font-size:12px;color:var(--text3);margin-top:8px;min-height:16px}
+.my-activity{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.my-activity-title{font-size:14px;font-weight:900;margin-bottom:8px}
+.my-comment-list{display:flex;flex-direction:column;gap:8px}
+.my-comment-item{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px}
+.my-comment-main{font-size:13px;color:var(--text);line-height:1.45}
+.my-comment-context{font-size:12px;color:var(--text3);margin-top:6px;line-height:1.4}
 
 /* 배틀 */
 .battle-header{text-align:center;padding:20px 0 12px}
@@ -332,6 +340,10 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
       <input type="text" style="width:100%;padding:14px 14px 14px 42px;background:var(--bg);border:1.5px solid var(--border);border-radius:14px;font-size:15px;font-family:inherit;color:var(--text)" id="set-school-input" placeholder="학교 이름 검색" autocomplete="off" oninput="onSetSchoolSearch(this.value)">
     </div>
     <div id="set-school-results"></div>
+    <div class="my-activity">
+      <div class="my-activity-title">내가 쓴 리뷰/댓글</div>
+      <div id="my-activity-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div></div>
+    </div>
   </div>
 </div>
 
@@ -775,6 +787,7 @@ async function openSchoolSetSheet() {
   document.getElementById('school-set-sheet').classList.add('show');
   document.getElementById('set-school-input').value = '';
   document.getElementById('set-school-results').innerHTML = '';
+  loadMyActivity();
   setTimeout(() => document.getElementById('set-school-input').focus(), 300);
 }
 function closeSchoolSetSheet() {
@@ -1258,6 +1271,21 @@ function reviewSchoolHtml(s) {
 function reviewNickname(r) {
   return escapeHtml(r.nickname || r.user_nickname || '익명의 급식러');
 }
+function mealDateLabel(dateStr) {
+  if (!dateStr) return '';
+  return fmtDateKR(new Date(`${dateStr}T00:00:00`));
+}
+function mealPreviewText(menu) {
+  const items = Array.isArray(menu) ? menu : (typeof menu === 'string' ? menu.split(/[\n,]+/) : []);
+  return items.map(i => String(i || '').trim()).filter(Boolean).slice(0, 4).join(' · ');
+}
+function reviewMealHtml(meal) {
+  if (!meal) return '';
+  const date = mealDateLabel(meal.meal_date);
+  const preview = mealPreviewText(meal.menu) || '식단 정보 없음';
+  return `<div class="review-meal">${date ? `<span class="review-meal-date">${escapeHtml(date)}</span>` : ''}${escapeHtml(preview)}</div>`;
+}
+const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,photo_url,created_at,fingerprint,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,menu)';
 function renderReviewComments(ratingId, comments = []) {
   const list = comments.length ? comments.map(c => `
     <div class="review-comment">
@@ -1286,6 +1314,7 @@ function renderReviewItem(r) {
         <span class="review-stars">${'⭐'.repeat(r.score || 0)}</span>
         <span class="review-time">${timeAgo(r.created_at)}</span>
       </div>
+      ${reviewMealHtml(r.meals)}
       ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
       ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
       <div class="review-actions">
@@ -1353,6 +1382,7 @@ async function renderReviews(data, targetEl, title, emptyText = '') {
 }
 async function refreshVisibleReviews() {
   if (latestReviewsVisible) loadLatestReviews();
+  if (document.getElementById('school-set-sheet')?.classList.contains('show')) loadMyActivity();
   const detailRevEl = document.getElementById('detail-reviews-wrap');
   if (detailRevEl && currentSchool?.id) loadSchoolReviews(currentSchool.id, detailRevEl);
   const msRevEl = document.getElementById('ms-reviews-wrap');
@@ -1395,6 +1425,49 @@ async function submitReviewComment(ratingId) {
   input.value = '';
   refreshVisibleReviews();
 }
+function myCommentsHtml(comments = []) {
+  if (!comments.length) return '';
+  return `
+    <div class="rating-section">
+      <div class="rating-title">내 댓글 ${comments.length}개</div>
+      <div class="my-comment-list">
+        ${comments.map(c => {
+          const r = c.ratings || {};
+          const meal = reviewMealHtml(r.meals);
+          const schoolName = r.schools?.name || '학교 정보 없음';
+          const score = r.score ? `${'⭐'.repeat(r.score)} ` : '';
+          return `
+            <div class="my-comment-item">
+              <div class="my-comment-main">${escapeHtml(c.comment)}</div>
+              <div class="my-comment-context">
+                ${escapeHtml(schoolName)} · ${score}${timeAgo(c.created_at)}에 단 댓글
+                ${meal}
+                ${r.comment ? `<div style="margin-top:4px">원 리뷰: ${escapeHtml(r.comment)}</div>` : ''}
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+async function loadMyActivity() {
+  const targetEl = document.getElementById('my-activity-wrap');
+  if (!targetEl) return;
+  targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div>';
+  await getUserId();
+  const fp = encodeURIComponent(getInteractionFingerprint());
+  const commentSelect = `id,rating_id,nickname,comment,created_at,ratings(${REVIEW_SELECT})`;
+  const [reviews, comments] = await Promise.all([
+    sb(`ratings?fingerprint=eq.${fp}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`),
+    sb(`review_comments?fingerprint=eq.${fp}&order=created_at.desc&limit=20&select=${commentSelect}`)
+  ]);
+  const enrichedReviews = await enrichReviews(Array.isArray(reviews) ? reviews : []);
+  const ownComments = Array.isArray(comments) ? comments : [];
+  if (!enrichedReviews.length && !ownComments.length) {
+    targetEl.innerHTML = '<div class="empty" style="padding:18px 8px"><div class="empty-emoji">💬</div><div>아직 내가 쓴 리뷰나 댓글이 없어요</div></div>';
+    return;
+  }
+  targetEl.innerHTML = `${reviewListHtml(enrichedReviews, '내 리뷰')}${myCommentsHtml(ownComments)}`;
+}
 function latestReviewsHtml(data) {
   return reviewListHtml(data, '최신 리뷰', '아직 등록된 리뷰가 없어요');
 }
@@ -1402,7 +1475,7 @@ async function loadLatestReviews() {
   const targetEl = document.getElementById('latest-reviews-wrap');
   if (!targetEl) return;
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">최신 리뷰 불러오는 중...</div></div>';
-  const data = await sb('ratings?order=created_at.desc&limit=30&select=id,school_id,score,comment,photo_url,created_at,fingerprint,nickname,schools(id,name,type,address,atpt_code,school_code)');
+  const data = await sb(`ratings?order=created_at.desc&limit=30&select=${REVIEW_SELECT}`);
   const enriched = await enrichReviews(data || []);
   targetEl.innerHTML = latestReviewsHtml(enriched);
 }
@@ -1430,13 +1503,13 @@ function openReviewSchool(s) {
 async function loadReviews(mealId, targetEl) {
   if (!targetEl) return;
   targetEl.dataset.mealId = mealId;
-  const data = await sb(`ratings?meal_id=eq.${mealId}&order=created_at.desc&limit=20&select=id,school_id,score,comment,photo_url,created_at,fingerprint,nickname,schools(id,name,type,address,atpt_code,school_code)`);
+  const data = await sb(`ratings?meal_id=eq.${mealId}&order=created_at.desc&limit=20&select=${REVIEW_SELECT}`);
   renderReviews(data, targetEl, '리뷰');
 }
 async function loadSchoolReviews(schoolId, targetEl) {
   if (!targetEl || !schoolId) return;
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">학교 리뷰 불러오는 중...</div></div>';
-  const data = await sb(`ratings?school_id=eq.${schoolId}&order=created_at.desc&limit=20&select=id,school_id,score,comment,photo_url,created_at,fingerprint,nickname,schools(id,name,type,address,atpt_code,school_code)`);
+  const data = await sb(`ratings?school_id=eq.${schoolId}&order=created_at.desc&limit=20&select=${REVIEW_SELECT}`);
   renderReviews(data, targetEl, '이 학교 리뷰', '아직 이 학교 리뷰가 없어요');
 }
 
