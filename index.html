@@ -461,7 +461,16 @@ function getFingerprint() {
   }
   return fp;
 }
-const FP = getFingerprint();
+let FP = null;
+
+function getFallbackFingerprint() {
+  if (!FP) FP = getFingerprint();
+  return FP;
+}
+
+function getInteractionFingerprint() {
+  return window.USER?.id || getFallbackFingerprint();
+}
 
 // ===== USER IDENTITY (Toss hash key 우선, 랜덤 client id fallback) =====
 // 토스 미니앱에서는 getAnonymousKey()로 기기간 동일한 사용자 식별 가능
@@ -474,6 +483,10 @@ async function getUserId() {
     const mod = await import('https://esm.sh/@apps-in-toss/web-framework@^2.4.5');
     if (mod && typeof mod.getAnonymousKey === 'function') {
       const key = await mod.getAnonymousKey();
+      if (key && typeof key === 'object' && key.type === 'HASH' && key.hash) {
+        window.USER = { id: 'toss_' + key.hash, source: 'toss' };
+        return window.USER;
+      }
       if (key && typeof key === 'string') {
         window.USER = { id: 'toss_' + key, source: 'toss' };
         return window.USER;
@@ -483,7 +496,7 @@ async function getUserId() {
     // 토스앱 밖이거나 SDK 로드 실패 → fingerprint로 폴백
   }
   // 2순위: 브라우저 랜덤 client id
-  window.USER = { id: 'fp_' + FP, source: 'fp' };
+  window.USER = { id: 'fp_' + getFallbackFingerprint(), source: 'fp' };
   return window.USER;
 }
 
@@ -1107,7 +1120,7 @@ function removePhoto(mealId) {
 }
 async function uploadPhoto(file) {
   const ext = file.name.split('.').pop() || 'jpg';
-  const path = `${Date.now()}-${FP}.${ext}`;
+  const path = `${Date.now()}-${getInteractionFingerprint()}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/reviews/${path}`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type }
@@ -1120,11 +1133,12 @@ async function submitRating(mealId) {
   const comment = (document.getElementById(`comment-${mealId}`) || {}).value?.trim() || '';
   const btn = document.getElementById(`btn-rate-${mealId}`);
   if (btn) { btn.disabled = true; btn.textContent = '등록 중...'; }
+  await getUserId();
   let photoUrl = null;
   if (selectedPhotoFile) {
     try { photoUrl = await uploadPhoto(selectedPhotoFile); } catch(e) { console.warn('사진 업로드 실패:', e); }
   }
-  const body = { meal_id: mealId, school_id: currentSchool?.id || mySchool?.id, score: selectedRating, fingerprint: FP };
+  const body = { meal_id: mealId, school_id: currentSchool?.id || mySchool?.id, score: selectedRating, fingerprint: getInteractionFingerprint() };
   if (comment) body.comment = comment;
   if (photoUrl) body.photo_url = photoUrl;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
@@ -1491,11 +1505,12 @@ async function voteBattle(battleId, schoolId, side) {
     b.classList.toggle('selected', b === event.target);
     b.classList.toggle('unselected', b !== event.target);
   });
+  await getUserId();
   // DB insert
   const res = await fetch(`${SUPABASE_URL}/rest/v1/battle_votes`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ battle_id: battleId, voted_school_id: schoolId, fingerprint: FP })
+    body: JSON.stringify({ battle_id: battleId, voted_school_id: schoolId, fingerprint: getInteractionFingerprint() })
   });
   // vote_a/vote_b 업데이트
   const field = side === 'a' ? 'vote_a' : 'vote_b';
