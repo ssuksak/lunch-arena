@@ -32,6 +32,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .appbar{position:sticky;top:0;z-index:100;background:rgba(255,248,240,0.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
 .appbar-logo{font-size:17px;font-weight:800;letter-spacing:-0.5px}
 .appbar-right{display:flex;align-items:center;gap:8px}
+.appbar-nickname{font-size:12px;font-weight:800;background:var(--yellow-l);color:#b37400;padding:6px 10px;border-radius:20px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* 레이아웃 */
 .container{max-width:480px;margin:0 auto;padding:0 16px}
@@ -179,6 +180,15 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .bs-menu-list li{padding:3px 0;font-size:13px;color:var(--text2)}
 .bs-btn{display:block;width:100%;padding:12px;background:var(--blue);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;text-align:center}
 .bs-btn:active{opacity:.85}
+.nickname-box{background:var(--bg);border:1.5px solid var(--border);border-radius:14px;padding:12px;margin-bottom:14px}
+.nickname-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.nickname-title{font-size:13px;font-weight:800;color:var(--text)}
+.nickname-random{border:none;background:var(--yellow-l);color:#b37400;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer}
+.nickname-edit{display:flex;gap:8px}
+.nickname-input{flex:1;min-width:0;padding:11px 12px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;color:var(--text)}
+.nickname-input:focus{outline:none;border-color:var(--blue)}
+.nickname-save{border:none;background:var(--blue);color:white;border-radius:10px;padding:0 14px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
+.nickname-help{font-size:12px;color:var(--text3);margin-top:8px;min-height:16px}
 
 /* 배틀 */
 .battle-header{text-align:center;padding:20px 0 12px}
@@ -293,7 +303,18 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   <div class="bs-handle"></div>
   <div class="bs-content">
     <div style="font-size:18px;font-weight:900;margin-bottom:4px">내 학교 설정</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">설정하면 배틀탭에서 내 학교 배틀을 볼 수 있어!</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">닉네임과 학교를 자유롭게 바꿀 수 있어!</div>
+    <div class="nickname-box">
+      <div class="nickname-row">
+        <div class="nickname-title">내 닉네임</div>
+        <button class="nickname-random" onclick="randomizeNickname()">랜덤</button>
+      </div>
+      <div class="nickname-edit">
+        <input class="nickname-input" id="nickname-input" maxlength="12" placeholder="닉네임" autocomplete="off" onkeydown="if(event.key==='Enter')saveNicknameFromInput()">
+        <button class="nickname-save" onclick="saveNicknameFromInput()">저장</button>
+      </div>
+      <div class="nickname-help" id="nickname-help"></div>
+    </div>
     <div style="position:relative;margin-bottom:8px">
       <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px">🔍</span>
       <input type="text" style="width:100%;padding:14px 14px 14px 42px;background:var(--bg);border:1.5px solid var(--border);border-radius:14px;font-size:15px;font-family:inherit;color:var(--text)" id="set-school-input" placeholder="학교 이름 검색" autocomplete="off" oninput="onSetSchoolSearch(this.value)">
@@ -324,7 +345,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <div class="appbar">
   <div class="appbar-logo">🍱 오늘급식</div>
   <div class="appbar-right">
-    <div id="appbar-school" style="font-size:12px;font-weight:700;background:var(--blue-l);color:var(--blue);padding:6px 12px;border-radius:20px;cursor:pointer" onclick="openSchoolSetSheet()">내 학교 설정</div>
+    <div id="appbar-nickname" class="appbar-nickname"></div>
+    <div id="appbar-school" style="font-size:12px;font-weight:700;background:var(--blue-l);color:var(--blue);padding:6px 12px;border-radius:20px;cursor:pointer;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="openSchoolSetSheet()">내 학교 설정</div>
   </div>
 </div>
 
@@ -505,12 +527,86 @@ async function getUserId() {
   return window.USER;
 }
 
+// ===== NICKNAME =====
+const NICK_ADJECTIVES = ['든든한','신나는','반짝이는','야무진','배고픈','명랑한','빠른','용감한','행복한','매콤한'];
+const NICK_NOUNS = ['급식러','도시락','숟가락','젓가락','맛탐정','밥친구','반찬러','식판왕','국물요정','메뉴헌터'];
+function generateRandomNickname() {
+  const adj = NICK_ADJECTIVES[Math.floor(Math.random() * NICK_ADJECTIVES.length)];
+  const noun = NICK_NOUNS[Math.floor(Math.random() * NICK_NOUNS.length)];
+  const num = Math.floor(100 + Math.random() * 900);
+  return `${adj}${noun}${num}`;
+}
+function normalizeNickname(value) {
+  return String(value || '').trim().replace(/\s+/g, '').slice(0, 12);
+}
+function ensureNickname() {
+  if (userNickname) return userNickname;
+  const saved = normalizeNickname(localStorage.getItem('arena_nickname'));
+  userNickname = saved || generateRandomNickname();
+  localStorage.setItem('arena_nickname', userNickname);
+  return userNickname;
+}
+function applyNickname() {
+  const nick = ensureNickname();
+  const appbar = document.getElementById('appbar-nickname');
+  if (appbar) appbar.textContent = nick;
+  const input = document.getElementById('nickname-input');
+  if (input) input.value = nick;
+}
+function setNickname(value) {
+  const next = normalizeNickname(value);
+  if (next.length < 2) return { ok: false, message: '닉네임은 2글자 이상으로 입력해줘' };
+  userNickname = next;
+  localStorage.setItem('arena_nickname', userNickname);
+  applyNickname();
+  return { ok: true };
+}
+async function saveNicknameToDb() {
+  await getUserId();
+  const nick = ensureNickname();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_hash`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ user_hash: window.USER.id, source: window.USER.source, nickname: nick, updated_at: new Date().toISOString() })
+    });
+    if (!res.ok) return { ok: false, status: res.status, message: await res.text().catch(() => '') };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, message: String(e) };
+  }
+}
+async function saveNicknameFromInput() {
+  const input = document.getElementById('nickname-input');
+  const help = document.getElementById('nickname-help');
+  const result = setNickname(input?.value);
+  if (!result.ok) {
+    if (help) { help.textContent = result.message; help.style.color = 'var(--red)'; }
+    return;
+  }
+  if (help) { help.textContent = '저장 중...'; help.style.color = 'var(--text3)'; }
+  const saved = await saveNicknameToDb();
+  if (help) {
+    help.textContent = saved.ok ? '닉네임 저장 완료!' : '기기에 먼저 저장했어요. 네트워크가 괜찮을 때 다시 저장할게요.';
+    help.style.color = saved.ok ? 'var(--green)' : 'var(--text3)';
+  }
+}
+async function randomizeNickname() {
+  setNickname(generateRandomNickname());
+  await saveNicknameFromInput();
+}
 // ===== STATE =====
 let mySchool = null;
 let mealDate = new Date();
 let rankDate = new Date();
 let rankFilter = 'all';
 let currentSchool = null;
+let userNickname = null;
 let pendingShare = null; // 공유 버튼용 데이터 캐시
 let searchTimer = null;
 let selectedRating = 0;
@@ -557,23 +653,32 @@ function switchTab(tab) {
 // 우선순위: Supabase user_schools → localStorage (기존 사용자 호환)
 async function loadMySchool() {
   await getUserId(); // window.USER 준비
+  ensureNickname();
+  applyNickname();
 
   // 1순위: Supabase에서 user_hash로 조회
   try {
     const rows = await sb(`user_schools?user_hash=eq.${encodeURIComponent(window.USER.id)}&select=*`);
     if (Array.isArray(rows) && rows.length > 0) {
       const r = rows[0];
-      mySchool = {
-        id: r.school_id,
-        name: r.school_name,
-        type: r.school_type,
-        atpt_code: r.atpt_code,
-        school_code: r.school_code,
-        address: r.address
-      };
-      localStorage.setItem('arena_school', JSON.stringify(mySchool));
-      applyMySchool();
-      return;
+      if (r.nickname) {
+        userNickname = normalizeNickname(r.nickname) || userNickname;
+        localStorage.setItem('arena_nickname', userNickname);
+        applyNickname();
+      }
+      if (r.school_id) {
+        mySchool = {
+          id: r.school_id,
+          name: r.school_name,
+          type: r.school_type,
+          atpt_code: r.atpt_code,
+          school_code: r.school_code,
+          address: r.address
+        };
+        localStorage.setItem('arena_school', JSON.stringify(mySchool));
+        applyMySchool();
+        return;
+      }
     }
   } catch (e) { /* 네트워크 오류 → localStorage로 폴백 */ }
 
@@ -585,8 +690,12 @@ async function loadMySchool() {
       applyMySchool();
       // 기존 localStorage 값을 Supabase에도 마이그레이션
       saveMySchoolToDb();
+      return;
     } catch (e) {}
   }
+
+  // 학교가 없어도 닉네임은 서버에 기억해둔다.
+  saveNicknameToDb();
 }
 
 // Supabase user_schools 테이블에 현재 mySchool 저장 (upsert)
@@ -611,6 +720,7 @@ async function saveMySchoolToDb() {
         atpt_code: mySchool.atpt_code || null,
         school_code: mySchool.school_code || null,
         address: mySchool.address || null,
+        nickname: ensureNickname(),
         updated_at: new Date().toISOString()
       })
     });
@@ -625,13 +735,14 @@ async function saveMySchoolToDb() {
 }
 
 function applyMySchool() {
+  applyNickname();
   const s = mySchool;
   const card = document.getElementById('my-school-card');
   card.classList.remove('hide');
   card.innerHTML = `
     <div class="my-school-card">
       <div class="msc-wave"></div>
-      <div class="msc-top"><div class="msc-label">내 학교</div><button class="msc-change" onclick="openSchoolSetSheet()">변경</button></div>
+      <div class="msc-top"><div class="msc-label">${escapeHtml(ensureNickname())}의 학교</div><button class="msc-change" onclick="openSchoolSetSheet()">변경</button></div>
       <div style="font-size:28px;margin-bottom:6px">${s.type?.includes('초')?'🌱':s.type?.includes('중')?'📘':'🎓'}</div>
       <div class="msc-name">${s.name}</div>
       <div class="msc-type">${s.type||''} · ${(s.address||'').split(' ').slice(0,2).join(' ')}</div>
@@ -646,6 +757,9 @@ function applyMySchool() {
   loadMySchoolStats();
 }
 async function openSchoolSetSheet() {
+  applyNickname();
+  const help = document.getElementById('nickname-help');
+  if (help) help.textContent = '';
   document.getElementById('school-set-sheet').classList.add('show');
   document.getElementById('set-school-input').value = '';
   document.getElementById('set-school-results').innerHTML = '';
