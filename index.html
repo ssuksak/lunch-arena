@@ -1318,8 +1318,8 @@ function renderReviewItem(r) {
       ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
       ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
       <div class="review-actions">
-        <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like')">👍 ${likes}</button>
-        <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike')">👎 ${dislikes}</button>
+        <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">👍 ${likes}</button>
+        <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">👎 ${dislikes}</button>
         <span style="font-size:12px;color:var(--text3)">댓글 ${(r.comments || []).length}</span>
       </div>
       ${renderReviewComments(r.id, r.comments || [])}
@@ -1391,12 +1391,77 @@ async function refreshVisibleReviews() {
     if (ratedMealId) loadReviews(ratedMealId, msRevEl);
   }
 }
-async function reactToReview(ratingId, reaction) {
+function reactionTokenKey(ratingId) {
+  return `review_reaction_token_${ratingId}`;
+}
+function getReactionCancelToken(ratingId) {
+  const key = reactionTokenKey(ratingId);
+  let token = localStorage.getItem(key);
+  if (!token) {
+    const bytes = new Uint8Array(24);
+    if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    token = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem(key, token);
+  }
+  return token;
+}
+function clearReactionCancelToken(ratingId) {
+  localStorage.removeItem(reactionTokenKey(ratingId));
+}
+async function sha256Hex(value) {
+  const data = new TextEncoder().encode(value);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+}
+async function reactionCancelHash(ratingId) {
+  return sha256Hex(getReactionCancelToken(ratingId));
+}
+async function deleteMyReviewReaction(ratingId) {
+  const fp = getInteractionFingerprint();
+  const tokenHash = await reactionCancelHash(ratingId);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions?rating_id=eq.${ratingId}&fingerprint=eq.${encodeURIComponent(fp)}&select=id`, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      'x-reaction-cancel-token-hash': tokenHash
+    }
+  });
+  if (!res.ok) {
+    console.warn('리뷰 반응 취소 실패:', await res.text().catch(() => ''));
+    return false;
+  }
+  const deleted = await res.json().catch(() => []);
+  if (Array.isArray(deleted) && deleted.length > 0) {
+    clearReactionCancelToken(ratingId);
+    return true;
+  }
+  return false;
+}
+async function reactToReview(ratingId, reaction, currentReaction = '') {
   await getUserId();
+  if (currentReaction === reaction) {
+    const deleted = await deleteMyReviewReaction(ratingId);
+    if (!deleted) alert('이전 버전에서 남긴 반응은 취소할 수 없어요. 새로 누른 반응부터 취소돼요.');
+    refreshVisibleReviews();
+    return;
+  }
+  if (currentReaction) {
+    const deleted = await deleteMyReviewReaction(ratingId);
+    if (!deleted) {
+      alert('기존 반응을 먼저 취소할 수 없어서 변경하지 못했어요. 새로 누른 반응부터 변경할 수 있어요.');
+      refreshVisibleReviews();
+      return;
+    }
+  }
+  const tokenHash = await reactionCancelHash(ratingId);
   const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ rating_id: ratingId, fingerprint: getInteractionFingerprint(), nickname: ensureNickname(), reaction })
+    body: JSON.stringify({ rating_id: ratingId, fingerprint: getInteractionFingerprint(), nickname: ensureNickname(), reaction, cancel_token_hash: tokenHash })
   });
   if (res.status === 409) {
     alert('이미 이 리뷰에 표시했어요');
