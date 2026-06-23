@@ -942,37 +942,60 @@ async function generateShareCard(schoolName, score, rank, menu, rankObj) {
   ctx.fillText('ssuksak.github.io/lunch-arena', W/2, 820);
   return canvas.toDataURL('image/png');
 }
+let tossFrameworkPromise = null;
+function loadTossFramework() {
+  if (!tossFrameworkPromise) {
+    tossFrameworkPromise = import('https://esm.sh/@apps-in-toss/web-framework@^2.4.5').catch(() => null);
+  }
+  return tossFrameworkPromise;
+}
+function appDeepLinkForSchool(school) {
+  return school?.id ? `intoss://lunch-arena?school=${encodeURIComponent(school.id)}` : 'intoss://lunch-arena';
+}
+function webShareUrlForSchool(school) {
+  return school?.id ? `https://ssuksak.github.io/lunch-arena/?school=${school.id}` : 'https://ssuksak.github.io/lunch-arena/';
+}
+async function makeShareMessage(school, schoolName, score, rankObj) {
+  let shareLink = webShareUrlForSchool(school);
+  try {
+    const mod = await loadTossFramework();
+    if (mod?.getTossShareLink) {
+      shareLink = await mod.getTossShareLink(appDeepLinkForSchool(school), 'https://ssuksak.github.io/lunch-arena/thumbnail_1932x828.png');
+    }
+  } catch (e) {
+    console.warn('토스 공유 링크 생성 실패:', e);
+  }
+  return `[오늘급식]\n${schoolName} 오늘 급식 ${score}점 · ${rankObj.r}랭크 (${rankObj.l})\n\n우리 학교 급식도 확인해봐!\n${shareLink}`;
+}
 async function shareCurrentCard() {
   if (!pendingShare) return;
-  const { schoolName, score, rankObj, menu } = pendingShare;
+  const { schoolName, score, rankObj } = pendingShare;
   const school = currentSchool || mySchool;
-  const shareUrl = school?.id
-    ? `https://ssuksak.github.io/lunch-arena/?school=${school.id}`
-    : `https://ssuksak.github.io/lunch-arena/`;
+  const message = await makeShareMessage(school, schoolName, score, rankObj);
   try {
-    const dataUrl = await generateShareCard(schoolName, score, null, menu, rankObj);
-    const blob = await (await fetch(dataUrl)).blob();
-    const file = new File([blob], '오늘급식.png', { type: 'image/png' });
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: `${schoolName} 오늘 급식 ${rankObj.r}랭크!`, text: `${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n#오늘급식\n${shareUrl}` });
-    } else {
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `오늘급식_${schoolName}_${score}점.png`;
-      a.click();
+    const mod = await loadTossFramework();
+    if (mod?.share) {
+      await mod.share({ message });
+      return;
     }
-  } catch(e) {
-    // canvas/share 실패 시 링크 복사 fallback
-    const text = `[오늘급식] ${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n${shareUrl}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      alert('링크가 복사됐어요! 단톡에 붙여넣기 해봐 😊');
-    } catch {
-      alert(`공유할 링크:\n${shareUrl}`);
+  } catch (e) {
+    console.warn('토스 공유 실패:', e);
+  }
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: `${schoolName} 오늘 급식 ${rankObj.r}랭크!`, text: message });
+      return;
     }
+  } catch (e) {
+    console.warn('브라우저 공유 실패:', e);
+  }
+  try {
+    await navigator.clipboard.writeText(message);
+    alert('공유 문구가 복사됐어요! 단톡에 붙여넣기 해봐 😊');
+  } catch {
+    alert(`공유할 내용:\n${message}`);
   }
 }
-
 // ===== MY SCHOOL MEAL =====
 async function loadMySchoolMeal() {
   const wrap = document.getElementById('my-school-meal');
