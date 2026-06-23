@@ -911,6 +911,7 @@ function selectDetailSchool(s) {
   mealDate = fixWeekend(new Date());
   renderSchoolDetail();
   loadDetailMeal();
+  loadSchoolReviews(s.id, document.getElementById('detail-reviews-wrap'));
 }
 function renderSchoolDetail() {
   const s = currentSchool;
@@ -956,7 +957,6 @@ async function loadDetailMeal() {
   if (!result.meal) {
     mc.innerHTML = `<div class="empty"><div class="empty-emoji">😢</div><div>이 날은 급식 정보가 없어요</div></div>`;
     document.getElementById('detail-rating-wrap').innerHTML = '';
-    document.getElementById('detail-reviews-wrap').innerHTML = '';
     return;
   }
   const meal = result.meal;
@@ -975,7 +975,6 @@ async function loadDetailMeal() {
     </button>
   `;
   renderRating(meal.id, document.getElementById('detail-rating-wrap'));
-  loadReviews(meal.id, document.getElementById('detail-reviews-wrap'));
   if (!sessionStorage.getItem('effect_shown_' + meal.id)) {
     if (rank.r === 'S' || rank.r === 'D' || rank.r === 'A') {
       setTimeout(() => showRankEffect(rank.r, meal.auto_score), 600);
@@ -1109,17 +1108,22 @@ async function submitRating(mealId) {
       <div style="font-size:13px;color:var(--text3);margin-top:4px">${selectedRating}점 등록했어요</div>
     </div>`;
   // 리뷰 새로고침 (현재 활성 리뷰 영역 찾아서 갱신)
-  const revEl = document.getElementById('ms-reviews-wrap') || document.getElementById('detail-reviews-wrap');
-  if (revEl) loadReviews(mealId, revEl);
+  const detailRevEl = document.getElementById('detail-reviews-wrap');
+  if (detailRevEl && currentSchool?.id) loadSchoolReviews(currentSchool.id, detailRevEl);
+  else {
+    const msRevEl = document.getElementById('ms-reviews-wrap');
+    if (msRevEl) loadReviews(mealId, msRevEl);
+  }
 }
 
 // ===== REVIEWS =====
-async function loadReviews(mealId, targetEl) {
-  if (!targetEl) return;
-  const data = await sb(`ratings?meal_id=eq.${mealId}&order=created_at.desc&limit=20&select=score,comment,photo_url,created_at`);
-  targetEl.innerHTML = (!data || data.length === 0) ? '' : `
+function reviewListHtml(data, title, emptyText = '') {
+  if (!data || data.length === 0) {
+    return emptyText ? `<div class="rating-section"><div class="rating-title">${title}</div><div class="empty" style="padding:20px 8px"><div class="empty-emoji">💬</div><div>${emptyText}</div></div></div>` : '';
+  }
+  return `
     <div class="rating-section">
-      <div class="rating-title">리뷰 ${data.length}개</div>
+      <div class="rating-title">${title} ${data.length}개</div>
       ${data.map(r => `
         <div class="review-item">
           <div class="review-header"><span class="review-stars">${'⭐'.repeat(r.score)}</span><span class="review-time">${timeAgo(r.created_at)}</span></div>
@@ -1127,6 +1131,17 @@ async function loadReviews(mealId, targetEl) {
           ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
         </div>`).join('')}
     </div>`;
+}
+async function loadReviews(mealId, targetEl) {
+  if (!targetEl) return;
+  const data = await sb(`ratings?meal_id=eq.${mealId}&order=created_at.desc&limit=20&select=score,comment,photo_url,created_at`);
+  targetEl.innerHTML = reviewListHtml(data, '리뷰');
+}
+async function loadSchoolReviews(schoolId, targetEl) {
+  if (!targetEl || !schoolId) return;
+  targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">학교 리뷰 불러오는 중...</div></div>';
+  const data = await sb(`ratings?school_id=eq.${schoolId}&order=created_at.desc&limit=20&select=score,comment,photo_url,created_at`);
+  targetEl.innerHTML = reviewListHtml(data, '이 학교 리뷰', '아직 이 학교 리뷰가 없어요');
 }
 
 // ===== RANKING =====
