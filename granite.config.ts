@@ -26,7 +26,7 @@ export default defineConfig({
       // 정적 사이트라 별도 빌드 없음. dev는 단순 http 서버
       dev: 'npx http-server -p 5173 -c-1',
       // AIT build가 outdir를 정리하므로 루트를 outdir로 두면 위험함
-      build: 'mkdir -p dist && cp index.html privacy.html icon_600.png icon.png icon.svg thumbnail_1932x828.png dist/ && cp -r migrations dist/migrations',
+      build: 'npm run build:static',
     },
   },
 

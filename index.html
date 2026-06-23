@@ -439,27 +439,33 @@ const edge = (fn, body) => fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
 }).then(r => r.json());
 
-// ===== FINGERPRINT (스팸 방지) =====
+// ===== CLIENT ID (스팸 방지 + 브라우저 사용자 식별) =====
+// 기존 canvas/screen 기반 fingerprint는 같은 기종·브라우저에서 충돌할 수 있어
+// 타인의 학교 설정이 내 학교처럼 보이는 문제가 발생할 수 있다.
+// localStorage에 저장되는 랜덤 ID를 사용해 기기별로만 안정적으로 식별한다.
 function getFingerprint() {
   let fp = localStorage.getItem('arena_fp');
-  if (!fp) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.fillText('오늘급식', 2, 2);
-    const cv = canvas.toDataURL().slice(-50);
-    const raw = cv + screen.width + 'x' + screen.height + (Intl.DateTimeFormat().resolvedOptions().timeZone || '') + (navigator.language || '');
-    fp = btoa(unescape(encodeURIComponent(raw))).replace(/[^a-z0-9]/gi,'').slice(0, 32);
+  const isRandomClientId = fp && fp.startsWith('cid_');
+  if (!isRandomClientId) {
+    const bytes = new Uint8Array(16);
+    if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    const randomPart = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    fp = 'cid_' + randomPart;
     localStorage.setItem('arena_fp', fp);
+
+    // 구 fingerprint 시절에 서버/로컬에 잘못 동기화된 학교가 남아있을 수 있어
+    // 한 번만 학교 캐시를 비운다. 사용자는 다시 정확한 학교를 선택하면 된다.
+    localStorage.removeItem('arena_school');
+    localStorage.setItem('arena_fp_migrated_at', new Date().toISOString());
   }
   return fp;
 }
 const FP = getFingerprint();
 
-// ===== USER IDENTITY (Toss hash key 우선, fingerprint fallback) =====
+// ===== USER IDENTITY (Toss hash key 우선, 랜덤 client id fallback) =====
 // 토스 미니앱에서는 getAnonymousKey()로 기기간 동일한 사용자 식별 가능
-// 일반 브라우저는 기존 fingerprint 사용
+// 일반 브라우저는 localStorage 랜덤 client id 사용
 window.USER = null; // {id, source}
 async function getUserId() {
   if (window.USER) return window.USER;
@@ -476,7 +482,7 @@ async function getUserId() {
   } catch (e) {
     // 토스앱 밖이거나 SDK 로드 실패 → fingerprint로 폴백
   }
-  // 2순위: 브라우저 fingerprint
+  // 2순위: 브라우저 랜덤 client id
   window.USER = { id: 'fp_' + FP, source: 'fp' };
   return window.USER;
 }
