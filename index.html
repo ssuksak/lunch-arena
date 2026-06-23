@@ -151,9 +151,21 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .review-stars{color:var(--yellow)} .review-time{color:var(--text3);margin-left:auto;font-size:11px}
 .review-school{font-size:13px;font-weight:800;color:var(--text);cursor:pointer}
 .review-school:active{color:var(--blue)}
-.review-text{font-size:13px;color:var(--text2);margin-top:4px}
+.review-nick{font-size:12px;font-weight:800;color:var(--purple);background:var(--purple-l);padding:2px 7px;border-radius:8px;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.review-text{font-size:13px;color:var(--text2);margin-top:6px;line-height:1.45}
 .review-photo{margin-top:6px;border-radius:8px;max-width:200px;max-height:150px;object-fit:cover}
-
+.review-actions{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.review-action-btn{border:1px solid var(--border);background:var(--bg);border-radius:10px;padding:6px 9px;font-size:12px;font-weight:800;color:var(--text2);font-family:inherit;cursor:pointer}
+.review-action-btn.selected{background:var(--blue-l);border-color:var(--blue);color:var(--blue)}
+.review-comments{margin-top:10px;background:var(--bg);border-radius:12px;padding:8px 10px}
+.review-comment{padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;color:var(--text2);line-height:1.4}
+.review-comment:last-child{border-bottom:none}
+.review-comment-nick{font-weight:900;color:var(--text);margin-right:5px}
+.review-comment-time{font-size:10px;color:var(--text3);margin-left:4px}
+.review-comment-form{display:flex;gap:6px;margin-top:8px}
+.review-comment-input{flex:1;min-width:0;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 9px;font-size:12px;font-family:inherit;color:var(--text)}
+.review-comment-input:focus{outline:none;border-color:var(--blue)}
+.review-comment-submit{border:none;background:var(--blue);color:white;border-radius:9px;padding:0 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer}
 /* 지도 */
 .kakao-map-wrap{position:relative;width:100%;height:calc(100vh - 56px - 80px)}
 #kakao-map{width:100%;height:100%;filter:saturate(0.45) brightness(1.1) contrast(0.9) sepia(0.15)}
@@ -1208,7 +1220,7 @@ async function submitRating(mealId) {
   if (selectedPhotoFile) {
     try { photoUrl = await uploadPhoto(selectedPhotoFile); } catch(e) { console.warn('사진 업로드 실패:', e); }
   }
-  const body = { meal_id: mealId, school_id: currentSchool?.id || mySchool?.id, score: selectedRating, fingerprint: getInteractionFingerprint() };
+  const body = { meal_id: mealId, school_id: currentSchool?.id || mySchool?.id, score: selectedRating, fingerprint: getInteractionFingerprint(), nickname: ensureNickname() };
   if (comment) body.comment = comment;
   if (photoUrl) body.photo_url = photoUrl;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
@@ -1238,6 +1250,52 @@ async function submitRating(mealId) {
 }
 
 // ===== REVIEWS =====
+function reviewSchoolHtml(s) {
+  if (!s) return '<span class="review-school">학교 정보 없음</span>';
+  const schoolJson = JSON.stringify(s).replace(/"/g, '&quot;');
+  return `<span class="review-school" onclick="openReviewSchool(${schoolJson})">${escapeHtml(s.name)}</span>`;
+}
+function reviewNickname(r) {
+  return escapeHtml(r.nickname || r.user_nickname || '익명의 급식러');
+}
+function renderReviewComments(ratingId, comments = []) {
+  const list = comments.length ? comments.map(c => `
+    <div class="review-comment">
+      <span class="review-comment-nick">${escapeHtml(c.nickname || '익명의 급식러')}</span>
+      <span>${escapeHtml(c.comment)}</span>
+      <span class="review-comment-time">${timeAgo(c.created_at)}</span>
+    </div>`).join('') : '<div class="review-comment" style="color:var(--text3)">아직 댓글이 없어요</div>';
+  return `
+    <div class="review-comments">
+      ${list}
+      <div class="review-comment-form">
+        <input class="review-comment-input" id="review-comment-${ratingId}" maxlength="300" placeholder="댓글 달기" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId})">
+        <button class="review-comment-submit" onclick="submitReviewComment(${ratingId})">등록</button>
+      </div>
+    </div>`;
+}
+function renderReviewItem(r) {
+  const likes = r.reaction_counts?.like || 0;
+  const dislikes = r.reaction_counts?.dislike || 0;
+  const myReaction = r.my_reaction || '';
+  return `
+    <div class="review-item">
+      <div class="review-header">
+        ${reviewSchoolHtml(r.schools)}
+        <span class="review-nick">${reviewNickname(r)}</span>
+        <span class="review-stars">${'⭐'.repeat(r.score || 0)}</span>
+        <span class="review-time">${timeAgo(r.created_at)}</span>
+      </div>
+      ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
+      ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
+      <div class="review-actions">
+        <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like')">👍 ${likes}</button>
+        <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike')">👎 ${dislikes}</button>
+        <span style="font-size:12px;color:var(--text3)">댓글 ${(r.comments || []).length}</span>
+      </div>
+      ${renderReviewComments(r.id, r.comments || [])}
+    </div>`;
+}
 function reviewListHtml(data, title, emptyText = '') {
   if (!data || data.length === 0) {
     return emptyText ? `<div class="rating-section"><div class="rating-title">${title}</div><div class="empty" style="padding:20px 8px"><div class="empty-emoji">💬</div><div>${emptyText}</div></div></div>` : '';
@@ -1245,43 +1303,108 @@ function reviewListHtml(data, title, emptyText = '') {
   return `
     <div class="rating-section">
       <div class="rating-title">${title} ${data.length}개</div>
-      ${data.map(r => `
-        <div class="review-item">
-          <div class="review-header"><span class="review-stars">${'⭐'.repeat(r.score)}</span><span class="review-time">${timeAgo(r.created_at)}</span></div>
-          ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
-          ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
-        </div>`).join('')}
+      ${data.map(renderReviewItem).join('')}
     </div>`;
 }
-function latestReviewsHtml(data) {
-  if (!data || data.length === 0) {
-    return `<div class="rating-section"><div class="rating-title">최신 리뷰</div><div class="empty" style="padding:20px 8px"><div class="empty-emoji">💬</div><div>아직 등록된 리뷰가 없어요</div></div></div>`;
+async function enrichReviews(data) {
+  if (!Array.isArray(data) || data.length === 0) return [];
+  await getUserId();
+  const ids = data.map(r => r.id).filter(Boolean);
+  if (ids.length === 0) return data;
+  const idFilter = ids.join(',');
+  const myFp = getInteractionFingerprint();
+  const [reactions, comments, users] = await Promise.all([
+    sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id,reaction,fingerprint`),
+    sb(`review_comments?rating_id=in.(${idFilter})&order=created_at.asc&select=id,rating_id,nickname,comment,created_at`),
+    (() => {
+      const fps = [...new Set(data.map(r => r.fingerprint).filter(Boolean))];
+      return fps.length ? sb(`user_schools?user_hash=in.(${fps.map(encodeURIComponent).join(',')})&select=user_hash,nickname`) : Promise.resolve([]);
+    })()
+  ]);
+  const userNickByHash = new Map((users || []).map(u => [u.user_hash, u.nickname]));
+  const reactionByRating = new Map();
+  for (const rr of (reactions || [])) {
+    const bucket = reactionByRating.get(rr.rating_id) || { counts: { like: 0, dislike: 0 }, mine: '' };
+    if (rr.reaction === 'like' || rr.reaction === 'dislike') bucket.counts[rr.reaction] += 1;
+    if (rr.fingerprint === myFp) bucket.mine = rr.reaction;
+    reactionByRating.set(rr.rating_id, bucket);
   }
-  return `
-    <div class="rating-section">
-      <div class="rating-title">최신 리뷰 ${data.length}개</div>
-      ${data.map(r => {
-        const s = r.schools;
-        const schoolJson = s ? JSON.stringify(s).replace(/"/g, '&quot;') : '';
-        return `
-          <div class="review-item">
-            <div class="review-header">
-              ${s ? `<span class="review-school" onclick="openReviewSchool(${schoolJson})">${escapeHtml(s.name)}</span>` : `<span class="review-school">학교 정보 없음</span>`}
-              <span class="review-stars">${'⭐'.repeat(r.score || 0)}</span>
-              <span class="review-time">${timeAgo(r.created_at)}</span>
-            </div>
-            ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
-            ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
-          </div>`;
-      }).join('')}
-    </div>`;
+  const commentsByRating = new Map();
+  for (const c of (comments || [])) {
+    const list = commentsByRating.get(c.rating_id) || [];
+    list.push(c);
+    commentsByRating.set(c.rating_id, list);
+  }
+  return data.map(r => {
+    const reaction = reactionByRating.get(r.id) || { counts: { like: 0, dislike: 0 }, mine: '' };
+    return {
+      ...r,
+      user_nickname: r.nickname || userNickByHash.get(r.fingerprint) || '',
+      reaction_counts: reaction.counts,
+      my_reaction: reaction.mine,
+      comments: commentsByRating.get(r.id) || []
+    };
+  });
+}
+async function renderReviews(data, targetEl, title, emptyText = '') {
+  if (!targetEl) return;
+  const enriched = await enrichReviews(data || []);
+  targetEl.innerHTML = reviewListHtml(enriched, title, emptyText);
+}
+async function refreshVisibleReviews() {
+  if (latestReviewsVisible) loadLatestReviews();
+  const detailRevEl = document.getElementById('detail-reviews-wrap');
+  if (detailRevEl && currentSchool?.id) loadSchoolReviews(currentSchool.id, detailRevEl);
+  const msRevEl = document.getElementById('ms-reviews-wrap');
+  if (msRevEl && mySchool) {
+    const ratedMealId = msRevEl.dataset.mealId;
+    if (ratedMealId) loadReviews(ratedMealId, msRevEl);
+  }
+}
+async function reactToReview(ratingId, reaction) {
+  await getUserId();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ rating_id: ratingId, fingerprint: getInteractionFingerprint(), nickname: ensureNickname(), reaction })
+  });
+  if (res.status === 409) {
+    alert('이미 이 리뷰에 표시했어요');
+    return;
+  }
+  if (!res.ok) {
+    console.warn('리뷰 반응 저장 실패:', await res.text().catch(() => ''));
+    return;
+  }
+  refreshVisibleReviews();
+}
+async function submitReviewComment(ratingId) {
+  const input = document.getElementById(`review-comment-${ratingId}`);
+  const comment = input?.value?.trim() || '';
+  if (!comment) return;
+  await getUserId();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/review_comments`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ rating_id: ratingId, fingerprint: getInteractionFingerprint(), nickname: ensureNickname(), comment })
+  });
+  if (!res.ok) {
+    console.warn('댓글 저장 실패:', await res.text().catch(() => ''));
+    return;
+  }
+  input.value = '';
+  refreshVisibleReviews();
+}
+function latestReviewsHtml(data) {
+  return reviewListHtml(data, '최신 리뷰', '아직 등록된 리뷰가 없어요');
 }
 async function loadLatestReviews() {
   const targetEl = document.getElementById('latest-reviews-wrap');
   if (!targetEl) return;
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">최신 리뷰 불러오는 중...</div></div>';
-  const data = await sb('ratings?order=created_at.desc&limit=30&select=score,comment,photo_url,created_at,schools(id,name,type,address,atpt_code,school_code)');
-  targetEl.innerHTML = latestReviewsHtml(data);
+  const data = await sb('ratings?order=created_at.desc&limit=30&select=id,school_id,score,comment,photo_url,created_at,fingerprint,nickname,schools(id,name,type,address,atpt_code,school_code)');
+  const enriched = await enrichReviews(data || []);
+  targetEl.innerHTML = latestReviewsHtml(enriched);
 }
 function toggleLatestReviews() {
   const targetEl = document.getElementById('latest-reviews-wrap');
@@ -1306,14 +1429,15 @@ function openReviewSchool(s) {
 }
 async function loadReviews(mealId, targetEl) {
   if (!targetEl) return;
-  const data = await sb(`ratings?meal_id=eq.${mealId}&order=created_at.desc&limit=20&select=score,comment,photo_url,created_at`);
-  targetEl.innerHTML = reviewListHtml(data, '리뷰');
+  targetEl.dataset.mealId = mealId;
+  const data = await sb(`ratings?meal_id=eq.${mealId}&order=created_at.desc&limit=20&select=id,school_id,score,comment,photo_url,created_at,fingerprint,nickname,schools(id,name,type,address,atpt_code,school_code)`);
+  renderReviews(data, targetEl, '리뷰');
 }
 async function loadSchoolReviews(schoolId, targetEl) {
   if (!targetEl || !schoolId) return;
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">학교 리뷰 불러오는 중...</div></div>';
-  const data = await sb(`ratings?school_id=eq.${schoolId}&order=created_at.desc&limit=20&select=score,comment,photo_url,created_at`);
-  targetEl.innerHTML = reviewListHtml(data, '이 학교 리뷰', '아직 이 학교 리뷰가 없어요');
+  const data = await sb(`ratings?school_id=eq.${schoolId}&order=created_at.desc&limit=20&select=id,school_id,score,comment,photo_url,created_at,fingerprint,nickname,schools(id,name,type,address,atpt_code,school_code)`);
+  renderReviews(data, targetEl, '이 학교 리뷰', '아직 이 학교 리뷰가 없어요');
 }
 
 // ===== RANKING =====
