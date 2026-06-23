@@ -85,6 +85,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 /* 스탯 */
 .stat-row{display:flex;gap:8px;margin-bottom:16px}
 .stat-card{flex:1;background:var(--surface);border-radius:14px;padding:14px;text-align:center;border:1.5px solid var(--border)}
+.stat-card.clickable{cursor:pointer;transition:transform .12s,background .12s}
+.stat-card.clickable:active{transform:scale(.98);background:var(--bg)}
 .stat-num{font-size:22px;font-weight:900;color:var(--blue)}
 .stat-label{font-size:11px;color:var(--text3);margin-top:2px;font-weight:600}
 
@@ -146,6 +148,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .review-item:last-child{border-bottom:none}
 .review-header{display:flex;align-items:center;gap:6px;font-size:13px}
 .review-stars{color:var(--yellow)} .review-time{color:var(--text3);margin-left:auto;font-size:11px}
+.review-school{font-size:13px;font-weight:800;color:var(--text);cursor:pointer}
+.review-school:active{color:var(--blue)}
 .review-text{font-size:13px;color:var(--text2);margin-top:4px}
 .review-photo{margin-top:6px;border-radius:8px;max-width:200px;max-height:150px;object-fit:cover}
 
@@ -347,8 +351,9 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     <div class="stat-row" style="margin-top:8px">
       <div class="stat-card"><div class="stat-num" id="stat-schools">-</div><div class="stat-label">등록 학교</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-meals">-</div><div class="stat-label">오늘 급식</div></div>
-      <div class="stat-card"><div class="stat-num" id="stat-ratings">-</div><div class="stat-label">리뷰</div></div>
+      <div class="stat-card clickable" onclick="toggleLatestReviews()"><div class="stat-num" id="stat-ratings">-</div><div class="stat-label">리뷰</div></div>
     </div>
+    <div id="latest-reviews-wrap"></div>
     <!-- 오늘 급식왕 -->
     <div class="section-title">🏆 오늘의 급식왕 <span class="section-more" onclick="switchTab('ranking')">더보기</span></div>
     <div id="today-ranking"><div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">랭킹 준비 중...</div></div></div>
@@ -513,6 +518,7 @@ let selectedPhotoFile = null;
 let selectedPhotoUrl = null;
 let kakaoMap = null, mapSchools = [], clusterer = null;
 let mapLoaded = false;
+let latestReviewsVisible = false;
 
 // XSS 방어: 사용자 입력값 HTML 이스케이프
 function escapeHtml(s) {
@@ -1114,6 +1120,7 @@ async function submitRating(mealId) {
     const msRevEl = document.getElementById('ms-reviews-wrap');
     if (msRevEl) loadReviews(mealId, msRevEl);
   }
+  if (latestReviewsVisible) loadLatestReviews();
 }
 
 // ===== REVIEWS =====
@@ -1131,6 +1138,57 @@ function reviewListHtml(data, title, emptyText = '') {
           ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
         </div>`).join('')}
     </div>`;
+}
+function latestReviewsHtml(data) {
+  if (!data || data.length === 0) {
+    return `<div class="rating-section"><div class="rating-title">최신 리뷰</div><div class="empty" style="padding:20px 8px"><div class="empty-emoji">💬</div><div>아직 등록된 리뷰가 없어요</div></div></div>`;
+  }
+  return `
+    <div class="rating-section">
+      <div class="rating-title">최신 리뷰 ${data.length}개</div>
+      ${data.map(r => {
+        const s = r.schools;
+        const schoolJson = s ? JSON.stringify(s).replace(/"/g, '&quot;') : '';
+        return `
+          <div class="review-item">
+            <div class="review-header">
+              ${s ? `<span class="review-school" onclick="openReviewSchool(${schoolJson})">${escapeHtml(s.name)}</span>` : `<span class="review-school">학교 정보 없음</span>`}
+              <span class="review-stars">${'⭐'.repeat(r.score || 0)}</span>
+              <span class="review-time">${timeAgo(r.created_at)}</span>
+            </div>
+            ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
+            ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+async function loadLatestReviews() {
+  const targetEl = document.getElementById('latest-reviews-wrap');
+  if (!targetEl) return;
+  targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">최신 리뷰 불러오는 중...</div></div>';
+  const data = await sb('ratings?order=created_at.desc&limit=30&select=score,comment,photo_url,created_at,schools(id,name,type,address,atpt_code,school_code)');
+  targetEl.innerHTML = latestReviewsHtml(data);
+}
+function toggleLatestReviews() {
+  const targetEl = document.getElementById('latest-reviews-wrap');
+  if (!targetEl) return;
+  latestReviewsVisible = !latestReviewsVisible;
+  if (!latestReviewsVisible) {
+    targetEl.innerHTML = '';
+    return;
+  }
+  loadLatestReviews();
+}
+function closeLatestReviews() {
+  latestReviewsVisible = false;
+  const targetEl = document.getElementById('latest-reviews-wrap');
+  if (targetEl) targetEl.innerHTML = '';
+}
+function openReviewSchool(s) {
+  if (!s) return;
+  closeLatestReviews();
+  selectDetailSchool(s);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 async function loadReviews(mealId, targetEl) {
   if (!targetEl) return;
