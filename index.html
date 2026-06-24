@@ -434,6 +434,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
       <div class="stat-card clickable" onclick="toggleLatestReviews()"><div class="stat-num" id="stat-ratings">-</div><div class="stat-label">리뷰</div></div>
     </div>
     <div id="latest-reviews-wrap"></div>
+    <div class="section-title">🔥 이번 달 리뷰 참여왕</div>
+    <div id="monthly-engagement-ranking"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">참여 랭킹 준비 중...</div></div></div>
     <!-- 오늘 급식왕 -->
     <div class="section-title">🏆 오늘의 급식왕 <span class="section-more" onclick="switchTab('ranking')">더보기</span></div>
     <div id="today-ranking"><div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">랭킹 준비 중...</div></div></div>
@@ -2369,6 +2371,75 @@ function goMyLocation() {
   navigator.geolocation.getCurrentPosition(pos => { kakaoMap.setCenter(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude)); kakaoMap.setLevel(4); });
 }
 
+function monthlyRange(d = new Date()) {
+  const start = new Date(d.getFullYear(), d.getMonth(), 1);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+function engagementRankCard(item, index) {
+  const numCls = index < 3 ? `rank-${index+1}` : '';
+  const score = Math.round(item.score * 10) / 10;
+  return `<div class="ranking-card" onclick="openReviewSchool(${JSON.stringify(item.school).replace(/"/g,'&quot;')})">
+    <div class="rank-num ${numCls}">${index + 1}</div>
+    <div class="rank-info">
+      <div class="rank-school">${escapeHtml(item.school?.name || '?')}</div>
+      <div class="rank-menu-preview">리뷰 ${item.reviewCount} · 댓글 ${item.commentCount} · 반응 ${item.reactionCount}</div>
+    </div>
+    <div class="rank-score">${score}</div>
+  </div>`;
+}
+async function loadMonthlyEngagementRanking() {
+  const wrap = document.getElementById('monthly-engagement-ranking');
+  if (!wrap) return;
+  const { start, end } = monthlyRange();
+  try {
+    const reviews = await sb(`ratings?created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}&select=id,school_id,schools(id,name,type,address,atpt_code,school_code)`);
+    if (!reviews || !reviews.length) {
+      wrap.innerHTML = `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">💬</div><div>이번 달 리뷰 참여가 아직 없어요</div></div>`;
+      return;
+    }
+    const ratingIds = reviews.map(r => r.id).filter(Boolean);
+    const idFilter = ratingIds.join(',');
+    const [comments, reactions] = idFilter ? await Promise.all([
+      sb(`review_comments?rating_id=in.(${idFilter})&select=rating_id`),
+      sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id`)
+    ]) : [[], []];
+    const schoolByRating = new Map(reviews.map(r => [r.id, r.school_id]));
+    const stats = new Map();
+    function bucket(schoolId) {
+      if (!stats.has(schoolId)) {
+        const review = reviews.find(r => r.school_id === schoolId);
+        stats.set(schoolId, { school: review?.schools || null, reviewCount: 0, commentCount: 0, reactionCount: 0, score: 0 });
+      }
+      return stats.get(schoolId);
+    }
+    for (const r of reviews) {
+      const b = bucket(r.school_id);
+      b.reviewCount += 1;
+      b.score += 1;
+    }
+    for (const c of (comments || [])) {
+      const schoolId = schoolByRating.get(c.rating_id);
+      if (!schoolId) continue;
+      const b = bucket(schoolId);
+      b.commentCount += 1;
+      b.score += 0.5;
+    }
+    for (const rr of (reactions || [])) {
+      const schoolId = schoolByRating.get(rr.rating_id);
+      if (!schoolId) continue;
+      const b = bucket(schoolId);
+      b.reactionCount += 1;
+      b.score += 0.2;
+    }
+    const top = [...stats.values()].filter(x => x.school).sort((a, b) => b.score - a.score || b.reviewCount - a.reviewCount || b.commentCount - a.commentCount).slice(0, 3);
+    wrap.innerHTML = top.length ? top.map(engagementRankCard).join('') : `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">💬</div><div>이번 달 리뷰 참여가 아직 없어요</div></div>`;
+  } catch (e) {
+    console.warn('월간 참여 랭킹 불러오기 실패:', e);
+    wrap.innerHTML = `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">😢</div><div>참여 랭킹을 불러오지 못했어요</div></div>`;
+  }
+}
+
 // ===== INIT =====
 async function init() {
   await loadMySchool();
@@ -2381,6 +2452,7 @@ async function init() {
   document.getElementById('stat-schools').textContent = Number(schoolCount).toLocaleString();
   document.getElementById('stat-meals').textContent = mealCount > 0 ? mealCount.toLocaleString() : '-';
   document.getElementById('stat-ratings').textContent = ratingCount > 0 ? ratingCount.toLocaleString() : '0';
+  loadMonthlyEngagementRanking();
   // 오늘 랭킹 TOP5
   const todayMeals = await sb(`meals?meal_date=eq.${fmtDate(mealDate)}&order=auto_score.desc&limit=5&select=auto_score,auto_rank,meal_type,meal_type_label,menu,schools!inner(id,name,type)`);
   if (todayMeals && todayMeals.length > 0) {
