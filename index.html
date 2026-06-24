@@ -490,37 +490,37 @@ const edge = (fn, body) => fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
 }).then(r => r.json());
 
-// ===== CLIENT ID (스팸 방지 + 브라우저 사용자 식별) =====
-// 기존 canvas/screen 기반 fingerprint는 같은 기종·브라우저에서 충돌할 수 있어
+// ===== USER KEY (스팸 방지 + 브라우저 사용자 식별) =====
+// 기존 canvas/screen 기반 식별값은 같은 기종·브라우저에서 충돌할 수 있어
 // 타인의 학교 설정이 내 학교처럼 보이는 문제가 발생할 수 있다.
 // localStorage에 저장되는 랜덤 ID를 사용해 기기별로만 안정적으로 식별한다.
-function getFingerprint() {
-  let fp = localStorage.getItem('arena_fp');
-  const isRandomClientId = fp && fp.startsWith('cid_');
+function getLocalClientId() {
+  let clientId = localStorage.getItem('arena_fp');
+  const isRandomClientId = clientId && clientId.startsWith('cid_');
   if (!isRandomClientId) {
     const bytes = new Uint8Array(16);
     if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
     else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
     const randomPart = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-    fp = 'cid_' + randomPart;
-    localStorage.setItem('arena_fp', fp);
+    clientId = 'cid_' + randomPart;
+    localStorage.setItem('arena_fp', clientId);
 
-    // 구 fingerprint 시절에 서버/로컬에 잘못 동기화된 학교가 남아있을 수 있어
+    // 구 식별값 시절에 서버/로컬에 잘못 동기화된 학교가 남아있을 수 있어
     // 한 번만 학교 캐시를 비운다. 사용자는 다시 정확한 학교를 선택하면 된다.
     localStorage.removeItem('arena_school');
     localStorage.setItem('arena_fp_migrated_at', new Date().toISOString());
   }
-  return fp;
+  return clientId;
 }
-let FP = null;
+let LOCAL_CLIENT_ID = null;
 
-function getFallbackFingerprint() {
-  if (!FP) FP = getFingerprint();
-  return FP;
+function getFallbackUserKey() {
+  if (!LOCAL_CLIENT_ID) LOCAL_CLIENT_ID = getLocalClientId();
+  return LOCAL_CLIENT_ID;
 }
 
-function getInteractionFingerprint() {
-  return window.USER?.id || getFallbackFingerprint();
+function getInteractionUserKey() {
+  return window.USER?.id || getFallbackUserKey();
 }
 
 // ===== USER IDENTITY (Toss hash key 우선, 랜덤 client id fallback) =====
@@ -544,10 +544,10 @@ async function getUserId() {
       }
     }
   } catch (e) {
-    // 토스앱 밖이거나 SDK 로드 실패 → fingerprint로 폴백
+    // 토스앱 밖이거나 SDK 로드 실패 → localStorage client id로 폴백
   }
   // 2순위: 브라우저 랜덤 client id
-  window.USER = { id: 'fp_' + getFallbackFingerprint(), source: 'fp' };
+  window.USER = { id: 'fp_' + getFallbackUserKey(), source: 'fp' };
   return window.USER;
 }
 
@@ -589,7 +589,7 @@ async function saveNicknameToDb() {
   await getUserId();
   const nick = ensureNickname();
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_hash`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_key`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
@@ -597,7 +597,7 @@ async function saveNicknameToDb() {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
-      body: JSON.stringify({ user_hash: window.USER.id, source: window.USER.source, nickname: nick, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ user_key: window.USER.id, source: window.USER.source, nickname: nick, updated_at: new Date().toISOString() })
     });
     if (!res.ok) return { ok: false, status: res.status, message: await res.text().catch(() => '') };
     return { ok: true };
@@ -680,9 +680,9 @@ async function loadMySchool() {
   ensureNickname();
   applyNickname();
 
-  // 1순위: Supabase에서 user_hash로 조회
+  // 1순위: Supabase에서 user_key로 조회
   try {
-    const rows = await sb(`user_schools?user_hash=eq.${encodeURIComponent(window.USER.id)}&select=*`);
+    const rows = await sb(`user_schools?user_key=eq.${encodeURIComponent(window.USER.id)}&select=*`);
     if (Array.isArray(rows) && rows.length > 0) {
       const r = rows[0];
       if (r.nickname) {
@@ -727,7 +727,7 @@ async function loadMySchool() {
 async function saveMySchoolToDb() {
   if (!window.USER || !mySchool || !mySchool.id) return { ok: true };
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_hash`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_key`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
@@ -736,7 +736,7 @@ async function saveMySchoolToDb() {
         'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
       body: JSON.stringify({
-        user_hash: window.USER.id,
+        user_key: window.USER.id,
         source: window.USER.source,
         school_id: mySchool.id,
         school_name: mySchool.name || null,
@@ -1238,7 +1238,7 @@ function removePhoto(mealId) {
 }
 async function uploadPhoto(file) {
   const ext = file.name.split('.').pop() || 'jpg';
-  const path = `${Date.now()}-${getInteractionFingerprint()}.${ext}`;
+  const path = `${Date.now()}-${getInteractionUserKey()}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/reviews/${path}`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type }
@@ -1256,7 +1256,7 @@ async function submitRating(mealId) {
   if (selectedPhotoFile) {
     try { photoUrl = await uploadPhoto(selectedPhotoFile); } catch(e) { console.warn('사진 업로드 실패:', e); }
   }
-  const body = { meal_id: mealId, school_id: currentSchool?.id || mySchool?.id, score: selectedRating, fingerprint: getInteractionFingerprint(), nickname: ensureNickname() };
+  const body = { meal_id: mealId, school_id: currentSchool?.id || mySchool?.id, score: selectedRating, user_key: getInteractionUserKey(), nickname: ensureNickname() };
   if (comment) body.comment = comment;
   if (photoUrl) body.photo_url = photoUrl;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
@@ -1308,7 +1308,7 @@ function reviewMealHtml(meal) {
   const preview = mealPreviewText(meal.menu) || '식단 정보 없음';
   return `<div class="review-meal">${date ? `<span class="review-meal-date">${escapeHtml(date)}</span>` : ''}${escapeHtml(preview)}</div>`;
 }
-const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,photo_url,created_at,fingerprint,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,menu)';
+const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,photo_url,created_at,user_key,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,menu)';
 function renderReviewComments(ratingId, comments = []) {
   const list = comments.length ? comments.map(c => `
     <div class="review-comment">
@@ -1364,21 +1364,21 @@ async function enrichReviews(data) {
   const ids = data.map(r => r.id).filter(Boolean);
   if (ids.length === 0) return data;
   const idFilter = ids.join(',');
-  const myFp = getInteractionFingerprint();
+  const myUserKey = getInteractionUserKey();
   const [reactions, comments, users] = await Promise.all([
-    sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id,reaction,fingerprint`),
+    sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id,reaction,user_key`),
     sb(`review_comments?rating_id=in.(${idFilter})&order=created_at.asc&select=id,rating_id,nickname,comment,created_at`),
     (() => {
-      const fps = [...new Set(data.map(r => r.fingerprint).filter(Boolean))];
-      return fps.length ? sb(`user_schools?user_hash=in.(${fps.map(encodeURIComponent).join(',')})&select=user_hash,nickname`) : Promise.resolve([]);
+      const userKeys = [...new Set(data.map(r => r.user_key).filter(Boolean))];
+      return userKeys.length ? sb(`user_schools?user_key=in.(${userKeys.map(encodeURIComponent).join(',')})&select=user_key,nickname`) : Promise.resolve([]);
     })()
   ]);
-  const userNickByHash = new Map((users || []).map(u => [u.user_hash, u.nickname]));
+  const userNickByKey = new Map((users || []).map(u => [u.user_key, u.nickname]));
   const reactionByRating = new Map();
   for (const rr of (reactions || [])) {
     const bucket = reactionByRating.get(rr.rating_id) || { counts: { like: 0, dislike: 0 }, mine: '' };
     if (rr.reaction === 'like' || rr.reaction === 'dislike') bucket.counts[rr.reaction] += 1;
-    if (rr.fingerprint === myFp) bucket.mine = rr.reaction;
+    if (rr.user_key === myUserKey) bucket.mine = rr.reaction;
     reactionByRating.set(rr.rating_id, bucket);
   }
   const commentsByRating = new Map();
@@ -1391,7 +1391,7 @@ async function enrichReviews(data) {
     const reaction = reactionByRating.get(r.id) || { counts: { like: 0, dislike: 0 }, mine: '' };
     return {
       ...r,
-      user_nickname: r.nickname || userNickByHash.get(r.fingerprint) || '',
+      user_nickname: r.nickname || userNickByKey.get(r.user_key) || '',
       reaction_counts: reaction.counts,
       my_reaction: reaction.mine,
       comments: commentsByRating.get(r.id) || []
@@ -1441,9 +1441,9 @@ async function reactionCancelHash(ratingId) {
   return sha256Hex(getReactionCancelToken(ratingId));
 }
 async function deleteMyReviewReaction(ratingId) {
-  const fp = getInteractionFingerprint();
+  const userKey = getInteractionUserKey();
   const tokenHash = await reactionCancelHash(ratingId);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions?rating_id=eq.${ratingId}&fingerprint=eq.${encodeURIComponent(fp)}&select=id`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions?rating_id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id`, {
     method: 'DELETE',
     headers: {
       'apikey': SUPABASE_KEY,
@@ -1484,7 +1484,7 @@ async function reactToReview(ratingId, reaction, currentReaction = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ rating_id: ratingId, fingerprint: getInteractionFingerprint(), nickname: ensureNickname(), reaction, cancel_token_hash: tokenHash })
+    body: JSON.stringify({ rating_id: ratingId, user_key: getInteractionUserKey(), nickname: ensureNickname(), reaction, cancel_token_hash: tokenHash })
   });
   if (res.status === 409) {
     alert('이미 이 리뷰에 표시했어요');
@@ -1504,7 +1504,7 @@ async function submitReviewComment(ratingId) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/review_comments`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ rating_id: ratingId, fingerprint: getInteractionFingerprint(), nickname: ensureNickname(), comment })
+    body: JSON.stringify({ rating_id: ratingId, user_key: getInteractionUserKey(), nickname: ensureNickname(), comment })
   });
   if (!res.ok) {
     console.warn('댓글 저장 실패:', await res.text().catch(() => ''));
@@ -1542,11 +1542,11 @@ async function loadMyActivity() {
   if (!targetEl) return;
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div>';
   await getUserId();
-  const fp = encodeURIComponent(getInteractionFingerprint());
+  const userKey = encodeURIComponent(getInteractionUserKey());
   const commentSelect = `id,rating_id,nickname,comment,created_at,ratings(${REVIEW_SELECT})`;
   const [reviews, comments] = await Promise.all([
-    sb(`ratings?fingerprint=eq.${fp}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`),
-    sb(`review_comments?fingerprint=eq.${fp}&order=created_at.desc&limit=20&select=${commentSelect}`)
+    sb(`ratings?user_key=eq.${userKey}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`),
+    sb(`review_comments?user_key=eq.${userKey}&order=created_at.desc&limit=20&select=${commentSelect}`)
   ]);
   const enrichedReviews = await enrichReviews(Array.isArray(reviews) ? reviews : []);
   const ownComments = Array.isArray(comments) ? comments : [];
@@ -1933,7 +1933,7 @@ async function voteBattle(battleId, schoolId, side) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/battle_votes`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ battle_id: battleId, voted_school_id: schoolId, fingerprint: getInteractionFingerprint() })
+    body: JSON.stringify({ battle_id: battleId, voted_school_id: schoolId, user_key: getInteractionUserKey() })
   });
   // vote_a/vote_b 업데이트
   const field = side === 'a' ? 'vote_a' : 'vote_b';
