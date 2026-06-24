@@ -133,6 +133,10 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 /* 평가 */
 .rating-section{background:var(--surface);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border:1.5px solid var(--border);margin-bottom:14px}
 .rating-title{font-size:15px;font-weight:700;margin-bottom:12px}
+.rating-subtitle{font-size:12px;font-weight:800;color:var(--text3);margin:12px 0 7px}
+.rating-menu-picks{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.rating-menu-pick{border:1.5px solid var(--border);background:var(--bg);color:var(--text2);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rating-menu-pick.selected{border-color:var(--blue);background:var(--blue-l);color:var(--blue)}
 .stars{display:flex;gap:6px;justify-content:center;margin-bottom:12px;padding:8px 0}
 .star{width:36px;height:36px;cursor:pointer;transition:transform .1s;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:8px;background:var(--bg)}
 .star:active{transform:scale(1.15)} .star.filled{background:var(--yellow-l)} .star.empty{opacity:.4}
@@ -158,6 +162,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .review-nick{font-size:12px;font-weight:800;color:var(--purple);background:var(--purple-l);padding:2px 7px;border-radius:8px;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .review-meal{margin-top:5px;font-size:12px;color:var(--text3);line-height:1.4;background:var(--bg);border-radius:8px;padding:7px 9px}
 .review-meal-date{font-weight:800;color:var(--text2);margin-right:4px}
+.review-picked-menu{display:inline-flex;align-items:center;gap:4px;margin-top:6px;background:var(--yellow-l);color:var(--text);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:800}
 .review-text{font-size:13px;color:var(--text2);margin-top:6px;line-height:1.45}
 .review-photo{margin-top:6px;border-radius:8px;max-width:200px;max-height:150px;object-fit:cover}
 .review-actions{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
@@ -1071,7 +1076,7 @@ function activateMealPanel(scope, index) {
     const badgeEl = document.getElementById('msc-rank-badge');
     if (badgeEl) { badgeEl.className = 'msc-rank-badge'; badgeEl.textContent = `${rank.r}랭크`; badgeEl.style.display = ''; }
   }
-  if (state.ratingContainerId) renderRating(meal.id, document.getElementById(state.ratingContainerId));
+  if (state.ratingContainerId) renderRating(meal.id, document.getElementById(state.ratingContainerId), meal);
   if (state.reviewsContainerId) loadReviews(meal.id, document.getElementById(state.reviewsContainerId));
   if (!sessionStorage.getItem('effect_shown_' + meal.id)) {
     if (rank.r === 'S' || rank.r === 'D' || rank.r === 'A') {
@@ -1224,9 +1229,10 @@ function getRank(s) {
 
 // ===== RATING =====
 // wrap: DOM element (my school meal div) or {rating, reviews} object
-function renderRating(mealId, targetEl) {
+function renderRating(mealId, targetEl, meal = null) {
   if (!targetEl) return;
-  selectedRating = 0; selectedPhotoFile = null; selectedPhotoUrl = null;
+  selectedRating = 0; selectedMenuItem = ''; selectedPhotoFile = null; selectedPhotoUrl = null;
+  ratingMealMenus[mealId] = Array.isArray(meal?.menu) ? meal.menu.map(x => String(x || '').trim()).filter(Boolean) : [];
   const alreadyRated = localStorage.getItem(`rated_${mealId}`);
   targetEl.innerHTML = alreadyRated ? `
     <div class="rating-section" style="text-align:center">
@@ -1236,9 +1242,11 @@ function renderRating(mealId, targetEl) {
     </div>` :
   `<div class="rating-section" id="rating-box-${mealId}">
     <div class="rating-title">오늘 급식 어땠어?</div>
+    <div class="rating-subtitle">총별점</div>
     <div class="stars" id="stars-${mealId}">
       ${[1,2,3,4,5].map(i => `<span class="star empty" onclick="setRating(${i},${mealId})">⭐</span>`).join('')}
     </div>
+    ${ratingMenuPickerHtml(mealId)}
     <textarea class="comment-input" id="comment-${mealId}" placeholder="한줄평 (선택, 100자)"></textarea>
     <div class="photo-upload">
       <label class="photo-label" for="photo-input" onclick="currentRatingMealId=${mealId}">
@@ -1253,13 +1261,40 @@ function renderRating(mealId, targetEl) {
   </div>`;
 }
 let currentRatingMealId = null;
+let selectedMenuItem = '';
+const ratingMealMenus = {};
+function ratingMenuPickerHtml(mealId) {
+  const menus = (ratingMealMenus[mealId] || []).slice(0, 12);
+  if (!menus.length) return '';
+  return `<div class="rating-subtitle">가장 기억나는 메뉴 하나 골라줘</div><div class="rating-menu-picks" id="menu-picks-${mealId}">${menus.map((item, idx) => `<button type="button" class="rating-menu-pick" onclick="selectReviewMenu(${mealId}, ${idx})">${escapeHtml(item)}</button>`).join('')}</div>`;
+}
+function selectReviewMenu(mealId, idx) {
+  const menus = ratingMealMenus[mealId] || [];
+  selectedMenuItem = menus[idx] || '';
+  document.querySelectorAll(`#menu-picks-${mealId} .rating-menu-pick`).forEach((btn, i) => btn.classList.toggle('selected', i === idx));
+  updateRatingSubmitState(mealId);
+}
+function updateRatingSubmitState(mealId) {
+  const btn = document.getElementById(`btn-rate-${mealId}`);
+  if (!btn) return;
+  const needsMenu = (ratingMealMenus[mealId] || []).length > 0;
+  if (!selectedRating) {
+    btn.disabled = true;
+    btn.textContent = '별점을 선택해주세요';
+  } else if (needsMenu && !selectedMenuItem) {
+    btn.disabled = true;
+    btn.textContent = '대표 메뉴를 골라주세요';
+  } else {
+    btn.disabled = false;
+    btn.textContent = `${selectedRating}점으로 평가하기`;
+  }
+}
 function setRating(n, mealId) {
   selectedRating = n;
   document.querySelectorAll(`#stars-${mealId} .star`).forEach((s, i) => {
     s.classList.toggle('filled', i < n); s.classList.toggle('empty', i >= n);
   });
-  const btn = document.getElementById(`btn-rate-${mealId}`);
-  if (btn) { btn.disabled = false; btn.textContent = `${n}점으로 평가하기`; }
+  updateRatingSubmitState(mealId);
 }
 function onPhotoSelected(input) {
   const file = input.files[0];
@@ -1293,6 +1328,10 @@ async function uploadPhoto(file) {
 }
 async function submitRating(mealId) {
   const comment = (document.getElementById(`comment-${mealId}`) || {}).value?.trim() || '';
+  if (!selectedRating || ((ratingMealMenus[mealId] || []).length > 0 && !selectedMenuItem)) {
+    updateRatingSubmitState(mealId);
+    return;
+  }
   const btn = document.getElementById(`btn-rate-${mealId}`);
   if (btn) { btn.disabled = true; btn.textContent = '등록 중...'; }
   await getUserId();
@@ -1301,6 +1340,7 @@ async function submitRating(mealId) {
     try { photoUrl = await uploadPhoto(selectedPhotoFile); } catch(e) { console.warn('사진 업로드 실패:', e); }
   }
   const body = { meal_id: mealId, school_id: currentSchool?.id || mySchool?.id, score: selectedRating, user_key: getInteractionUserKey(), nickname: ensureNickname() };
+  if (selectedMenuItem) body.selected_menu_item = selectedMenuItem;
   if (comment) body.comment = comment;
   if (photoUrl) body.photo_url = photoUrl;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
@@ -1353,7 +1393,7 @@ function reviewMealHtml(meal) {
   const preview = mealPreviewText(meal.menu) || '식단 정보 없음';
   return `<div class="review-meal">${date ? `<span class="review-meal-date">${escapeHtml(date)}</span>` : ''}<span class="review-meal-date">${escapeHtml(type)}</span>${escapeHtml(preview)}</div>`;
 }
-const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,photo_url,created_at,user_key,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,meal_type,meal_type_label,menu)';
+const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,meal_type,meal_type_label,menu)';
 function renderReviewComments(ratingId, comments = []) {
   const list = comments.length ? comments.map(c => `
     <div class="review-comment">
@@ -1383,6 +1423,7 @@ function renderReviewItem(r) {
         <span class="review-time">${timeAgo(r.created_at)}</span>
       </div>
       ${reviewMealHtml(r.meals)}
+      ${r.selected_menu_item ? `<div class="review-picked-menu">대표 메뉴 ${escapeHtml(r.selected_menu_item)}</div>` : ''}
       ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
       ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
       <div class="review-actions">
