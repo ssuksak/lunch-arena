@@ -270,6 +270,15 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .ad-cancel{background:var(--bg);color:var(--text3);border:1px solid var(--border)!important}
 .ad-confirm{background:var(--blue);color:white}
 
+/* 업데이트 공지 */
+.notice-modal-backdrop{position:fixed;inset:0;z-index:540;background:rgba(25,31,40,.46);display:flex;align-items:center;justify-content:center;padding:24px}
+.notice-modal-card{width:100%;max-width:340px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--shadow-lg)}
+.notice-modal-badge{display:inline-flex;align-items:center;background:var(--blue-l);color:var(--blue);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900;margin-bottom:10px}
+.notice-modal-title{font-size:18px;font-weight:900;letter-spacing:-.3px;margin-bottom:8px}
+.notice-modal-copy{font-size:14px;color:var(--text2);line-height:1.5;margin-bottom:8px;overflow-wrap:anywhere;word-break:keep-all}
+.notice-modal-date{font-size:12px;color:var(--text3);font-weight:800;margin-bottom:16px}
+.notice-modal-confirm{width:100%;border:none;border-radius:12px;background:var(--blue);color:white;padding:13px 12px;font-size:14px;font-weight:900;font-family:inherit;cursor:pointer}
+.notice-modal-confirm:active{opacity:.86}
 /* 랭킹 */
 .ranking-card{background:var(--surface);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border:1.5px solid var(--border);cursor:pointer}
 .ranking-card:active{background:var(--bg)}
@@ -343,6 +352,15 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 </head>
 <body>
 
+<div class="notice-modal-backdrop hide" id="release-notice-modal" onclick="if(event.target===this)closeReleaseNotice()">
+  <div class="notice-modal-card">
+    <div class="notice-modal-badge">업데이트 안내</div>
+    <div class="notice-modal-title">오늘급식 오류 수정 안내</div>
+    <div class="notice-modal-copy">학교 변경 등의 에러를 수정하였습니다.</div>
+    <div class="notice-modal-date">2026. 6. 24.</div>
+    <button class="notice-modal-confirm" onclick="closeReleaseNotice()">확인</button>
+  </div>
+</div>
 <!-- ===== 내 학교 설정 바텀시트 ===== -->
 <div class="bottom-sheet" id="school-set-sheet">
   <div class="bs-handle"></div>
@@ -546,6 +564,21 @@ const rpc = async (fn, body = {}) => {
   return text ? JSON.parse(text) : null;
 };
 
+
+// ===== RELEASE NOTICE =====
+const RELEASE_NOTICE_KEY = 'release_notice_20260624_school_fix_v2';
+function showReleaseNotice() {
+  const modal = document.getElementById('release-notice-modal');
+  if (!modal) return;
+  try {
+    if (localStorage.getItem(RELEASE_NOTICE_KEY)) return;
+  } catch (e) {}
+  modal.classList.remove('hide');
+}
+function closeReleaseNotice() {
+  try { localStorage.setItem(RELEASE_NOTICE_KEY, '1'); } catch (e) {}
+  document.getElementById('release-notice-modal')?.classList.add('hide');
+}
 // ===== USER KEY (스팸 방지 + 브라우저 사용자 식별) =====
 // 기존 canvas/screen 기반 식별값은 같은 기종·브라우저에서 충돌할 수 있어
 // 타인의 학교 설정이 내 학교처럼 보이는 문제가 발생할 수 있다.
@@ -2548,6 +2581,7 @@ async function handleUrlParam() {
 }
 
 // 카카오맵은 지도 탭 진입 시 동적으로 로드한다.
+setTimeout(showReleaseNotice, 800);
 init().then(() => handleUrlParam());
 </script>
 </body>
