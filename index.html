@@ -1623,7 +1623,7 @@ function setRankFilter(f, el) {
 }
 async function loadFullRanking() {
   const dateStr = fmtDate(rankDate);
-  let query = `meals?meal_date=eq.${dateStr}&order=auto_score.desc&limit=30&select=id,auto_score,auto_rank,menu,school_id,schools(id,name,type,atpt_code,school_code,address)`;
+  let query = `meals?meal_date=eq.${dateStr}&order=auto_score.desc&limit=30&select=id,auto_score,auto_rank,menu,school_id,schools!inner(id,name,type,atpt_code,school_code,address)`;
   if (rankFilter === 'elem') query += '&schools.type=ilike.*초등*';
   else if (rankFilter === 'mid') query += '&schools.type=ilike.*중학*';
   else if (rankFilter === 'high') query += '&schools.type=ilike.*고등*';
@@ -2055,7 +2055,7 @@ async function init() {
   document.getElementById('stat-meals').textContent = mealCount > 0 ? mealCount.toLocaleString() : '-';
   document.getElementById('stat-ratings').textContent = ratingCount > 0 ? ratingCount.toLocaleString() : '0';
   // 오늘 랭킹 TOP5
-  const todayMeals = await sb(`meals?meal_date=eq.${fmtDate(mealDate)}&order=auto_score.desc&limit=5&select=auto_score,auto_rank,menu,schools(id,name,type)`);
+  const todayMeals = await sb(`meals?meal_date=eq.${fmtDate(mealDate)}&order=auto_score.desc&limit=5&select=auto_score,auto_rank,menu,schools!inner(id,name,type)`);
   if (todayMeals && todayMeals.length > 0) {
     document.getElementById('today-ranking').innerHTML = todayMeals.map((m, i) => {
       const numCls = i < 3 ? `rank-${i+1}` : '';
