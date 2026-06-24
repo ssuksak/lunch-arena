@@ -78,9 +78,9 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .msc-change{font-size:12px;font-weight:700;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:4px 10px;cursor:pointer;color:white}
 .msc-name{font-size:20px;font-weight:900;letter-spacing:-.5px;margin-bottom:4px}
 .msc-type{font-size:13px;opacity:.75}
-.msc-score-row{display:flex;align-items:center;gap:10px;margin-top:14px}
-.msc-score{font-size:42px;font-weight:900;line-height:1}
-.msc-rank-badge{font-size:13px;font-weight:800;background:rgba(255,255,255,0.2);border-radius:8px;padding:6px 12px}
+.msc-score-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.msc-score{font-size:42px;font-weight:900;line-height:1}.msc-score-unit{font-size:14px;font-weight:800;opacity:.72;margin-left:2px}
+.msc-rank-badge{font-size:13px;font-weight:800;background:rgba(255,255,255,0.2);border-radius:8px;padding:6px 12px}.msc-meal-label{font-size:12px;font-weight:900;background:rgba(255,255,255,0.16);border:1px solid rgba(255,255,255,0.18);border-radius:999px;padding:5px 9px}.my-school-meal-compact .meal-score-row{display:none}.my-school-meal-compact .meal-card{margin-top:-2px}
 .msc-streak{display:inline-flex;align-items:center;gap:4px;background:rgba(212,255,79,0.25);border:1px solid rgba(212,255,79,0.5);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:800;color:var(--neon);margin-top:8px}
 
 /* 스탯 */
@@ -100,6 +100,10 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .meal-score-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed var(--border)}
 .meal-score-big{font-size:36px;font-weight:900}
 .meal-rank-badge{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:800}
+.meal-type-tabs{display:flex;gap:4px;margin-bottom:12px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:4px}
+.meal-type-tab{flex:1;border:0;background:transparent;border-radius:9px;padding:8px 10px;font-family:inherit;font-size:13px;font-weight:800;color:var(--text3);cursor:pointer}
+.meal-type-tab.active{background:var(--surface);color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.meal-type-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:999px;background:var(--blue-l);color:var(--blue);font-size:12px;font-weight:900;margin-bottom:10px}
 .rank-s{background:linear-gradient(135deg,#ffd700,#ffb300);color:#7c5800}
 .rank-a{background:var(--purple-l);color:var(--purple)}
 .rank-b{background:var(--blue-l);color:var(--blue)}
@@ -129,9 +133,14 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 /* 평가 */
 .rating-section{background:var(--surface);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border:1.5px solid var(--border);margin-bottom:14px}
 .rating-title{font-size:15px;font-weight:700;margin-bottom:12px}
-.stars{display:flex;gap:6px;justify-content:center;margin-bottom:12px;padding:8px 0}
-.star{width:36px;height:36px;cursor:pointer;transition:transform .1s;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:8px;background:var(--bg)}
-.star:active{transform:scale(1.15)} .star.filled{background:var(--yellow-l)} .star.empty{opacity:.4}
+.rating-subtitle{font-size:12px;font-weight:800;color:var(--text3);margin:12px 0 7px}
+.rating-menu-picks{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.rating-menu-pick{border:1.5px solid var(--border);background:var(--bg);color:var(--text2);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rating-menu-pick.selected{border-color:var(--blue);background:var(--blue-l);color:var(--blue)}
+.stars{display:grid;grid-template-columns:repeat(5,40px);gap:8px;justify-content:center;margin-bottom:12px;padding:8px 0;align-items:center}
+.star{width:40px;height:40px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:10px;background:var(--bg);padding:0;margin:0;font-family:inherit;line-height:1;vertical-align:top;-webkit-tap-highlight-color:transparent}
+.star-icon{display:block;width:24px;height:24px;line-height:24px;font-size:22px;text-align:center;transition:transform .1s,filter .12s;transform-origin:center center}
+.star:active .star-icon{transform:scale(1.12)} .star.filled{background:var(--yellow-l)} .star.filled .star-icon{filter:saturate(1.25)} .star.star-empty .star-icon{opacity:.42}
 .comment-input{width:100%;padding:12px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;resize:none;height:44px}
 .comment-input:focus{outline:none;border-color:var(--blue)}
 /* 사진 업로드 */
@@ -145,29 +154,34 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .btn-rate:active{opacity:.85} .btn-rate:disabled{background:var(--text4);cursor:not-allowed}
 
 /* 리뷰 */
-.review-item{padding:12px 0;border-bottom:1px solid var(--border)}
+.review-item{padding:14px 0;border-bottom:1px solid var(--border)}
 .review-item:last-child{border-bottom:none}
-.review-header{display:flex;align-items:center;gap:6px;font-size:13px}
-.review-stars{color:var(--yellow)} .review-time{color:var(--text3);margin-left:auto;font-size:11px}
-.review-school{font-size:13px;font-weight:800;color:var(--text);cursor:pointer}
+.review-top-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+.review-identity{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.review-time{color:var(--text3);font-size:12px;line-height:1.35;white-space:nowrap;padding-top:1px}
+.review-school{font-size:14px;font-weight:900;color:var(--text);cursor:pointer;line-height:1.35;min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:keep-all}
 .review-school:active{color:var(--blue)}
-.review-nick{font-size:12px;font-weight:800;color:var(--purple);background:var(--purple-l);padding:2px 7px;border-radius:8px;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.review-meal{margin-top:5px;font-size:12px;color:var(--text3);line-height:1.4;background:var(--bg);border-radius:8px;padding:7px 9px}
-.review-meal-date{font-weight:800;color:var(--text2);margin-right:4px}
-.review-text{font-size:13px;color:var(--text2);margin-top:6px;line-height:1.45}
-.review-photo{margin-top:6px;border-radius:8px;max-width:200px;max-height:150px;object-fit:cover}
+.review-nick{font-size:12px;font-weight:900;color:var(--purple);background:var(--purple-l);padding:3px 8px;border-radius:9px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.review-meal{margin-top:8px;background:var(--bg);border-radius:10px;padding:8px 10px}
+.review-meal-line{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.review-meal-meta{font-size:13px;font-weight:900;color:var(--text2);line-height:1.35;min-width:0;overflow-wrap:anywhere;word-break:keep-all}
+.review-stars{display:flex;align-items:center;gap:1px;color:var(--yellow);font-size:17px;line-height:1;white-space:nowrap;flex-shrink:0;padding-top:1px}
+.review-menu-preview{margin-top:4px;font-size:13px;color:var(--text3);line-height:1.45;overflow-wrap:anywhere;word-break:keep-all}
+.review-picked-menu{display:inline-flex;align-items:center;gap:4px;margin-top:7px;background:var(--yellow-l);color:var(--text);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:800;max-width:100%;overflow-wrap:anywhere;word-break:keep-all}
+.review-text{font-size:13px;color:var(--text2);margin-top:7px;line-height:1.45;overflow-wrap:anywhere;word-break:keep-all}
+.review-photo{margin-top:7px;border-radius:8px;max-width:200px;max-height:150px;object-fit:cover}
 .review-actions{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
 .review-action-btn{border:1px solid var(--border);background:var(--bg);border-radius:10px;padding:6px 9px;font-size:12px;font-weight:800;color:var(--text2);font-family:inherit;cursor:pointer}
 .review-action-btn.selected{background:var(--blue-l);border-color:var(--blue);color:var(--blue)}
 .review-comments{margin-top:10px;background:var(--bg);border-radius:12px;padding:8px 10px}
-.review-comment{padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;color:var(--text2);line-height:1.4}
+.review-comment{padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;color:var(--text2);line-height:1.4;overflow-wrap:anywhere}
 .review-comment:last-child{border-bottom:none}
 .review-comment-nick{font-weight:900;color:var(--text);margin-right:5px}
 .review-comment-time{font-size:10px;color:var(--text3);margin-left:4px}
 .review-comment-form{display:flex;gap:6px;margin-top:8px}
 .review-comment-input{flex:1;min-width:0;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 9px;font-size:12px;font-family:inherit;color:var(--text)}
 .review-comment-input:focus{outline:none;border-color:var(--blue)}
-.review-comment-submit{border:none;background:var(--blue);color:white;border-radius:9px;padding:0 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer}
+.review-comment-submit{border:none;background:var(--blue);color:white;border-radius:9px;padding:0 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer}.review-comment-submit:disabled{background:var(--text4);cursor:not-allowed}
 /* 지도 */
 .kakao-map-wrap{position:relative;width:100%;height:calc(100vh - 56px - 80px)}
 #kakao-map{width:100%;height:100%;filter:saturate(0.45) brightness(1.1) contrast(0.9) sepia(0.15)}
@@ -245,6 +259,26 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .vote-winner{text-align:center;font-size:15px;font-weight:800;margin-top:8px}
 .vote-share-btn{width:100%;margin-top:10px;padding:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--text2)}
 
+/* 학교 변경 광고 확인 */
+.ad-modal-backdrop{position:fixed;inset:0;z-index:520;background:rgba(25,31,40,.48);display:flex;align-items:center;justify-content:center;padding:24px}
+.ad-modal-card{width:100%;max-width:360px;background:var(--surface);border-radius:18px;padding:18px;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.ad-modal-title{font-size:17px;font-weight:900;margin-bottom:6px}
+.ad-modal-copy{font-size:13px;color:var(--text3);line-height:1.45;margin-bottom:12px}
+.ad-preview{height:118px;border:1.5px dashed var(--border);border-radius:14px;background:linear-gradient(135deg,var(--yellow-l),var(--blue-l));display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);font-size:13px;font-weight:800;margin-bottom:12px}
+.ad-modal-actions{display:flex;gap:8px}
+.ad-modal-actions button{flex:1;border:none;border-radius:12px;padding:12px 10px;font-family:inherit;font-size:13px;font-weight:900;cursor:pointer}
+.ad-cancel{background:var(--bg);color:var(--text3);border:1px solid var(--border)!important}
+.ad-confirm{background:var(--blue);color:white}
+
+/* 업데이트 공지 */
+.notice-modal-backdrop{position:fixed;inset:0;z-index:540;background:rgba(25,31,40,.46);display:flex;align-items:center;justify-content:center;padding:24px}
+.notice-modal-card{width:100%;max-width:340px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--shadow-lg)}
+.notice-modal-badge{display:inline-flex;align-items:center;background:var(--blue-l);color:var(--blue);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900;margin-bottom:10px}
+.notice-modal-title{font-size:18px;font-weight:900;letter-spacing:-.3px;margin-bottom:8px}
+.notice-modal-copy{font-size:14px;color:var(--text2);line-height:1.5;margin-bottom:8px;overflow-wrap:anywhere;word-break:keep-all}
+.notice-modal-date{font-size:12px;color:var(--text3);font-weight:800;margin-bottom:16px}
+.notice-modal-confirm{width:100%;border:none;border-radius:12px;background:var(--blue);color:white;padding:13px 12px;font-size:14px;font-weight:900;font-family:inherit;cursor:pointer}
+.notice-modal-confirm:active{opacity:.86}
 /* 랭킹 */
 .ranking-card{background:var(--surface);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border:1.5px solid var(--border);cursor:pointer}
 .ranking-card:active{background:var(--bg)}
@@ -318,6 +352,15 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 </head>
 <body>
 
+<div class="notice-modal-backdrop hide" id="release-notice-modal" onclick="if(event.target===this)closeReleaseNotice()">
+  <div class="notice-modal-card">
+    <div class="notice-modal-badge">업데이트 안내</div>
+    <div class="notice-modal-title">오늘급식 오류 수정 안내</div>
+    <div class="notice-modal-copy">학교 변경 등의 에러를 수정하였습니다.</div>
+    <div class="notice-modal-date">2026. 6. 24.</div>
+    <button class="notice-modal-confirm" onclick="closeReleaseNotice()">확인</button>
+  </div>
+</div>
 <!-- ===== 내 학교 설정 바텀시트 ===== -->
 <div class="bottom-sheet" id="school-set-sheet">
   <div class="bs-handle"></div>
@@ -347,6 +390,20 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   </div>
 </div>
 
+
+<div class="ad-modal-backdrop hide" id="school-change-ad-modal">
+  <div class="ad-modal-card">
+    <div class="ad-modal-title">학교 변경 횟수를 모두 썼어요</div>
+    <div class="ad-modal-copy" id="school-change-ad-copy">이번 달 학교 변경은 3회까지 바로 가능해요. 광고를 확인하면 한 번 더 변경할 수 있어요.</div>
+    <div class="ad-preview">
+      <div>광고 영역<br><span style="font-size:11px;color:var(--text3);font-weight:700">확인 후 학교 변경 계속하기</span></div>
+    </div>
+    <div class="ad-modal-actions">
+      <button class="ad-cancel" onclick="cancelSchoolChangeAd()">취소</button>
+      <button class="ad-confirm" onclick="confirmSchoolChangeAd()">광고 확인 완료</button>
+    </div>
+  </div>
+</div>
 <!-- ===== 배틀 상대 변경 바텀시트 ===== -->
 <div class="bottom-sheet" id="battle-opp-sheet">
   <div class="bs-handle"></div>
@@ -400,6 +457,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
       <div class="stat-card clickable" onclick="toggleLatestReviews()"><div class="stat-num" id="stat-ratings">-</div><div class="stat-label">리뷰</div></div>
     </div>
     <div id="latest-reviews-wrap"></div>
+    <div class="section-title">🔥 이번 달 리뷰 참여왕</div>
+    <div id="monthly-engagement-ranking"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">참여 랭킹 준비 중...</div></div></div>
     <!-- 오늘 급식왕 -->
     <div class="section-title">🏆 오늘의 급식왕 <span class="section-more" onclick="switchTab('ranking')">더보기</span></div>
     <div id="today-ranking"><div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">랭킹 준비 중...</div></div></div>
@@ -474,7 +533,6 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <!-- 사진 input (hidden) -->
 <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="onPhotoSelected(this)">
 
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=9b2d956d02e8bd8ad58de3641a8c8c62&libraries=services,clusterer&autoload=false"></script>
 <script>
 // ===== CONFIG =====
 const SUPABASE_URL = 'https://puwthqzbounohrdmacgo.supabase.co';
@@ -489,38 +547,69 @@ const sb = (path, opts = {}) => {
 const edge = (fn, body) => fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
 }).then(r => r.json());
+const rpc = async (fn, body = {}) => {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    const err = new Error(text || `${fn} failed`);
+    err.status = res.status;
+    err.body = text;
+    throw err;
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+};
 
-// ===== CLIENT ID (스팸 방지 + 브라우저 사용자 식별) =====
-// 기존 canvas/screen 기반 fingerprint는 같은 기종·브라우저에서 충돌할 수 있어
+
+// ===== RELEASE NOTICE =====
+const RELEASE_NOTICE_KEY = 'release_notice_20260624_school_fix_v2';
+function showReleaseNotice() {
+  const modal = document.getElementById('release-notice-modal');
+  if (!modal) return;
+  try {
+    if (localStorage.getItem(RELEASE_NOTICE_KEY)) return;
+  } catch (e) {}
+  modal.classList.remove('hide');
+}
+function closeReleaseNotice() {
+  try { localStorage.setItem(RELEASE_NOTICE_KEY, '1'); } catch (e) {}
+  document.getElementById('release-notice-modal')?.classList.add('hide');
+}
+// ===== USER KEY (스팸 방지 + 브라우저 사용자 식별) =====
+// 기존 canvas/screen 기반 식별값은 같은 기종·브라우저에서 충돌할 수 있어
 // 타인의 학교 설정이 내 학교처럼 보이는 문제가 발생할 수 있다.
 // localStorage에 저장되는 랜덤 ID를 사용해 기기별로만 안정적으로 식별한다.
-function getFingerprint() {
-  let fp = localStorage.getItem('arena_fp');
-  const isRandomClientId = fp && fp.startsWith('cid_');
+function getLocalClientId() {
+  let clientId = localStorage.getItem('arena_fp');
+  const isRandomClientId = clientId && clientId.startsWith('cid_');
   if (!isRandomClientId) {
     const bytes = new Uint8Array(16);
     if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
     else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
     const randomPart = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-    fp = 'cid_' + randomPart;
-    localStorage.setItem('arena_fp', fp);
+    clientId = 'cid_' + randomPart;
+    localStorage.setItem('arena_fp', clientId);
 
-    // 구 fingerprint 시절에 서버/로컬에 잘못 동기화된 학교가 남아있을 수 있어
+    // 구 식별값 시절에 서버/로컬에 잘못 동기화된 학교가 남아있을 수 있어
     // 한 번만 학교 캐시를 비운다. 사용자는 다시 정확한 학교를 선택하면 된다.
     localStorage.removeItem('arena_school');
     localStorage.setItem('arena_fp_migrated_at', new Date().toISOString());
   }
-  return fp;
+  return clientId;
 }
-let FP = null;
+let LOCAL_CLIENT_ID = null;
 
-function getFallbackFingerprint() {
-  if (!FP) FP = getFingerprint();
-  return FP;
+function getFallbackUserKey() {
+  if (!LOCAL_CLIENT_ID) LOCAL_CLIENT_ID = getLocalClientId();
+  return LOCAL_CLIENT_ID;
 }
 
-function getInteractionFingerprint() {
-  return window.USER?.id || getFallbackFingerprint();
+function getInteractionUserKey() {
+  return window.USER?.id || getFallbackUserKey();
 }
 
 // ===== USER IDENTITY (Toss hash key 우선, 랜덤 client id fallback) =====
@@ -544,10 +633,10 @@ async function getUserId() {
       }
     }
   } catch (e) {
-    // 토스앱 밖이거나 SDK 로드 실패 → fingerprint로 폴백
+    // 토스앱 밖이거나 SDK 로드 실패 → localStorage client id로 폴백
   }
   // 2순위: 브라우저 랜덤 client id
-  window.USER = { id: 'fp_' + getFallbackFingerprint(), source: 'fp' };
+  window.USER = { id: 'fp_' + getFallbackUserKey(), source: 'fp' };
   return window.USER;
 }
 
@@ -589,7 +678,7 @@ async function saveNicknameToDb() {
   await getUserId();
   const nick = ensureNickname();
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_hash`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_key`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
@@ -597,7 +686,7 @@ async function saveNicknameToDb() {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
-      body: JSON.stringify({ user_hash: window.USER.id, source: window.USER.source, nickname: nick, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ user_key: window.USER.id, source: window.USER.source, nickname: nick, updated_at: new Date().toISOString() })
     });
     if (!res.ok) return { ok: false, status: res.status, message: await res.text().catch(() => '') };
     return { ok: true };
@@ -626,6 +715,7 @@ async function randomizeNickname() {
 }
 // ===== STATE =====
 let mySchool = null;
+let myMealDate = new Date();
 let mealDate = new Date();
 let rankDate = new Date();
 let rankFilter = 'all';
@@ -633,17 +723,21 @@ let currentSchool = null;
 let userNickname = null;
 let pendingShare = null; // 공유 버튼용 데이터 캐시
 let searchTimer = null;
-let selectedRating = 0;
-let selectedPhotoFile = null;
-let selectedPhotoUrl = null;
 let kakaoMap = null, mapSchools = [], clusterer = null;
 let mapLoaded = false;
+const KAKAO_MAP_SDK_URL = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=9b2d956d02e8bd8ad58de3641a8c8c62&libraries=services,clusterer&autoload=false';
+let kakaoMapSdkPromise = null;
 let latestReviewsVisible = false;
+const SCHOOL_CHANGE_LIMIT_PER_MONTH = 3;
+let schoolChangeAdResolver = null;
 
 // XSS 방어: 사용자 입력값 HTML 이스케이프
 function escapeHtml(s) {
   if (s == null) return '';
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function inlineJsString(s) {
+  return JSON.stringify(String(s ?? '')).replace(/&/g, '\\u0026').replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/"/g, '&quot;');
 }
 
 function fixWeekend(d) {
@@ -651,7 +745,7 @@ function fixWeekend(d) {
   if (d.getDay() === 6) d.setDate(d.getDate() - 1);
   return d;
 }
-fixWeekend(mealDate); fixWeekend(rankDate);
+fixWeekend(myMealDate); fixWeekend(mealDate); fixWeekend(rankDate);
 function fmtDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 function fmtDateKR(d) { const days=['일','월','화','수','목','금','토']; return `${d.getMonth()+1}/${d.getDate()} (${days[d.getDay()]})`; }
 function timeAgo(ts) {
@@ -659,6 +753,15 @@ function timeAgo(ts) {
   if (m < 1) return '방금'; if (m < 60) return m + '분 전';
   const h = Math.floor(m / 60); if (h < 24) return h + '시간 전';
   return Math.floor(h / 24) + '일 전';
+}
+function relativeMealDateLabel(d) {
+  const base = new Date(); base.setHours(0,0,0,0);
+  const target = new Date(d); target.setHours(0,0,0,0);
+  const diff = Math.round((target - base) / 86400000);
+  if (diff === 0) return '오늘';
+  if (diff === 1) return '내일';
+  if (diff === -1) return '어제';
+  return fmtDateKR(d);
 }
 
 // ===== TABS =====
@@ -668,7 +771,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + tab).classList.add('active');
   document.querySelectorAll('.tab-item')[tabOrder[tab]].classList.add('active');
-  if (tab === 'map' && !mapLoaded) { mapLoaded = true; initKakaoMap(); }
+  if (tab === 'map') openMapTab();
   if (tab === 'ranking') { document.getElementById('rank-date').textContent = fmtDateKR(rankDate); loadFullRanking(); }
   if (tab === 'battle') loadBattle();
 }
@@ -680,9 +783,9 @@ async function loadMySchool() {
   ensureNickname();
   applyNickname();
 
-  // 1순위: Supabase에서 user_hash로 조회
+  // 1순위: Supabase에서 user_key로 조회
   try {
-    const rows = await sb(`user_schools?user_hash=eq.${encodeURIComponent(window.USER.id)}&select=*`);
+    const rows = await sb(`user_schools?user_key=eq.${encodeURIComponent(window.USER.id)}&select=*`);
     if (Array.isArray(rows) && rows.length > 0) {
       const r = rows[0];
       if (r.nickname) {
@@ -727,7 +830,7 @@ async function loadMySchool() {
 async function saveMySchoolToDb() {
   if (!window.USER || !mySchool || !mySchool.id) return { ok: true };
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_hash`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_key`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
@@ -736,7 +839,7 @@ async function saveMySchoolToDb() {
         'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
       body: JSON.stringify({
-        user_hash: window.USER.id,
+        user_key: window.USER.id,
         source: window.USER.source,
         school_id: mySchool.id,
         school_name: mySchool.name || null,
@@ -768,13 +871,13 @@ function applyMySchool() {
       <div class="msc-wave"></div>
       <div class="msc-top"><div class="msc-label">${escapeHtml(ensureNickname())}의 학교</div><button class="msc-change" onclick="openSchoolSetSheet()">변경</button></div>
       <div style="font-size:28px;margin-bottom:6px">${s.type?.includes('초')?'🌱':s.type?.includes('중')?'📘':'🎓'}</div>
-      <div class="msc-name">${s.name}</div>
-      <div class="msc-type">${s.type||''} · ${(s.address||'').split(' ').slice(0,2).join(' ')}</div>
-      <div class="msc-score-row"><div class="msc-score" id="msc-score">-</div><div id="msc-rank-badge" class="msc-rank-badge" style="display:none"></div></div>
+      <div class="msc-name">${escapeHtml(s.name)}</div>
+      <div class="msc-type">${escapeHtml(s.type||'')} · ${escapeHtml((s.address||'').split(' ').slice(0,2).join(' '))}</div>
+      <div class="msc-score-row"><div><span class="msc-score" id="msc-score">-</span><span class="msc-score-unit">점</span></div><div id="msc-rank-badge" class="msc-rank-badge" style="display:none"></div><div id="msc-meal-label" class="msc-meal-label" style="display:none"></div></div>
       <div id="msc-streak" style="display:none" class="msc-streak"></div>
     </div>`;
   const ab = document.getElementById('appbar-school');
-  ab.textContent = s.name;
+  ab.textContent = s.name || '';
   ab.style.background = 'var(--green-l)';
   ab.style.color = 'var(--green)';
   loadMySchoolMeal();
@@ -793,18 +896,69 @@ async function openSchoolSetSheet() {
 function closeSchoolSetSheet() {
   document.getElementById('school-set-sheet').classList.remove('show');
 }
+function monthStartString(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+}
+async function getMonthlySchoolChangeCount() {
+  await getUserId();
+  const count = await rpc('get_monthly_school_change_count', { p_user_key: window.USER.id, p_month_start: monthStartString() });
+  return Number(count || 0);
+}
+function showSchoolChangeAd(count) {
+  const modal = document.getElementById('school-change-ad-modal');
+  const copy = document.getElementById('school-change-ad-copy');
+  if (copy) copy.textContent = `이번 달 학교 변경 ${count}회를 사용했어요. 광고를 확인하면 추가 변경을 계속할 수 있어요.`;
+  modal?.classList.remove('hide');
+  return new Promise(resolve => { schoolChangeAdResolver = resolve; });
+}
+function closeSchoolChangeAd(ok) {
+  document.getElementById('school-change-ad-modal')?.classList.add('hide');
+  const resolve = schoolChangeAdResolver;
+  schoolChangeAdResolver = null;
+  if (resolve) resolve(ok);
+}
+function confirmSchoolChangeAd() { closeSchoolChangeAd(true); }
+function cancelSchoolChangeAd() { closeSchoolChangeAd(false); }
+async function changeMySchoolToDb(s, adConfirmed = false) {
+  await getUserId();
+  return rpc('change_user_school', {
+    p_user_key: window.USER.id,
+    p_source: window.USER.source,
+    p_school_id: s.id,
+    p_nickname: ensureNickname(),
+    p_ad_confirmed: adConfirmed
+  });
+}
+async function confirmSchoolChangeIfNeeded() {
+  if (!mySchool || !mySchool.id) return { ok: true, adConfirmed: false, count: 0 };
+  const count = await getMonthlySchoolChangeCount();
+  if (count < SCHOOL_CHANGE_LIMIT_PER_MONTH) return { ok: true, adConfirmed: false, count };
+  const adOk = await showSchoolChangeAd(count);
+  return { ok: adOk, adConfirmed: adOk, count };
+}
 async function selectMySchool(s) {
-  // 같은 학교면 그냥 닫기
-  if (mySchool && mySchool.id === s.id) {
+  if (mySchool && String(mySchool.id) === String(s.id)) {
     closeSchoolSetSheet();
     return;
   }
-  mySchool = s;
-  localStorage.setItem('arena_school', JSON.stringify(s));
-  const result = await saveMySchoolToDb();
-  if (!result.ok) console.warn('학교 저장 실패:', result);
-  closeSchoolSetSheet();
-  applyMySchool();
+
+  try {
+    const gate = await confirmSchoolChangeIfNeeded();
+    if (!gate.ok) return;
+
+    await changeMySchoolToDb(s, gate.adConfirmed);
+    mySchool = s;
+    localStorage.setItem('arena_school', JSON.stringify(s));
+    closeSchoolSetSheet();
+    applyMySchool();
+  } catch (e) {
+    console.warn('학교 변경 실패:', e);
+    if (String(e.body || e.message || '').includes('MONTHLY_SCHOOL_CHANGE_LIMIT')) {
+      alert('이번 달 학교 변경 3회를 모두 사용했어요. 광고 확인 후 다시 변경해줘.');
+    } else {
+      alert('학교 변경에 실패했어요. 잠시 후 다시 시도해줘.');
+    }
+  }
 }
 let setSchoolTimer = null;
 async function onSetSchoolSearch(q) {
@@ -942,83 +1096,190 @@ async function generateShareCard(schoolName, score, rank, menu, rankObj) {
   ctx.fillText('ssuksak.github.io/lunch-arena', W/2, 820);
   return canvas.toDataURL('image/png');
 }
+let tossFrameworkPromise = null;
+function loadTossFramework() {
+  if (!tossFrameworkPromise) {
+    tossFrameworkPromise = import('https://esm.sh/@apps-in-toss/web-framework@^2.4.5').catch(() => null);
+  }
+  return tossFrameworkPromise;
+}
+function appDeepLinkForSchool(school) {
+  return school?.id ? `intoss://lunch-arena?school=${encodeURIComponent(school.id)}` : 'intoss://lunch-arena';
+}
+function webShareUrlForSchool(school) {
+  return school?.id ? `https://ssuksak.github.io/lunch-arena/?school=${school.id}` : 'https://ssuksak.github.io/lunch-arena/';
+}
+async function makeShareMessage(school, schoolName, score, rankObj, mealType = '') {
+  let shareLink = webShareUrlForSchool(school);
+  try {
+    const mod = await loadTossFramework();
+    if (mod?.getTossShareLink) {
+      shareLink = await mod.getTossShareLink(appDeepLinkForSchool(school), 'https://ssuksak.github.io/lunch-arena/thumbnail_1932x828.png');
+    }
+  } catch (e) {
+    console.warn('토스 공유 링크 생성 실패:', e);
+  }
+  const mealText = mealType ? `${mealType} ` : '';
+  return `[오늘급식]\n${schoolName} 오늘 ${mealText}급식 ${score}점 · ${rankObj.r}랭크 (${rankObj.l})\n\n우리 학교 급식도 확인해봐!\n${shareLink}`;
+}
 async function shareCurrentCard() {
   if (!pendingShare) return;
-  const { schoolName, score, rankObj, menu } = pendingShare;
+  const { schoolName, score, rankObj, mealTypeLabel } = pendingShare;
   const school = currentSchool || mySchool;
-  const shareUrl = school?.id
-    ? `https://ssuksak.github.io/lunch-arena/?school=${school.id}`
-    : `https://ssuksak.github.io/lunch-arena/`;
+  const message = await makeShareMessage(school, schoolName, score, rankObj, mealTypeLabel);
   try {
-    const dataUrl = await generateShareCard(schoolName, score, null, menu, rankObj);
-    const blob = await (await fetch(dataUrl)).blob();
-    const file = new File([blob], '오늘급식.png', { type: 'image/png' });
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: `${schoolName} 오늘 급식 ${rankObj.r}랭크!`, text: `${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n#오늘급식\n${shareUrl}` });
-    } else {
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `오늘급식_${schoolName}_${score}점.png`;
-      a.click();
+    const mod = await loadTossFramework();
+    if (mod?.share) {
+      await mod.share({ message });
+      return;
     }
-  } catch(e) {
-    // canvas/share 실패 시 링크 복사 fallback
-    const text = `[오늘급식] ${schoolName} 오늘 급식 ${score}점 (${rankObj.l})\n${shareUrl}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      alert('링크가 복사됐어요! 단톡에 붙여넣기 해봐 😊');
-    } catch {
-      alert(`공유할 링크:\n${shareUrl}`);
+  } catch (e) {
+    console.warn('토스 공유 실패:', e);
+  }
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: `${schoolName} 오늘 ${mealTypeLabel ? mealTypeLabel + ' ' : ''}급식 ${rankObj.r}랭크!`, text: message });
+      return;
     }
+  } catch (e) {
+    console.warn('브라우저 공유 실패:', e);
+  }
+  try {
+    await navigator.clipboard.writeText(message);
+    alert('공유 문구가 복사됐어요! 단톡에 붙여넣기 해봐 😊');
+  } catch {
+    alert(`공유할 내용:\n${message}`);
   }
 }
-
-// ===== MY SCHOOL MEAL =====
-async function loadMySchoolMeal() {
-  const wrap = document.getElementById('my-school-meal');
-  wrap.classList.remove('hide');
-  wrap.innerHTML = '<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">오늘 급식 불러오는 중...</div></div>';
-  const today = fmtDate(mealDate);
-  const result = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: today });
-  if (!result.meal) {
-    wrap.innerHTML = `<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>오늘 급식 정보가 없어요</div></div></div>`;
-    document.getElementById('msc-score').textContent = '-';
-    return;
-  }
-  const meal = result.meal;
+const MEAL_TYPE_ORDER = { breakfast: 0, lunch: 1, dinner: 2, snack: 3, other: 4 };
+const MEAL_TYPE_LABELS = { breakfast: '조식', lunch: '중식', dinner: '석식', snack: '간식', other: '기타' };
+const mealPanelState = {};
+function normalizeMealType(meal = {}) {
+  const raw = String(meal.meal_type || '').toLowerCase();
+  if (MEAL_TYPE_LABELS[raw]) return raw;
+  const code = String(meal.neis_meal_code || '').trim();
+  if (code === '1') return 'breakfast';
+  if (code === '2') return 'lunch';
+  if (code === '3') return 'dinner';
+  const label = String(meal.meal_type_label || '').trim();
+  if (label.includes('조')) return 'breakfast';
+  if (label.includes('석')) return 'dinner';
+  if (label.includes('간')) return 'snack';
+  return 'lunch';
+}
+function mealTypeLabel(meal = {}) {
+  return meal.meal_type_label || MEAL_TYPE_LABELS[normalizeMealType(meal)] || '급식';
+}
+function normalizeMealList(result) {
+  const raw = Array.isArray(result?.meals) ? result.meals : (result?.meal ? [result.meal] : []);
+  return raw.map(meal => {
+    const meal_type = normalizeMealType(meal);
+    return { ...meal, meal_type, meal_type_label: meal.meal_type_label || MEAL_TYPE_LABELS[meal_type] || '급식' };
+  }).sort((a, b) => (MEAL_TYPE_ORDER[a.meal_type] ?? 9) - (MEAL_TYPE_ORDER[b.meal_type] ?? 9));
+}
+function mealTypeTabsHtml(scope, meals) {
+  if (!meals || meals.length <= 1) return '';
+  return `<div class="meal-type-tabs">${meals.map((meal, i) => `<button class="meal-type-tab${i === 0 ? ' active' : ''}" data-meal-tab="${scope}" onclick="activateMealPanel('${scope}', ${i})">${escapeHtml(mealTypeLabel(meal))}</button>`).join('')}</div>`;
+}
+function mealCardHtml(meal, footerRight = '', opts = {}) {
   const rank = getRank(meal.auto_score);
-  pendingShare = { schoolName: mySchool.name, score: meal.auto_score, rankObj: rank, menu: meal.menu };
-  // 카드 점수 업데이트
-  const scoreEl = document.getElementById('msc-score');
-  if (scoreEl) scoreEl.textContent = meal.auto_score;
-  const badgeEl = document.getElementById('msc-rank-badge');
-  if (badgeEl) { badgeEl.className = 'msc-rank-badge'; badgeEl.textContent = rank.r + '랭크'; badgeEl.style.display = ''; }
-
-  const scoreColor = meal.auto_score >= 75 ? '#64b5f6' : meal.auto_score >= 55 ? '#69f0ae' : '#ffcc02';
-  const items = meal.menu.map(m => menuItemHtml(m)).join('');
-  wrap.innerHTML = `
-    <div class="meal-card">
+  const scoreColor = meal.auto_score >= 75 ? 'var(--blue)' : meal.auto_score >= 55 ? 'var(--green)' : 'var(--yellow)';
+  const scoreBlock = opts.compact ? '' : `
+      <div class="meal-type-pill">🍽 ${escapeHtml(mealTypeLabel(meal))}</div>
       <div class="meal-score-row">
         <div class="meal-score-big" style="color:${scoreColor}">${meal.auto_score}<span style="font-size:16px;color:var(--text3)">점</span></div>
         <div class="meal-rank-badge ${rank.c}">${rank.r}랭크 · ${rank.l}</div>
-      </div>
-      <ul class="menu-list">${items}</ul>
-      <div class="meal-footer"><span>🔥 ${meal.calories || '?'} kcal</span><span style="font-size:11px">${fmtDateKR(mealDate)}</span></div>
-    </div>
-    <button class="btn-share" onclick="shareCurrentCard()">
-      📤 카드 공유하기 · 단톡에 보내기
-    </button>
-    <div id="ms-rating-wrap"></div>
-    <div id="ms-reviews-wrap"></div>
-  `;
-  renderRating(meal.id, document.getElementById('ms-rating-wrap'));
-  loadReviews(meal.id, document.getElementById('ms-reviews-wrap'));
-  // S/D 랭크 이펙트 (처음 로드 시만)
+      </div>`;
+  return `
+    <div class="meal-card">
+      ${scoreBlock}
+      <ul class="menu-list">${(meal.menu || []).map(m => menuItemHtml(m)).join('')}</ul>
+      <div class="meal-footer"><span>🔥 ${meal.calories || '?'} kcal</span><span>${footerRight}</span></div>
+    </div>`;
+}
+function renderMealPanels(scope, meals, footerRight = '', opts = {}) {
+  return `${mealTypeTabsHtml(scope, meals)}${meals.map((meal, i) => `<div data-meal-panel="${scope}" style="${i === 0 ? '' : 'display:none'}">${mealCardHtml(meal, footerRight, opts)}</div>`).join('')}
+    <button class="btn-share" onclick="shareCurrentCard()">📤 카드 공유하기 · 단톡에 보내기</button>`;
+}
+function setMealPanelState(scope, state) {
+  mealPanelState[scope] = state;
+  activateMealPanel(scope, 0);
+}
+function activateMealPanel(scope, index) {
+  const state = mealPanelState[scope];
+  if (!state) return;
+  const meal = state.meals[index] || state.meals[0];
+  if (!meal) return;
+  document.querySelectorAll(`[data-meal-panel="${scope}"]`).forEach((el, i) => { el.style.display = i === index ? '' : 'none'; });
+  document.querySelectorAll(`[data-meal-tab="${scope}"]`).forEach((el, i) => el.classList.toggle('active', i === index));
+  const rank = getRank(meal.auto_score);
+  pendingShare = { schoolName: state.schoolName, score: meal.auto_score, rankObj: rank, menu: meal.menu, mealTypeLabel: mealTypeLabel(meal) };
+  if (state.updateMySchoolScore) {
+    const scoreEl = document.getElementById('msc-score');
+    if (scoreEl) scoreEl.textContent = meal.auto_score;
+    const badgeEl = document.getElementById('msc-rank-badge');
+    if (badgeEl) { badgeEl.className = 'msc-rank-badge'; badgeEl.textContent = `${rank.r}랭크`; badgeEl.style.display = ''; }
+    const mealLabelEl = document.getElementById('msc-meal-label');
+    if (mealLabelEl) { mealLabelEl.textContent = `${relativeMealDateLabel(state.date || myMealDate)} ${mealTypeLabel(meal)}`; mealLabelEl.style.display = ''; }
+  }
+  if (state.ratingContainerId) renderRating(meal.id, document.getElementById(state.ratingContainerId), meal);
+  if (state.reviewsContainerId) loadReviews(meal.id, document.getElementById(state.reviewsContainerId));
   if (!sessionStorage.getItem('effect_shown_' + meal.id)) {
     if (rank.r === 'S' || rank.r === 'D' || rank.r === 'A') {
       setTimeout(() => showRankEffect(rank.r, meal.auto_score), 600);
       sessionStorage.setItem('effect_shown_' + meal.id, '1');
     }
+  }
+}
+// ===== MY SCHOOL MEAL =====
+function myMealDateNavHtml() {
+  return `<div class="date-nav" style="margin:2px 0 12px">
+    <button class="date-btn" onclick="changeMyMealDate(-1)">&lt;</button>
+    <div class="date-text" id="my-meal-date">${relativeMealDateLabel(myMealDate)} · ${fmtDateKR(myMealDate)}</div>
+    <button class="date-btn" onclick="changeMyMealDate(1)">&gt;</button>
+  </div>`;
+}
+function changeMyMealDate(delta) {
+  myMealDate.setDate(myMealDate.getDate() + delta);
+  const dow = myMealDate.getDay();
+  if (delta > 0) {
+    if (dow === 6) myMealDate.setDate(myMealDate.getDate() + 2);
+    else if (dow === 0) myMealDate.setDate(myMealDate.getDate() + 1);
+  } else {
+    if (dow === 0) myMealDate.setDate(myMealDate.getDate() - 2);
+    else if (dow === 6) myMealDate.setDate(myMealDate.getDate() - 1);
+  }
+  loadMySchoolMeal();
+}
+async function loadMySchoolMeal() {
+  const wrap = document.getElementById('my-school-meal');
+  wrap.classList.remove('hide');
+  wrap.classList.add('my-school-meal-compact');
+  wrap.innerHTML = `${myMealDateNavHtml()}<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">급식 불러오는 중...</div></div>`;
+  try {
+    const targetDate = fmtDate(myMealDate);
+    const result = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: targetDate });
+    const meals = normalizeMealList(result);
+    if (!meals.length) {
+      wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>${relativeMealDateLabel(myMealDate)} 급식 정보가 없어요</div></div></div>`;
+      document.getElementById('msc-score').textContent = '-';
+      document.getElementById('msc-meal-label').style.display = 'none';
+      return;
+    }
+    wrap.innerHTML = `${myMealDateNavHtml()}${renderMealPanels('my-school', meals, fmtDateKR(myMealDate), { compact: true })}<div id="ms-rating-wrap"></div><div id="ms-reviews-wrap"></div>`;
+    setMealPanelState('my-school', {
+      schoolName: mySchool.name,
+      meals,
+      ratingContainerId: 'ms-rating-wrap',
+      reviewsContainerId: 'ms-reviews-wrap',
+      updateMySchoolScore: true,
+      date: new Date(myMealDate)
+    });
+  } catch (e) {
+    console.warn('내 학교 급식 불러오기 실패:', e);
+    document.getElementById('msc-score').textContent = '-';
+    document.getElementById('msc-meal-label').style.display = 'none';
+    wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>급식 정보를 불러오지 못했어요</div><button class="btn-secondary" style="margin-top:10px" onclick="loadMySchoolMeal()">다시 시도</button></div></div>`;
   }
 }
 async function loadMySchoolStats() {
@@ -1066,7 +1327,7 @@ function renderSchoolDetail() {
     <div class="school-detail">
       <div class="sd-header">
         <div class="sd-icon" style="background:${bgCls}">${icon}</div>
-        <div><div class="sd-name">${s.name}</div><div class="sd-meta">${s.type||''} · ${s.address||''}</div></div>
+        <div><div class="sd-name">${escapeHtml(s.name)}</div><div class="sd-meta">${escapeHtml(s.type||'')} · ${escapeHtml(s.address||'')}</div></div>
         <button class="sd-close" onclick="document.getElementById('school-detail-wrap').innerHTML=''">✕</button>
       </div>
       <div class="date-nav">
@@ -1097,37 +1358,29 @@ async function loadDetailMeal() {
   const mc = document.getElementById('detail-meal-content');
   if (!mc) return;
   mc.innerHTML = '<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">급식 불러오는 중...</div></div>';
-  const s = currentSchool;
-  const result = await edge('sync-meals', { atpt_code: s.atpt_code, school_code: s.school_code, date: fmtDate(mealDate) });
-  if (!result.meal) {
-    mc.innerHTML = `<div class="empty"><div class="empty-emoji">😢</div><div>이 날은 급식 정보가 없어요</div></div>`;
-    document.getElementById('detail-rating-wrap').innerHTML = '';
-    return;
-  }
-  const meal = result.meal;
-  const rank = getRank(meal.auto_score);
-  pendingShare = { schoolName: currentSchool.name, score: meal.auto_score, rankObj: rank, menu: meal.menu };
-  const scoreColor = meal.auto_score >= 75 ? 'var(--blue)' : meal.auto_score >= 55 ? 'var(--green)' : 'var(--yellow)';
-  mc.innerHTML = `
-    <div class="meal-score-row">
-      <div class="meal-score-big" style="color:${scoreColor}">${meal.auto_score}<span style="font-size:16px;color:var(--text3)">점</span></div>
-      <div class="meal-rank-badge ${rank.c}">${rank.r}랭크 · ${rank.l}</div>
-    </div>
-    <ul class="menu-list">${meal.menu.map(m => menuItemHtml(m)).join('')}</ul>
-    <div class="meal-footer"><span>🔥 ${meal.calories||'?'} kcal</span><span>${result.cached?'캐시됨':'방금 조회'}</span></div>
-    <button class="btn-share" style="margin-top:14px" onclick="shareCurrentCard()">
-      📤 카드 공유하기 · 단톡에 보내기
-    </button>
-  `;
-  renderRating(meal.id, document.getElementById('detail-rating-wrap'));
-  if (!sessionStorage.getItem('effect_shown_' + meal.id)) {
-    if (rank.r === 'S' || rank.r === 'D' || rank.r === 'A') {
-      setTimeout(() => showRankEffect(rank.r, meal.auto_score), 600);
-      sessionStorage.setItem('effect_shown_' + meal.id, '1');
+  try {
+    const s = currentSchool;
+    const result = await edge('sync-meals', { atpt_code: s.atpt_code, school_code: s.school_code, date: fmtDate(mealDate) });
+    const meals = normalizeMealList(result);
+    if (!meals.length) {
+      mc.innerHTML = `<div class="empty"><div class="empty-emoji">😢</div><div>이 날은 급식 정보가 없어요</div></div>`;
+      document.getElementById('detail-rating-wrap').innerHTML = '';
+      return;
     }
+    mc.innerHTML = renderMealPanels('detail', meals, result.cached ? '캐시됨' : '방금 조회');
+    setMealPanelState('detail', {
+      schoolName: currentSchool.name,
+      meals,
+      ratingContainerId: 'detail-rating-wrap',
+      reviewsContainerId: null,
+      updateMySchoolScore: false
+    });
+  } catch (e) {
+    console.warn('상세 급식 불러오기 실패:', e);
+    document.getElementById('detail-rating-wrap').innerHTML = '';
+    mc.innerHTML = `<div class="empty"><div class="empty-emoji">😢</div><div>급식 정보를 불러오지 못했어요</div><button class="btn-secondary" style="margin-top:10px" onclick="loadDetailMeal()">다시 시도</button></div>`;
   }
 }
-
 // ===== MEAL HELPERS =====
 const POPULAR=['치킨','피자','떡볶이','햄버거','돈까스','돈가스','카레','짜장','탕수육','제육','불고기','갈비','스파게티','파스타','라면','순대','핫도그','너겟'];
 const DESSERTS=['케이크','아이스크림','푸딩','젤리','요구르트','요거트','딸기','귤','사과','바나나','포도','수박','초코','쿠키','빵','주스','우유'];
@@ -1137,14 +1390,14 @@ function menuItemHtml(m) {
   for(const p of POPULAR){if(m.includes(p)){tag='<span class="tag tag-pop">인기</span>';break;}}
   if(!tag)for(const d of DESSERTS){if(m.includes(d)){tag='<span class="tag tag-des">후식</span>';break;}}
   if(!tag)for(const h of HEALTHY){if(m.includes(h)){tag='<span class="tag tag-hlt">건강</span>';break;}}
-  return `<li${tag?' class="hl"':''}>${m} ${tag}</li>`;
+  return `<li${tag?' class="hl"':''}>${escapeHtml(m)} ${tag}</li>`;
 }
 function schoolItemHtml(s, onclick) {
   const cls = s.type?.includes('초') ? 'elem' : s.type?.includes('중') ? 'mid' : 'high';
   const emoji = s.type?.includes('초') ? '🌱' : s.type?.includes('중') ? '📘' : '🎓';
   return `<div class="sr-item" onclick="${onclick}">
     <div class="sr-icon ${cls}">${emoji}</div>
-    <div class="sr-info"><div class="sr-name">${s.name}</div><div class="sr-addr">${s.address||''}</div></div>
+    <div class="sr-info"><div class="sr-name">${escapeHtml(s.name)}</div><div class="sr-addr">${escapeHtml(s.address||'')}</div></div>
   </div>`;
 }
 function getRank(s) {
@@ -1157,10 +1410,41 @@ function getRank(s) {
 
 // ===== RATING =====
 // wrap: DOM element (my school meal div) or {rating, reviews} object
-function renderRating(mealId, targetEl) {
+const ratingStates = {};
+let currentRatingMealId = null;
+function getRatingState(mealId) {
+  if (!ratingStates[mealId]) ratingStates[mealId] = { score: 0, selectedMenuItem: '', photoFile: null, photoUrl: null, menus: [], schoolId: null };
+  return ratingStates[mealId];
+}
+function canWriteReviewForSchool(schoolId) {
+  return !!(schoolId && mySchool?.id && String(mySchool.id) === String(schoolId));
+}
+function reviewWriteBlockedHtml(schoolId) {
+  return `<div class="rating-section" style="text-align:center">
+    <div style="font-size:32px;margin-bottom:8px">🔒</div>
+    <div style="font-size:15px;font-weight:800">내 학교 사용자만 리뷰를 쓸 수 있어요</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:6px;line-height:1.45">이 학교를 내 학교로 등록한 뒤 리뷰를 남길 수 있어요.</div>
+    <button class="btn-rate" style="margin-top:14px" onclick="openSchoolSetSheet()">내 학교 설정하기</button>
+  </div>`;
+}
+function resetRatingState(mealId, meal = null) {
+  const state = getRatingState(mealId);
+  state.score = 0;
+  state.selectedMenuItem = '';
+  state.photoFile = null;
+  state.photoUrl = null;
+  state.menus = Array.isArray(meal?.menu) ? meal.menu.map(x => String(x || '').trim()).filter(Boolean) : [];
+  state.schoolId = meal?.school_id || meal?.schools?.id || currentSchool?.id || mySchool?.id || null;
+  return state;
+}
+function renderRating(mealId, targetEl, meal = null) {
   if (!targetEl) return;
-  selectedRating = 0; selectedPhotoFile = null; selectedPhotoUrl = null;
+  resetRatingState(mealId, meal);
   const alreadyRated = localStorage.getItem(`rated_${mealId}`);
+  if (!alreadyRated && !canWriteReviewForSchool(getRatingState(mealId).schoolId)) {
+    targetEl.innerHTML = reviewWriteBlockedHtml(getRatingState(mealId).schoolId);
+    return;
+  }
   targetEl.innerHTML = alreadyRated ? `
     <div class="rating-section" style="text-align:center">
       <div style="font-size:32px;margin-bottom:8px">✅</div>
@@ -1169,9 +1453,11 @@ function renderRating(mealId, targetEl) {
     </div>` :
   `<div class="rating-section" id="rating-box-${mealId}">
     <div class="rating-title">오늘 급식 어땠어?</div>
+    <div class="rating-subtitle">총별점</div>
     <div class="stars" id="stars-${mealId}">
-      ${[1,2,3,4,5].map(i => `<span class="star empty" onclick="setRating(${i},${mealId})">⭐</span>`).join('')}
+      ${[1,2,3,4,5].map(i => `<button type="button" class="star star-empty" onclick="setRating(${i},${mealId})" aria-label="${i}점"><span class="star-icon">⭐</span></button>`).join('')}
     </div>
+    ${ratingMenuPickerHtml(mealId)}
     <textarea class="comment-input" id="comment-${mealId}" placeholder="한줄평 (선택, 100자)"></textarea>
     <div class="photo-upload">
       <label class="photo-label" for="photo-input" onclick="currentRatingMealId=${mealId}">
@@ -1184,21 +1470,50 @@ function renderRating(mealId, targetEl) {
     </div>
     <button class="btn-rate" id="btn-rate-${mealId}" onclick="submitRating(${mealId})" disabled>별점을 선택해주세요</button>
   </div>`;
+  updateRatingSubmitState(mealId);
 }
-let currentRatingMealId = null;
-function setRating(n, mealId) {
-  selectedRating = n;
-  document.querySelectorAll(`#stars-${mealId} .star`).forEach((s, i) => {
-    s.classList.toggle('filled', i < n); s.classList.toggle('empty', i >= n);
-  });
+function ratingMenuPickerHtml(mealId) {
+  const menus = getRatingState(mealId).menus.slice(0, 12);
+  if (!menus.length) return '';
+  return `<div class="rating-subtitle">가장 기억나는 메뉴 하나 골라줘</div><div class="rating-menu-picks" id="menu-picks-${mealId}">${menus.map((item, idx) => `<button type="button" class="rating-menu-pick" onclick="selectReviewMenu(${mealId}, ${idx})">${escapeHtml(item)}</button>`).join('')}</div>`;
+}
+function selectReviewMenu(mealId, idx) {
+  const state = getRatingState(mealId);
+  state.selectedMenuItem = state.menus[idx] || '';
+  document.querySelectorAll(`#menu-picks-${mealId} .rating-menu-pick`).forEach((btn, i) => btn.classList.toggle('selected', i === idx));
+  updateRatingSubmitState(mealId);
+}
+function updateRatingSubmitState(mealId) {
   const btn = document.getElementById(`btn-rate-${mealId}`);
-  if (btn) { btn.disabled = false; btn.textContent = `${n}점으로 평가하기`; }
+  if (!btn) return;
+  const state = getRatingState(mealId);
+  const needsMenu = state.menus.length > 0;
+  if (!state.score) {
+    btn.disabled = true;
+    btn.textContent = '별점을 선택해주세요';
+  } else if (needsMenu && !state.selectedMenuItem) {
+    btn.disabled = true;
+    btn.textContent = '대표 메뉴를 골라주세요';
+  } else {
+    btn.disabled = false;
+    btn.textContent = `${state.score}점으로 평가하기`;
+  }
+}
+function setRating(n, mealId) {
+  const state = getRatingState(mealId);
+  state.score = n;
+  document.querySelectorAll(`#stars-${mealId} .star`).forEach((s, i) => {
+    s.classList.toggle('filled', i < n); s.classList.toggle('star-empty', i >= n);
+  });
+  updateRatingSubmitState(mealId);
 }
 function onPhotoSelected(input) {
   const file = input.files[0];
   if (!file) return;
-  selectedPhotoFile = file;
   const mid = currentRatingMealId;
+  if (!mid) return;
+  const state = getRatingState(mid);
+  state.photoFile = file;
   const reader = new FileReader();
   reader.onload = e => {
     const prev = document.getElementById(`photo-prev-${mid}`);
@@ -1208,61 +1523,84 @@ function onPhotoSelected(input) {
   reader.readAsDataURL(file);
 }
 function removePhoto(mealId) {
-  selectedPhotoFile = null; selectedPhotoUrl = null;
+  const state = getRatingState(mealId);
+  state.photoFile = null;
+  state.photoUrl = null;
   const prev = document.getElementById(`photo-prev-${mealId}`);
   if (prev) prev.style.display = 'none';
-  document.getElementById('photo-input').value = '';
+  const input = document.getElementById('photo-input');
+  if (input) input.value = '';
 }
 async function uploadPhoto(file) {
   const ext = file.name.split('.').pop() || 'jpg';
-  const path = `${Date.now()}-${getInteractionFingerprint()}.${ext}`;
+  const path = `${Date.now()}-${getInteractionUserKey()}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/reviews/${path}`, {
     method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type }
-    , body: file
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type },
+    body: file
   });
   if (!res.ok) throw new Error('업로드 실패');
   return `${SUPABASE_URL}/storage/v1/object/public/reviews/${path}`;
 }
 async function submitRating(mealId) {
+  const state = getRatingState(mealId);
   const comment = (document.getElementById(`comment-${mealId}`) || {}).value?.trim() || '';
+  if (!canWriteReviewForSchool(state.schoolId)) {
+    alert('내 학교로 등록한 학교의 급식만 리뷰를 작성할 수 있어요.');
+    return;
+  }
+  if (!state.score || (state.menus.length > 0 && !state.selectedMenuItem)) {
+    updateRatingSubmitState(mealId);
+    return;
+  }
   const btn = document.getElementById(`btn-rate-${mealId}`);
   if (btn) { btn.disabled = true; btn.textContent = '등록 중...'; }
-  await getUserId();
-  let photoUrl = null;
-  if (selectedPhotoFile) {
-    try { photoUrl = await uploadPhoto(selectedPhotoFile); } catch(e) { console.warn('사진 업로드 실패:', e); }
-  }
-  const body = { meal_id: mealId, school_id: currentSchool?.id || mySchool?.id, score: selectedRating, fingerprint: getInteractionFingerprint(), nickname: ensureNickname() };
-  if (comment) body.comment = comment;
-  if (photoUrl) body.photo_url = photoUrl;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify(body)
-  });
-  if (res.status === 409) {
-    // 이미 평가됨 (unique constraint)
-  }
-  localStorage.setItem(`rated_${mealId}`, selectedRating);
-  const box = document.getElementById(`rating-box-${mealId}`);
-  if (box) box.innerHTML = `
-    <div style="text-align:center">
-      <div style="font-size:36px;margin-bottom:8px">🎉</div>
-      <div style="font-size:15px;font-weight:700">평가 완료!</div>
-      <div style="font-size:13px;color:var(--text3);margin-top:4px">${selectedRating}점 등록했어요</div>
-    </div>`;
-  // 리뷰 새로고침 (현재 활성 리뷰 영역 찾아서 갱신)
-  const detailRevEl = document.getElementById('detail-reviews-wrap');
-  if (detailRevEl && currentSchool?.id) loadSchoolReviews(currentSchool.id, detailRevEl);
-  else {
+
+  try {
+    await getUserId();
+    let photoUrl = null;
+    if (state.photoFile) {
+      try { photoUrl = await uploadPhoto(state.photoFile); }
+      catch(e) { console.warn('사진 업로드 실패:', e); }
+    }
+    const body = { meal_id: mealId, school_id: state.schoolId, score: state.score, user_key: getInteractionUserKey(), nickname: ensureNickname() };
+    if (state.selectedMenuItem) body.selected_menu_item = state.selectedMenuItem;
+    if (comment) body.comment = comment;
+    if (photoUrl) body.photo_url = photoUrl;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok && res.status !== 409) {
+      const errorText = await res.text().catch(() => '');
+      console.warn('리뷰 저장 실패:', res.status, errorText);
+      if (btn) updateRatingSubmitState(mealId);
+      alert('평가 저장에 실패했어요. 잠시 후 다시 시도해줘.');
+      return;
+    }
+
+    localStorage.setItem(`rated_${mealId}`, state.score);
+    const box = document.getElementById(`rating-box-${mealId}`);
+    if (box) box.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-size:36px;margin-bottom:8px">🎉</div>
+        <div style="font-size:15px;font-weight:700">${res.status === 409 ? '이미 평가했어요' : '평가 완료!'}</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:4px">${state.score}점 등록했어요</div>
+      </div>`;
+    const detailRevEl = document.getElementById('detail-reviews-wrap');
+    if (detailRevEl && currentSchool?.id && String(currentSchool.id) === String(state.schoolId)) loadSchoolReviews(currentSchool.id, detailRevEl);
     const msRevEl = document.getElementById('ms-reviews-wrap');
     if (msRevEl) loadReviews(mealId, msRevEl);
+    if (latestReviewsVisible) loadLatestReviews();
+  } catch (e) {
+    console.warn('평가 저장 중 오류:', e);
+    if (btn) updateRatingSubmitState(mealId);
+    alert('평가 저장 중 문제가 생겼어요. 네트워크 상태를 확인하고 다시 시도해줘.');
   }
-  if (latestReviewsVisible) loadLatestReviews();
 }
-
 // ===== REVIEWS =====
+const openCommentThreads = new Set();
 function reviewSchoolHtml(s) {
   if (!s) return '<span class="review-school">학교 정보 없음</span>';
   const schoolJson = JSON.stringify(s).replace(/"/g, '&quot;');
@@ -1279,14 +1617,30 @@ function mealPreviewText(menu) {
   const items = Array.isArray(menu) ? menu : (typeof menu === 'string' ? menu.split(/[\n,]+/) : []);
   return items.map(i => String(i || '').trim()).filter(Boolean).slice(0, 4).join(' · ');
 }
-function reviewMealHtml(meal) {
-  if (!meal) return '';
-  const date = mealDateLabel(meal.meal_date);
-  const preview = mealPreviewText(meal.menu) || '식단 정보 없음';
-  return `<div class="review-meal">${date ? `<span class="review-meal-date">${escapeHtml(date)}</span>` : ''}${escapeHtml(preview)}</div>`;
+function reviewStarsHtml(score) {
+  const n = Math.max(0, Math.min(5, Number(score) || 0));
+  return Array.from({ length: n }, () => '<span aria-hidden="true">&#11088;</span>').join('');
 }
-const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,photo_url,created_at,fingerprint,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,menu)';
+function reviewMealHtml(meal, score = 0) {
+  const stars = reviewStarsHtml(score);
+  if (!meal) {
+    return `<div class="review-meal"><div class="review-meal-line"><div class="review-meal-meta">식단 정보 없음</div>${stars ? `<div class="review-stars" aria-label="${score}점">${stars}</div>` : ''}</div></div>`;
+  }
+  const date = mealDateLabel(meal.meal_date);
+  const type = mealTypeLabel(meal);
+  const meta = [date, type].filter(Boolean).join(' ');
+  const preview = mealPreviewText(meal.menu) || '메뉴 정보 없음';
+  return `<div class="review-meal">
+    <div class="review-meal-line">
+      <div class="review-meal-meta">${escapeHtml(meta || '식단 정보 없음')}</div>
+      ${stars ? `<div class="review-stars" aria-label="${score}점">${stars}</div>` : ''}
+    </div>
+    <div class="review-menu-preview">${escapeHtml(preview)}</div>
+  </div>`;
+}
+const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,meal_type,meal_type_label,menu)';
 function renderReviewComments(ratingId, comments = []) {
+  const isOpen = openCommentThreads.has(String(ratingId));
   const list = comments.length ? comments.map(c => `
     <div class="review-comment">
       <span class="review-comment-nick">${escapeHtml(c.nickname || '익명의 급식러')}</span>
@@ -1294,13 +1648,31 @@ function renderReviewComments(ratingId, comments = []) {
       <span class="review-comment-time">${timeAgo(c.created_at)}</span>
     </div>`).join('') : '<div class="review-comment" style="color:var(--text3)">아직 댓글이 없어요</div>';
   return `
-    <div class="review-comments">
+    <div class="review-comments${isOpen ? '' : ' hide'}" id="review-comments-${ratingId}">
       ${list}
       <div class="review-comment-form">
-        <input class="review-comment-input" id="review-comment-${ratingId}" maxlength="300" placeholder="댓글 달기" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId})">
-        <button class="review-comment-submit" onclick="submitReviewComment(${ratingId})">등록</button>
+        <input class="review-comment-input" id="review-comment-${ratingId}" maxlength="300" placeholder="댓글 달기" oninput="updateReviewCommentSubmit(${ratingId})" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId})">
+        <button class="review-comment-submit" id="review-comment-submit-${ratingId}" onclick="submitReviewComment(${ratingId})" disabled>등록</button>
       </div>
     </div>`;
+}
+function toggleReviewComments(ratingId) {
+  const key = String(ratingId);
+  const el = document.getElementById(`review-comments-${ratingId}`);
+  const shouldOpen = !el || el.classList.contains('hide');
+  if (shouldOpen) openCommentThreads.add(key);
+  else openCommentThreads.delete(key);
+  if (el) {
+    el.classList.toggle('hide', !shouldOpen);
+    const btn = document.getElementById(`review-comment-toggle-${ratingId}`);
+    if (btn) btn.classList.toggle('selected', shouldOpen);
+    if (shouldOpen) setTimeout(() => document.getElementById(`review-comment-${ratingId}`)?.focus(), 0);
+  }
+}
+function updateReviewCommentSubmit(ratingId) {
+  const input = document.getElementById(`review-comment-${ratingId}`);
+  const btn = document.getElementById(`review-comment-submit-${ratingId}`);
+  if (btn) btn.disabled = !input?.value?.trim();
 }
 function renderReviewItem(r) {
   const likes = r.reaction_counts?.like || 0;
@@ -1308,19 +1680,21 @@ function renderReviewItem(r) {
   const myReaction = r.my_reaction || '';
   return `
     <div class="review-item">
-      <div class="review-header">
-        ${reviewSchoolHtml(r.schools)}
-        <span class="review-nick">${reviewNickname(r)}</span>
-        <span class="review-stars">${'⭐'.repeat(r.score || 0)}</span>
+      <div class="review-top-row">
+        <div class="review-identity">
+          ${reviewSchoolHtml(r.schools)}
+          <span class="review-nick">${reviewNickname(r)}</span>
+        </div>
         <span class="review-time">${timeAgo(r.created_at)}</span>
       </div>
-      ${reviewMealHtml(r.meals)}
+      ${reviewMealHtml(r.meals, r.score)}
+      ${r.selected_menu_item ? `<div class="review-picked-menu">대표 메뉴 ${escapeHtml(r.selected_menu_item)}</div>` : ''}
       ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
       ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
       <div class="review-actions">
-        <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like')">👍 ${likes}</button>
-        <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike')">👎 ${dislikes}</button>
-        <span style="font-size:12px;color:var(--text3)">댓글 ${(r.comments || []).length}</span>
+        <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">&#128077; ${likes}</button>
+        <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">&#128078; ${dislikes}</button>
+        <button class="review-action-btn${openCommentThreads.has(String(r.id)) ? ' selected' : ''}" id="review-comment-toggle-${r.id}" onclick="toggleReviewComments(${r.id})">&#128172; 댓글 ${(r.comments || []).length}</button>
       </div>
       ${renderReviewComments(r.id, r.comments || [])}
     </div>`;
@@ -1341,21 +1715,21 @@ async function enrichReviews(data) {
   const ids = data.map(r => r.id).filter(Boolean);
   if (ids.length === 0) return data;
   const idFilter = ids.join(',');
-  const myFp = getInteractionFingerprint();
+  const myUserKey = getInteractionUserKey();
   const [reactions, comments, users] = await Promise.all([
-    sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id,reaction,fingerprint`),
+    sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id,reaction,user_key`),
     sb(`review_comments?rating_id=in.(${idFilter})&order=created_at.asc&select=id,rating_id,nickname,comment,created_at`),
     (() => {
-      const fps = [...new Set(data.map(r => r.fingerprint).filter(Boolean))];
-      return fps.length ? sb(`user_schools?user_hash=in.(${fps.map(encodeURIComponent).join(',')})&select=user_hash,nickname`) : Promise.resolve([]);
+      const userKeys = [...new Set(data.map(r => r.user_key).filter(Boolean))];
+      return userKeys.length ? sb(`user_schools?user_key=in.(${userKeys.map(encodeURIComponent).join(',')})&select=user_key,nickname`) : Promise.resolve([]);
     })()
   ]);
-  const userNickByHash = new Map((users || []).map(u => [u.user_hash, u.nickname]));
+  const userNickByKey = new Map((users || []).map(u => [u.user_key, u.nickname]));
   const reactionByRating = new Map();
   for (const rr of (reactions || [])) {
     const bucket = reactionByRating.get(rr.rating_id) || { counts: { like: 0, dislike: 0 }, mine: '' };
     if (rr.reaction === 'like' || rr.reaction === 'dislike') bucket.counts[rr.reaction] += 1;
-    if (rr.fingerprint === myFp) bucket.mine = rr.reaction;
+    if (rr.user_key === myUserKey) bucket.mine = rr.reaction;
     reactionByRating.set(rr.rating_id, bucket);
   }
   const commentsByRating = new Map();
@@ -1368,7 +1742,7 @@ async function enrichReviews(data) {
     const reaction = reactionByRating.get(r.id) || { counts: { like: 0, dislike: 0 }, mine: '' };
     return {
       ...r,
-      user_nickname: r.nickname || userNickByHash.get(r.fingerprint) || '',
+      user_nickname: r.nickname || userNickByKey.get(r.user_key) || '',
       reaction_counts: reaction.counts,
       my_reaction: reaction.mine,
       comments: commentsByRating.get(r.id) || []
@@ -1391,12 +1765,77 @@ async function refreshVisibleReviews() {
     if (ratedMealId) loadReviews(ratedMealId, msRevEl);
   }
 }
-async function reactToReview(ratingId, reaction) {
+function reactionTokenKey(ratingId) {
+  return `review_reaction_token_${ratingId}`;
+}
+function getReactionCancelToken(ratingId) {
+  const key = reactionTokenKey(ratingId);
+  let token = localStorage.getItem(key);
+  if (!token) {
+    const bytes = new Uint8Array(24);
+    if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    token = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem(key, token);
+  }
+  return token;
+}
+function clearReactionCancelToken(ratingId) {
+  localStorage.removeItem(reactionTokenKey(ratingId));
+}
+async function sha256Hex(value) {
+  const data = new TextEncoder().encode(value);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+}
+async function reactionCancelHash(ratingId) {
+  return sha256Hex(getReactionCancelToken(ratingId));
+}
+async function deleteMyReviewReaction(ratingId) {
+  const userKey = getInteractionUserKey();
+  const tokenHash = await reactionCancelHash(ratingId);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions?rating_id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id`, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      'x-reaction-cancel-token-hash': tokenHash
+    }
+  });
+  if (!res.ok) {
+    console.warn('리뷰 반응 취소 실패:', await res.text().catch(() => ''));
+    return false;
+  }
+  const deleted = await res.json().catch(() => []);
+  if (Array.isArray(deleted) && deleted.length > 0) {
+    clearReactionCancelToken(ratingId);
+    return true;
+  }
+  return false;
+}
+async function reactToReview(ratingId, reaction, currentReaction = '') {
   await getUserId();
+  if (currentReaction === reaction) {
+    const deleted = await deleteMyReviewReaction(ratingId);
+    if (!deleted) alert('이전 버전에서 남긴 반응은 취소할 수 없어요. 새로 누른 반응부터 취소돼요.');
+    refreshVisibleReviews();
+    return;
+  }
+  if (currentReaction) {
+    const deleted = await deleteMyReviewReaction(ratingId);
+    if (!deleted) {
+      alert('기존 반응을 먼저 취소할 수 없어서 변경하지 못했어요. 새로 누른 반응부터 변경할 수 있어요.');
+      refreshVisibleReviews();
+      return;
+    }
+  }
+  const tokenHash = await reactionCancelHash(ratingId);
   const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ rating_id: ratingId, fingerprint: getInteractionFingerprint(), nickname: ensureNickname(), reaction })
+    body: JSON.stringify({ rating_id: ratingId, user_key: getInteractionUserKey(), nickname: ensureNickname(), reaction, cancel_token_hash: tokenHash })
   });
   if (res.status === 409) {
     alert('이미 이 리뷰에 표시했어요');
@@ -1412,11 +1851,12 @@ async function submitReviewComment(ratingId) {
   const input = document.getElementById(`review-comment-${ratingId}`);
   const comment = input?.value?.trim() || '';
   if (!comment) return;
+  openCommentThreads.add(String(ratingId));
   await getUserId();
   const res = await fetch(`${SUPABASE_URL}/rest/v1/review_comments`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ rating_id: ratingId, fingerprint: getInteractionFingerprint(), nickname: ensureNickname(), comment })
+    body: JSON.stringify({ rating_id: ratingId, user_key: getInteractionUserKey(), nickname: ensureNickname(), comment })
   });
   if (!res.ok) {
     console.warn('댓글 저장 실패:', await res.text().catch(() => ''));
@@ -1454,11 +1894,11 @@ async function loadMyActivity() {
   if (!targetEl) return;
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div>';
   await getUserId();
-  const fp = encodeURIComponent(getInteractionFingerprint());
+  const userKey = encodeURIComponent(getInteractionUserKey());
   const commentSelect = `id,rating_id,nickname,comment,created_at,ratings(${REVIEW_SELECT})`;
   const [reviews, comments] = await Promise.all([
-    sb(`ratings?fingerprint=eq.${fp}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`),
-    sb(`review_comments?fingerprint=eq.${fp}&order=created_at.desc&limit=20&select=${commentSelect}`)
+    sb(`ratings?user_key=eq.${userKey}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`),
+    sb(`review_comments?user_key=eq.${userKey}&order=created_at.desc&limit=20&select=${commentSelect}`)
   ]);
   const enrichedReviews = await enrichReviews(Array.isArray(reviews) ? reviews : []);
   const ownComments = Array.isArray(comments) ? comments : [];
@@ -1535,7 +1975,7 @@ function setRankFilter(f, el) {
 }
 async function loadFullRanking() {
   const dateStr = fmtDate(rankDate);
-  let query = `meals?meal_date=eq.${dateStr}&order=auto_score.desc&limit=30&select=id,auto_score,auto_rank,menu,school_id,schools(id,name,type,atpt_code,school_code,address)`;
+  let query = `meals?meal_date=eq.${dateStr}&order=auto_score.desc&limit=30&select=id,auto_score,auto_rank,meal_type,meal_type_label,menu,school_id,schools!inner(id,name,type,atpt_code,school_code,address)`;
   if (rankFilter === 'elem') query += '&schools.type=ilike.*초등*';
   else if (rankFilter === 'mid') query += '&schools.type=ilike.*중학*';
   else if (rankFilter === 'high') query += '&schools.type=ilike.*고등*';
@@ -1550,11 +1990,11 @@ async function loadFullRanking() {
     const rank = i + 1;
     const numCls = rank <= 3 ? `rank-${rank}` : '';
     const isMine = s?.id === myId;
-    const preview = (m.menu || []).slice(0, 3).join(' · ');
+    const preview = `${escapeHtml(mealTypeLabel(m))} · ${escapeHtml((m.menu || []).slice(0, 3).join(' · '))}`;
     return `<div class="ranking-card${isMine?' mine':''}" onclick="selectDetailSchool(${JSON.stringify(s).replace(/"/g,'&quot;')});switchTab('home')">
       <div class="rank-num ${numCls}">${rank}</div>
       <div class="rank-info">
-        <div class="rank-school">${s?.name || '?'}${isMine ? ' ⭐ 내 학교' : ''}</div>
+        <div class="rank-school">${escapeHtml(s?.name || '?')}${isMine ? ' ⭐ 내 학교' : ''}</div>
         <div class="rank-menu-preview">${preview}</div>
       </div>
       <div class="rank-score">${m.auto_score}</div>
@@ -1665,10 +2105,14 @@ function renderBattleCard(battle) {
   const totalVotes = (battle.vote_a || 0) + (battle.vote_b || 0);
   const pctA = totalVotes > 0 ? Math.round(battle.vote_a * 100 / totalVotes) : 50;
   const pctB = 100 - pctA;
-  const menuA = (mA?.menu || []).slice(0, 5).map(m => `<li>${m}</li>`).join('');
-  const menuB = (mB?.menu || []).slice(0, 5).map(m => `<li>${m}</li>`).join('');
+  const menuA = (mA?.menu || []).slice(0, 5).map(m => `<li>${escapeHtml(m)}</li>`).join('');
+  const menuB = (mB?.menu || []).slice(0, 5).map(m => `<li>${escapeHtml(m)}</li>`).join('');
   const scoreA = battle.score_a || mA?.auto_score || 0;
   const scoreB = battle.score_b || mB?.auto_score || 0;
+  const nameAHtml = escapeHtml(sA.name);
+  const nameBHtml = escapeHtml(sB.name);
+  const nameAArg = inlineJsString(sA.name);
+  const nameBArg = inlineJsString(sB.name);
   const winA = scoreA > scoreB, tie = scoreA === scoreB;
   // AI 판정 텍스트
   const aiVerdict = tie ? '🤝 동점' : `🏆 AI 판정: ${winA ? sA.name : sB.name} 승`;
@@ -1682,19 +2126,19 @@ function renderBattleCard(battle) {
       <!-- AI 판정 -->
       <div class="battle-verdict">
         <div class="verdict-ai">AI 판정</div>
-        <div class="verdict-result">${aiVerdict}</div>
+        <div class="verdict-result">${escapeHtml(aiVerdict)}</div>
       </div>
       <!-- 메뉴 비교 -->
       <div class="vs-top">
         <div class="vs-school">
           <div class="vs-school-icon" style="background:${bgA}">${iconA}</div>
-          <div class="vs-school-name">${sA.name}</div>
+          <div class="vs-school-name">${nameAHtml}</div>
           <div class="vs-score${winA?' win':' lose'}">${scoreA}점</div>
         </div>
         <div class="vs-divider"><div class="vs-badge">VS</div></div>
         <div class="vs-school b">
           <div class="vs-school-icon" style="background:${bgB};margin-left:auto">${iconB}</div>
-          <div class="vs-school-name">${sB.name}</div>
+          <div class="vs-school-name">${nameBHtml}</div>
           <div class="vs-score${!winA&&!tie?' win':tie?'':' lose'}">${scoreB}점</div>
         </div>
       </div>
@@ -1711,9 +2155,9 @@ function renderBattleCard(battle) {
         </div>
         ${totalVotes > 0 ? `
           <div class="vote-bar-labels" style="margin-bottom:6px">
-            <span style="color:var(--blue);font-weight:800">${sA.name} ${pctA}%</span>
+            <span style="color:var(--blue);font-weight:800">${nameAHtml} ${pctA}%</span>
             <span style="color:var(--text3);font-size:11px">${totalVotes}명 투표</span>
-            <span style="color:var(--purple);font-weight:800">${pctB}% ${sB.name}</span>
+            <span style="color:var(--purple);font-weight:800">${pctB}% ${nameBHtml}</span>
           </div>
           <div class="vote-bar-bg">
             <div class="vote-bar-a" style="width:${pctA}%"></div>
@@ -1722,10 +2166,10 @@ function renderBattleCard(battle) {
           `<div style="font-size:13px;color:var(--text3);margin-bottom:8px">아직 아무도 안 했어요! 첫 투표 주인공이 되세요</div>`}
         ${!voted ? `
           <div class="vs-vote-row" style="margin-top:10px">
-            <button class="btn-vote a" onclick="voteBattle(${battle.id},'${sA.id}','a')">👆 ${sA.name}</button>
-            <button class="btn-vote b" onclick="voteBattle(${battle.id},'${sB.id}','b')">👆 ${sB.name}</button>
+            <button class="btn-vote a" onclick="voteBattle(${battle.id},'${sA.id}','a')">👆 ${nameAHtml}</button>
+            <button class="btn-vote b" onclick="voteBattle(${battle.id},'${sB.id}','b')">👆 ${nameBHtml}</button>
           </div>` : ''}
-        ${voted ? `<button class="vote-share-btn" onclick="shareBattle('${sA.name}','${sB.name}',${scoreA},${scoreB},${pctA},${pctB})">📤 이 결과 공유하기</button>` : ''}
+        ${voted ? `<button class="vote-share-btn" onclick="shareBattle(${nameAArg},${nameBArg},${scoreA},${scoreB},${pctA},${pctB})">📤 이 결과 공유하기</button>` : ''}
       </div>
     </div>
     <div style="display:flex;justify-content:center;gap:8px;margin-top:12px;padding-bottom:4px">
@@ -1784,10 +2228,10 @@ async function openBattleOppSheet(battleId, totalVotes) {
     const km = c.distance_km < 1 ? `${Math.round(c.distance_km * 1000)}m` : `${c.distance_km.toFixed(1)}km`;
     return `<div onclick="pickBattleOpponent(${battleId}, ${c.school_id}, ${c.meal_id}, ${c.auto_score})" style="padding:14px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <div style="font-size:15px;font-weight:800">${icon} ${c.school_name}${rankBadge}</div>
+        <div style="font-size:15px;font-weight:800">${icon} ${escapeHtml(c.school_name)}${rankBadge}</div>
         <div style="font-size:13px;color:var(--blue);font-weight:800">${c.auto_score}점</div>
       </div>
-      <div style="font-size:12px;color:var(--text3)">${(c.address||'').split(' ').slice(0,3).join(' ')} · ${km}</div>
+      <div style="font-size:12px;color:var(--text3)">${escapeHtml((c.address||'').split(' ').slice(0,3).join(' '))} · ${escapeHtml(km)}</div>
     </div>`;
   }).join('');
 }
@@ -1845,7 +2289,7 @@ async function voteBattle(battleId, schoolId, side) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/battle_votes`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ battle_id: battleId, voted_school_id: schoolId, fingerprint: getInteractionFingerprint() })
+    body: JSON.stringify({ battle_id: battleId, voted_school_id: schoolId, user_key: getInteractionUserKey() })
   });
   // vote_a/vote_b 업데이트
   const field = side === 'a' ? 'vote_a' : 'vote_b';
@@ -1869,8 +2313,50 @@ function shareBattle(nameA, nameB, scoreA, scoreB, pctA, pctB) {
 }
 
 // ===== MAP =====
-function initKakaoMap() {
+function isLocalMapOrigin() {
+  return location.protocol === 'file:' || ['127.0.0.1', 'localhost'].includes(location.hostname);
+}
+function loadKakaoMapSdk() {
+  if (window.kakao?.maps?.Map && window.kakao?.maps?.MarkerClusterer) return Promise.resolve();
+  if (kakaoMapSdkPromise) return kakaoMapSdkPromise;
+  kakaoMapSdkPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-kakao-map-sdk="true"]');
+    if (existing) existing.remove();
+    const script = document.createElement('script');
+    script.src = KAKAO_MAP_SDK_URL;
+    script.async = true;
+    script.dataset.kakaoMapSdk = 'true';
+    if (isLocalMapOrigin()) script.referrerPolicy = 'no-referrer';
+    script.onload = () => {
+      if (window.kakao?.maps?.load) window.kakao.maps.load(resolve);
+      else resolve();
+    };
+    script.onerror = () => reject(new Error('Kakao map SDK load failed'));
+    document.head.appendChild(script);
+  });
+  return kakaoMapSdkPromise;
+}
+async function openMapTab() {
+  if (!mapLoaded) {
+    mapLoaded = true;
+    await initKakaoMap();
+  } else {
+    setTimeout(() => { kakaoMap?.relayout?.(); focusMySchoolOnMap(); }, 0);
+  }
+}
+async function initKakaoMap() {
   const container = document.getElementById('kakao-map');
+  container.innerHTML = '<div class="loading" style="height:100%;display:flex;flex-direction:column;justify-content:center"><div class="loading-emoji">🗺</div><div class="loading-text">지도 불러오는 중...</div></div>';
+  try {
+    await loadKakaoMapSdk();
+  } catch (e) {
+    console.warn('카카오맵 SDK 로드 실패:', e);
+  }
+  if (!window.kakao?.maps?.Map || !window.kakao?.maps?.MarkerClusterer) {
+    container.innerHTML = '<div class="empty" style="height:100%;display:flex;flex-direction:column;justify-content:center"><div class="empty-emoji">🗺</div><div>지도를 불러오지 못했어요</div></div>';
+    return;
+  }
+  container.innerHTML = '';
   kakaoMap = new kakao.maps.Map(container, { center: new kakao.maps.LatLng(36.5, 127.8), level: 13 });
   clusterer = new kakao.maps.MarkerClusterer({
     map: kakaoMap, averageCenter: true, minLevel: 5,
@@ -1881,6 +2367,16 @@ function initKakaoMap() {
     ]
   });
   loadMapSchools();
+}
+function focusMySchoolOnMap() {
+  if (!kakaoMap || !mySchool || !mapSchools.length) return false;
+  const mine = mapSchools.find(s => String(s.id) === String(mySchool.id));
+  if (!mine || mine.lat == null || mine.lng == null) return false;
+  const pos = new kakao.maps.LatLng(mine.lat, mine.lng);
+  kakaoMap.relayout?.();
+  kakaoMap.setCenter(pos);
+  kakaoMap.setLevel(3);
+  return true;
 }
 async function loadMapSchools() {
   let all = [], page = 0;
@@ -1902,10 +2398,7 @@ async function loadMapSchools() {
   });
   clusterer.addMarkers(markers);
   // 내 학교 위치로 이동
-  if (mySchool) {
-    const mine = all.find(s => s.id === mySchool.id);
-    if (mine) { kakaoMap.setCenter(new kakao.maps.LatLng(mine.lat, mine.lng)); kakaoMap.setLevel(6); }
-  }
+  focusMySchoolOnMap();
 }
 async function openBottomSheet(school) {
   const bs = document.getElementById('bottom-sheet');
@@ -1916,32 +2409,46 @@ async function openBottomSheet(school) {
   bsc.innerHTML = `
     <div class="bs-header">
       <div class="bs-icon" style="background:${bgColor}">${emoji}</div>
-      <div><div class="bs-name">${school.name}</div><div class="bs-meta">${school.type||''} · ${school.address||''}</div></div>
+      <div><div class="bs-name">${escapeHtml(school.name)}</div><div class="bs-meta">${escapeHtml(school.type||'')} · ${escapeHtml(school.address||'')}</div></div>
       <button class="bs-close" onclick="closeBottomSheet()">✕</button>
     </div>
     <div style="text-align:center;padding:12px;color:var(--text3)"><div style="font-size:24px">🍳</div><div style="font-size:13px">급식 불러오는 중...</div></div>`;
   bs.classList.add('show');
   const today = fmtDate(fixWeekend(new Date()));
-  const result = await edge('sync-meals', { atpt_code: school.atpt_code, school_code: school.school_code, date: today });
+  let result = {};
+  try {
+    result = await edge('sync-meals', { atpt_code: school.atpt_code, school_code: school.school_code, date: today });
+  } catch (e) {
+    console.warn('지도 학교 급식 불러오기 실패:', e);
+    bsc.innerHTML = `
+      <div class="bs-header">
+        <div class="bs-icon" style="background:${bgColor}">${emoji}</div>
+        <div><div class="bs-name">${escapeHtml(school.name)}</div><div class="bs-meta">${escapeHtml(school.type||'')} · ${escapeHtml(school.address||'')}</div></div>
+        <button class="bs-close" onclick="closeBottomSheet()">×</button>
+      </div>
+      <div style="text-align:center;padding:20px;color:var(--text3)"><div style="font-size:24px">😢</div><div style="font-size:13px">급식 정보를 불러오지 못했어요</div></div>
+      <button class="bs-btn" onclick="selectDetailSchool(${JSON.stringify(school).replace(/"/g,'&quot;')});closeBottomSheet();switchTab('home')">상세보기</button>`;
+    return;
+  }
   if (result.meal) {
     const m = result.meal, rank = getRank(m.auto_score);
     bsc.innerHTML = `
       <div class="bs-header">
         <div class="bs-icon" style="background:${bgColor}">${emoji}</div>
-        <div><div class="bs-name">${school.name}</div><div class="bs-meta">${school.type||''} · ${school.address||''}</div></div>
+        <div><div class="bs-name">${escapeHtml(school.name)}</div><div class="bs-meta">${escapeHtml(school.type||'')} · ${escapeHtml(school.address||'')}</div></div>
         <button class="bs-close" onclick="closeBottomSheet()">✕</button>
       </div>
-      <div class="bs-menu-title"><span>${fmtDateKR(fixWeekend(new Date()))} 급식</span>
+      <div class="bs-menu-title"><span>${fmtDateKR(fixWeekend(new Date()))} ${mealTypeLabel(m)}</span>
         <span class="meal-rank-badge ${rank.c}" style="font-size:11px;padding:3px 8px">${rank.r} · ${m.auto_score}점</span>
       </div>
-      <ul class="bs-menu-list">${(m.menu||[]).map(i=>`<li>${i}</li>`).join('')}</ul>
+      <ul class="bs-menu-list">${(m.menu||[]).map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul>
       <div style="font-size:12px;color:var(--text3);margin-bottom:12px">🔥 ${m.calories||'?'} kcal</div>
       <button class="bs-btn" onclick="selectDetailSchool(${JSON.stringify(school).replace(/"/g,'&quot;')});closeBottomSheet();switchTab('home')">상세보기 · 평가하기</button>`;
   } else {
     bsc.innerHTML = `
       <div class="bs-header">
         <div class="bs-icon" style="background:${bgColor}">${emoji}</div>
-        <div><div class="bs-name">${school.name}</div><div class="bs-meta">${school.type||''} · ${school.address||''}</div></div>
+        <div><div class="bs-name">${escapeHtml(school.name)}</div><div class="bs-meta">${escapeHtml(school.type||'')} · ${escapeHtml(school.address||'')}</div></div>
         <button class="bs-close" onclick="closeBottomSheet()">✕</button>
       </div>
       <div style="text-align:center;padding:20px;color:var(--text3)"><div style="font-size:24px">😢</div><div style="font-size:13px">오늘 급식 정보가 없어요</div></div>
@@ -1952,6 +2459,75 @@ function closeBottomSheet() { document.getElementById('bottom-sheet').classList.
 function goMyLocation() {
   if (!navigator.geolocation || !kakaoMap) return;
   navigator.geolocation.getCurrentPosition(pos => { kakaoMap.setCenter(new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude)); kakaoMap.setLevel(4); });
+}
+
+function monthlyRange(d = new Date()) {
+  const start = new Date(d.getFullYear(), d.getMonth(), 1);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+function engagementRankCard(item, index) {
+  const numCls = index < 3 ? `rank-${index+1}` : '';
+  const score = Math.round(item.score * 10) / 10;
+  return `<div class="ranking-card" onclick="openReviewSchool(${JSON.stringify(item.school).replace(/"/g,'&quot;')})">
+    <div class="rank-num ${numCls}">${index + 1}</div>
+    <div class="rank-info">
+      <div class="rank-school">${escapeHtml(item.school?.name || '?')}</div>
+      <div class="rank-menu-preview">리뷰 ${item.reviewCount} · 댓글 ${item.commentCount} · 반응 ${item.reactionCount}</div>
+    </div>
+    <div class="rank-score">${score}</div>
+  </div>`;
+}
+async function loadMonthlyEngagementRanking() {
+  const wrap = document.getElementById('monthly-engagement-ranking');
+  if (!wrap) return;
+  const { start, end } = monthlyRange();
+  try {
+    const reviews = await sb(`ratings?created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}&select=id,school_id,schools(id,name,type,address,atpt_code,school_code)`);
+    if (!reviews || !reviews.length) {
+      wrap.innerHTML = `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">💬</div><div>이번 달 리뷰 참여가 아직 없어요</div></div>`;
+      return;
+    }
+    const ratingIds = reviews.map(r => r.id).filter(Boolean);
+    const idFilter = ratingIds.join(',');
+    const [comments, reactions] = idFilter ? await Promise.all([
+      sb(`review_comments?rating_id=in.(${idFilter})&select=rating_id`),
+      sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id`)
+    ]) : [[], []];
+    const schoolByRating = new Map(reviews.map(r => [r.id, r.school_id]));
+    const stats = new Map();
+    function bucket(schoolId) {
+      if (!stats.has(schoolId)) {
+        const review = reviews.find(r => r.school_id === schoolId);
+        stats.set(schoolId, { school: review?.schools || null, reviewCount: 0, commentCount: 0, reactionCount: 0, score: 0 });
+      }
+      return stats.get(schoolId);
+    }
+    for (const r of reviews) {
+      const b = bucket(r.school_id);
+      b.reviewCount += 1;
+      b.score += 1;
+    }
+    for (const c of (comments || [])) {
+      const schoolId = schoolByRating.get(c.rating_id);
+      if (!schoolId) continue;
+      const b = bucket(schoolId);
+      b.commentCount += 1;
+      b.score += 0.5;
+    }
+    for (const rr of (reactions || [])) {
+      const schoolId = schoolByRating.get(rr.rating_id);
+      if (!schoolId) continue;
+      const b = bucket(schoolId);
+      b.reactionCount += 1;
+      b.score += 0.2;
+    }
+    const top = [...stats.values()].filter(x => x.school).sort((a, b) => b.score - a.score || b.reviewCount - a.reviewCount || b.commentCount - a.commentCount).slice(0, 3);
+    wrap.innerHTML = top.length ? top.map(engagementRankCard).join('') : `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">💬</div><div>이번 달 리뷰 참여가 아직 없어요</div></div>`;
+  } catch (e) {
+    console.warn('월간 참여 랭킹 불러오기 실패:', e);
+    wrap.innerHTML = `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">😢</div><div>참여 랭킹을 불러오지 못했어요</div></div>`;
+  }
 }
 
 // ===== INIT =====
@@ -1966,13 +2542,14 @@ async function init() {
   document.getElementById('stat-schools').textContent = Number(schoolCount).toLocaleString();
   document.getElementById('stat-meals').textContent = mealCount > 0 ? mealCount.toLocaleString() : '-';
   document.getElementById('stat-ratings').textContent = ratingCount > 0 ? ratingCount.toLocaleString() : '0';
+  loadMonthlyEngagementRanking();
   // 오늘 랭킹 TOP5
-  const todayMeals = await sb(`meals?meal_date=eq.${fmtDate(mealDate)}&order=auto_score.desc&limit=5&select=auto_score,auto_rank,menu,schools(id,name,type)`);
+  const todayMeals = await sb(`meals?meal_date=eq.${fmtDate(mealDate)}&order=auto_score.desc&limit=5&select=auto_score,auto_rank,meal_type,meal_type_label,menu,schools!inner(id,name,type)`);
   if (todayMeals && todayMeals.length > 0) {
     document.getElementById('today-ranking').innerHTML = todayMeals.map((m, i) => {
       const numCls = i < 3 ? `rank-${i+1}` : '';
-      const preview = (m.menu||[]).slice(0,3).join(' · ');
-      return `<div class="ranking-card"><div class="rank-num ${numCls}">${i+1}</div><div class="rank-info"><div class="rank-school">${m.schools?.name||'?'}</div><div class="rank-menu-preview">${preview}</div></div><div class="rank-score">${m.auto_score}</div></div>`;
+      const preview = `${escapeHtml(mealTypeLabel(m))} · ${escapeHtml((m.menu||[]).slice(0,3).join(' · '))}`;
+      return `<div class="ranking-card"><div class="rank-num ${numCls}">${i+1}</div><div class="rank-info"><div class="rank-school">${escapeHtml(m.schools?.name||'?')}</div><div class="rank-menu-preview">${preview}</div></div><div class="rank-score">${m.auto_score}</div></div>`;
     }).join('');
   } else {
     document.getElementById('today-ranking').innerHTML = `<div class="empty"><div class="empty-emoji">🍽</div><div>아직 오늘 급식 데이터가 없어요<br>학교를 검색해서 첫 조회를 해보세요!</div></div>`;
@@ -2003,8 +2580,8 @@ async function handleUrlParam() {
   history.replaceState(null, '', cleanUrl);
 }
 
-// 카카오맵 지연 로드 (홈 탭엔 지도 없음, 지도 탭 진입 시 로드)
-try { kakao.maps.load(function() {}); } catch(e) {}
+// 카카오맵은 지도 탭 진입 시 동적으로 로드한다.
+setTimeout(showReleaseNotice, 800);
 init().then(() => handleUrlParam());
 </script>
 </body>
