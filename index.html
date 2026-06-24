@@ -154,23 +154,27 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .btn-rate:active{opacity:.85} .btn-rate:disabled{background:var(--text4);cursor:not-allowed}
 
 /* 리뷰 */
-.review-item{padding:12px 0;border-bottom:1px solid var(--border)}
+.review-item{padding:14px 0;border-bottom:1px solid var(--border)}
 .review-item:last-child{border-bottom:none}
-.review-header{display:flex;align-items:center;gap:6px;font-size:13px}
-.review-stars{color:var(--yellow)} .review-time{color:var(--text3);margin-left:auto;font-size:11px}
-.review-school{font-size:13px;font-weight:800;color:var(--text);cursor:pointer}
+.review-top-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+.review-identity{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.review-time{color:var(--text3);font-size:12px;line-height:1.35;white-space:nowrap;padding-top:1px}
+.review-school{font-size:14px;font-weight:900;color:var(--text);cursor:pointer;line-height:1.35;min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:keep-all}
 .review-school:active{color:var(--blue)}
-.review-nick{font-size:12px;font-weight:800;color:var(--purple);background:var(--purple-l);padding:2px 7px;border-radius:8px;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.review-meal{margin-top:5px;font-size:12px;color:var(--text3);line-height:1.4;background:var(--bg);border-radius:8px;padding:7px 9px}
-.review-meal-date{font-weight:800;color:var(--text2);margin-right:4px}
-.review-picked-menu{display:inline-flex;align-items:center;gap:4px;margin-top:6px;background:var(--yellow-l);color:var(--text);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:800}
-.review-text{font-size:13px;color:var(--text2);margin-top:6px;line-height:1.45}
-.review-photo{margin-top:6px;border-radius:8px;max-width:200px;max-height:150px;object-fit:cover}
+.review-nick{font-size:12px;font-weight:900;color:var(--purple);background:var(--purple-l);padding:3px 8px;border-radius:9px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.review-meal{margin-top:8px;background:var(--bg);border-radius:10px;padding:8px 10px}
+.review-meal-line{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.review-meal-meta{font-size:13px;font-weight:900;color:var(--text2);line-height:1.35;min-width:0;overflow-wrap:anywhere;word-break:keep-all}
+.review-stars{display:flex;align-items:center;gap:1px;color:var(--yellow);font-size:17px;line-height:1;white-space:nowrap;flex-shrink:0;padding-top:1px}
+.review-menu-preview{margin-top:4px;font-size:13px;color:var(--text3);line-height:1.45;overflow-wrap:anywhere;word-break:keep-all}
+.review-picked-menu{display:inline-flex;align-items:center;gap:4px;margin-top:7px;background:var(--yellow-l);color:var(--text);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:800;max-width:100%;overflow-wrap:anywhere;word-break:keep-all}
+.review-text{font-size:13px;color:var(--text2);margin-top:7px;line-height:1.45;overflow-wrap:anywhere;word-break:keep-all}
+.review-photo{margin-top:7px;border-radius:8px;max-width:200px;max-height:150px;object-fit:cover}
 .review-actions{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
 .review-action-btn{border:1px solid var(--border);background:var(--bg);border-radius:10px;padding:6px 9px;font-size:12px;font-weight:800;color:var(--text2);font-family:inherit;cursor:pointer}
 .review-action-btn.selected{background:var(--blue-l);border-color:var(--blue);color:var(--blue)}
 .review-comments{margin-top:10px;background:var(--bg);border-radius:12px;padding:8px 10px}
-.review-comment{padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;color:var(--text2);line-height:1.4}
+.review-comment{padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;color:var(--text2);line-height:1.4;overflow-wrap:anywhere}
 .review-comment:last-child{border-bottom:none}
 .review-comment-nick{font-weight:900;color:var(--text);margin-right:5px}
 .review-comment-time{font-size:10px;color:var(--text3);margin-left:4px}
@@ -1580,12 +1584,26 @@ function mealPreviewText(menu) {
   const items = Array.isArray(menu) ? menu : (typeof menu === 'string' ? menu.split(/[\n,]+/) : []);
   return items.map(i => String(i || '').trim()).filter(Boolean).slice(0, 4).join(' · ');
 }
-function reviewMealHtml(meal) {
-  if (!meal) return '';
+function reviewStarsHtml(score) {
+  const n = Math.max(0, Math.min(5, Number(score) || 0));
+  return Array.from({ length: n }, () => '<span aria-hidden="true">&#11088;</span>').join('');
+}
+function reviewMealHtml(meal, score = 0) {
+  const stars = reviewStarsHtml(score);
+  if (!meal) {
+    return `<div class="review-meal"><div class="review-meal-line"><div class="review-meal-meta">식단 정보 없음</div>${stars ? `<div class="review-stars" aria-label="${score}점">${stars}</div>` : ''}</div></div>`;
+  }
   const date = mealDateLabel(meal.meal_date);
   const type = mealTypeLabel(meal);
-  const preview = mealPreviewText(meal.menu) || '식단 정보 없음';
-  return `<div class="review-meal">${date ? `<span class="review-meal-date">${escapeHtml(date)}</span>` : ''}<span class="review-meal-date">${escapeHtml(type)}</span>${escapeHtml(preview)}</div>`;
+  const meta = [date, type].filter(Boolean).join(' ');
+  const preview = mealPreviewText(meal.menu) || '메뉴 정보 없음';
+  return `<div class="review-meal">
+    <div class="review-meal-line">
+      <div class="review-meal-meta">${escapeHtml(meta || '식단 정보 없음')}</div>
+      ${stars ? `<div class="review-stars" aria-label="${score}점">${stars}</div>` : ''}
+    </div>
+    <div class="review-menu-preview">${escapeHtml(preview)}</div>
+  </div>`;
 }
 const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,meal_type,meal_type_label,menu)';
 function renderReviewComments(ratingId, comments = []) {
@@ -1629,20 +1647,21 @@ function renderReviewItem(r) {
   const myReaction = r.my_reaction || '';
   return `
     <div class="review-item">
-      <div class="review-header">
-        ${reviewSchoolHtml(r.schools)}
-        <span class="review-nick">${reviewNickname(r)}</span>
-        <span class="review-stars">${'⭐'.repeat(r.score || 0)}</span>
+      <div class="review-top-row">
+        <div class="review-identity">
+          ${reviewSchoolHtml(r.schools)}
+          <span class="review-nick">${reviewNickname(r)}</span>
+        </div>
         <span class="review-time">${timeAgo(r.created_at)}</span>
       </div>
-      ${reviewMealHtml(r.meals)}
+      ${reviewMealHtml(r.meals, r.score)}
       ${r.selected_menu_item ? `<div class="review-picked-menu">대표 메뉴 ${escapeHtml(r.selected_menu_item)}</div>` : ''}
       ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
       ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
       <div class="review-actions">
-        <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">👍 ${likes}</button>
-        <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">👎 ${dislikes}</button>
-        <button class="review-action-btn${openCommentThreads.has(String(r.id)) ? ' selected' : ''}" id="review-comment-toggle-${r.id}" onclick="toggleReviewComments(${r.id})">💬 댓글 ${(r.comments || []).length}</button>
+        <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">&#128077; ${likes}</button>
+        <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">&#128078; ${dislikes}</button>
+        <button class="review-action-btn${openCommentThreads.has(String(r.id)) ? ' selected' : ''}" id="review-comment-toggle-${r.id}" onclick="toggleReviewComments(${r.id})">&#128172; 댓글 ${(r.comments || []).length}</button>
       </div>
       ${renderReviewComments(r.id, r.comments || [])}
     </div>`;
