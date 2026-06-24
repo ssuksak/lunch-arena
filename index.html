@@ -508,7 +508,6 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <!-- 사진 input (hidden) -->
 <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="onPhotoSelected(this)">
 
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=9b2d956d02e8bd8ad58de3641a8c8c62&libraries=services,clusterer&autoload=false"></script>
 <script>
 // ===== CONFIG =====
 const SUPABASE_URL = 'https://puwthqzbounohrdmacgo.supabase.co';
@@ -685,6 +684,8 @@ let pendingShare = null; // 공유 버튼용 데이터 캐시
 let searchTimer = null;
 let kakaoMap = null, mapSchools = [], clusterer = null;
 let mapLoaded = false;
+const KAKAO_MAP_SDK_URL = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=9b2d956d02e8bd8ad58de3641a8c8c62&libraries=services,clusterer&autoload=false';
+let kakaoMapSdkPromise = null;
 let latestReviewsVisible = false;
 const SCHOOL_CHANGE_LIMIT_PER_MONTH = 3;
 let schoolChangeAdResolver = null;
@@ -720,10 +721,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + tab).classList.add('active');
   document.querySelectorAll('.tab-item')[tabOrder[tab]].classList.add('active');
-  if (tab === 'map') {
-    if (!mapLoaded) { mapLoaded = true; initKakaoMap(); }
-    else { setTimeout(() => { kakaoMap?.relayout?.(); focusMySchoolOnMap(); }, 0); }
-  }
+  if (tab === 'map') openMapTab();
   if (tab === 'ranking') { document.getElementById('rank-date').textContent = fmtDateKR(rankDate); loadFullRanking(); }
   if (tab === 'battle') loadBattle();
 }
@@ -2202,12 +2200,50 @@ function shareBattle(nameA, nameB, scoreA, scoreB, pctA, pctB) {
 }
 
 // ===== MAP =====
-function initKakaoMap() {
+function isLocalMapOrigin() {
+  return location.protocol === 'file:' || ['127.0.0.1', 'localhost'].includes(location.hostname);
+}
+function loadKakaoMapSdk() {
+  if (window.kakao?.maps?.Map && window.kakao?.maps?.MarkerClusterer) return Promise.resolve();
+  if (kakaoMapSdkPromise) return kakaoMapSdkPromise;
+  kakaoMapSdkPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-kakao-map-sdk="true"]');
+    if (existing) existing.remove();
+    const script = document.createElement('script');
+    script.src = KAKAO_MAP_SDK_URL;
+    script.async = true;
+    script.dataset.kakaoMapSdk = 'true';
+    if (isLocalMapOrigin()) script.referrerPolicy = 'no-referrer';
+    script.onload = () => {
+      if (window.kakao?.maps?.load) window.kakao.maps.load(resolve);
+      else resolve();
+    };
+    script.onerror = () => reject(new Error('Kakao map SDK load failed'));
+    document.head.appendChild(script);
+  });
+  return kakaoMapSdkPromise;
+}
+async function openMapTab() {
+  if (!mapLoaded) {
+    mapLoaded = true;
+    await initKakaoMap();
+  } else {
+    setTimeout(() => { kakaoMap?.relayout?.(); focusMySchoolOnMap(); }, 0);
+  }
+}
+async function initKakaoMap() {
   const container = document.getElementById('kakao-map');
+  container.innerHTML = '<div class="loading" style="height:100%;display:flex;flex-direction:column;justify-content:center"><div class="loading-emoji">🗺</div><div class="loading-text">지도 불러오는 중...</div></div>';
+  try {
+    await loadKakaoMapSdk();
+  } catch (e) {
+    console.warn('카카오맵 SDK 로드 실패:', e);
+  }
   if (!window.kakao?.maps?.Map || !window.kakao?.maps?.MarkerClusterer) {
     container.innerHTML = '<div class="empty" style="height:100%;display:flex;flex-direction:column;justify-content:center"><div class="empty-emoji">🗺</div><div>지도를 불러오지 못했어요</div></div>';
     return;
   }
+  container.innerHTML = '';
   kakaoMap = new kakao.maps.Map(container, { center: new kakao.maps.LatLng(36.5, 127.8), level: 13 });
   clusterer = new kakao.maps.MarkerClusterer({
     map: kakaoMap, averageCenter: true, minLevel: 5,
@@ -2361,8 +2397,7 @@ async function handleUrlParam() {
   history.replaceState(null, '', cleanUrl);
 }
 
-// 카카오맵 지연 로드 (홈 탭엔 지도 없음, 지도 탭 진입 시 로드)
-try { kakao.maps.load(function() {}); } catch(e) {}
+// 카카오맵은 지도 탭 진입 시 동적으로 로드한다.
 init().then(() => handleUrlParam());
 </script>
 </body>
