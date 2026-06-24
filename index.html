@@ -668,7 +668,10 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + tab).classList.add('active');
   document.querySelectorAll('.tab-item')[tabOrder[tab]].classList.add('active');
-  if (tab === 'map' && !mapLoaded) { mapLoaded = true; initKakaoMap(); }
+  if (tab === 'map') {
+    if (!mapLoaded) { mapLoaded = true; initKakaoMap(); }
+    else { setTimeout(() => { kakaoMap?.relayout?.(); focusMySchoolOnMap(); }, 0); }
+  }
   if (tab === 'ranking') { document.getElementById('rank-date').textContent = fmtDateKR(rankDate); loadFullRanking(); }
   if (tab === 'battle') loadBattle();
 }
@@ -1970,6 +1973,16 @@ function initKakaoMap() {
   });
   loadMapSchools();
 }
+function focusMySchoolOnMap() {
+  if (!kakaoMap || !mySchool || !mapSchools.length) return false;
+  const mine = mapSchools.find(s => String(s.id) === String(mySchool.id));
+  if (!mine || mine.lat == null || mine.lng == null) return false;
+  const pos = new kakao.maps.LatLng(mine.lat, mine.lng);
+  kakaoMap.relayout?.();
+  kakaoMap.setCenter(pos);
+  kakaoMap.setLevel(3);
+  return true;
+}
 async function loadMapSchools() {
   let all = [], page = 0;
   while (true) {
@@ -1990,10 +2003,7 @@ async function loadMapSchools() {
   });
   clusterer.addMarkers(markers);
   // 내 학교 위치로 이동
-  if (mySchool) {
-    const mine = all.find(s => s.id === mySchool.id);
-    if (mine) { kakaoMap.setCenter(new kakao.maps.LatLng(mine.lat, mine.lng)); kakaoMap.setLevel(6); }
-  }
+  focusMySchoolOnMap();
 }
 async function openBottomSheet(school) {
   const bs = document.getElementById('bottom-sheet');
