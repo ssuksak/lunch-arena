@@ -176,7 +176,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .review-comment-form{display:flex;gap:6px;margin-top:8px}
 .review-comment-input{flex:1;min-width:0;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 9px;font-size:12px;font-family:inherit;color:var(--text)}
 .review-comment-input:focus{outline:none;border-color:var(--blue)}
-.review-comment-submit{border:none;background:var(--blue);color:white;border-radius:9px;padding:0 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer}
+.review-comment-submit{border:none;background:var(--blue);color:white;border-radius:9px;padding:0 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer}.review-comment-submit:disabled{background:var(--text4);cursor:not-allowed}
 /* 지도 */
 .kakao-map-wrap{position:relative;width:100%;height:calc(100vh - 56px - 80px)}
 #kakao-map{width:100%;height:100%;filter:saturate(0.45) brightness(1.1) contrast(0.9) sepia(0.15)}
@@ -1523,6 +1523,7 @@ async function submitRating(mealId) {
   }
 }
 // ===== REVIEWS =====
+const openCommentThreads = new Set();
 function reviewSchoolHtml(s) {
   if (!s) return '<span class="review-school">학교 정보 없음</span>';
   const schoolJson = JSON.stringify(s).replace(/"/g, '&quot;');
@@ -1548,6 +1549,7 @@ function reviewMealHtml(meal) {
 }
 const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,meal_type,meal_type_label,menu)';
 function renderReviewComments(ratingId, comments = []) {
+  const isOpen = openCommentThreads.has(String(ratingId));
   const list = comments.length ? comments.map(c => `
     <div class="review-comment">
       <span class="review-comment-nick">${escapeHtml(c.nickname || '익명의 급식러')}</span>
@@ -1555,13 +1557,31 @@ function renderReviewComments(ratingId, comments = []) {
       <span class="review-comment-time">${timeAgo(c.created_at)}</span>
     </div>`).join('') : '<div class="review-comment" style="color:var(--text3)">아직 댓글이 없어요</div>';
   return `
-    <div class="review-comments">
+    <div class="review-comments${isOpen ? '' : ' hide'}" id="review-comments-${ratingId}">
       ${list}
       <div class="review-comment-form">
-        <input class="review-comment-input" id="review-comment-${ratingId}" maxlength="300" placeholder="댓글 달기" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId})">
-        <button class="review-comment-submit" onclick="submitReviewComment(${ratingId})">등록</button>
+        <input class="review-comment-input" id="review-comment-${ratingId}" maxlength="300" placeholder="댓글 달기" oninput="updateReviewCommentSubmit(${ratingId})" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId})">
+        <button class="review-comment-submit" id="review-comment-submit-${ratingId}" onclick="submitReviewComment(${ratingId})" disabled>등록</button>
       </div>
     </div>`;
+}
+function toggleReviewComments(ratingId) {
+  const key = String(ratingId);
+  const el = document.getElementById(`review-comments-${ratingId}`);
+  const shouldOpen = !el || el.classList.contains('hide');
+  if (shouldOpen) openCommentThreads.add(key);
+  else openCommentThreads.delete(key);
+  if (el) {
+    el.classList.toggle('hide', !shouldOpen);
+    const btn = document.getElementById(`review-comment-toggle-${ratingId}`);
+    if (btn) btn.classList.toggle('selected', shouldOpen);
+    if (shouldOpen) setTimeout(() => document.getElementById(`review-comment-${ratingId}`)?.focus(), 0);
+  }
+}
+function updateReviewCommentSubmit(ratingId) {
+  const input = document.getElementById(`review-comment-${ratingId}`);
+  const btn = document.getElementById(`review-comment-submit-${ratingId}`);
+  if (btn) btn.disabled = !input?.value?.trim();
 }
 function renderReviewItem(r) {
   const likes = r.reaction_counts?.like || 0;
@@ -1582,7 +1602,7 @@ function renderReviewItem(r) {
       <div class="review-actions">
         <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">👍 ${likes}</button>
         <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">👎 ${dislikes}</button>
-        <span style="font-size:12px;color:var(--text3)">댓글 ${(r.comments || []).length}</span>
+        <button class="review-action-btn${openCommentThreads.has(String(r.id)) ? ' selected' : ''}" id="review-comment-toggle-${r.id}" onclick="toggleReviewComments(${r.id})">💬 댓글 ${(r.comments || []).length}</button>
       </div>
       ${renderReviewComments(r.id, r.comments || [])}
     </div>`;
@@ -1739,6 +1759,7 @@ async function submitReviewComment(ratingId) {
   const input = document.getElementById(`review-comment-${ratingId}`);
   const comment = input?.value?.trim() || '';
   if (!comment) return;
+  openCommentThreads.add(String(ratingId));
   await getUserId();
   const res = await fetch(`${SUPABASE_URL}/rest/v1/review_comments`, {
     method: 'POST',
