@@ -380,7 +380,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     </div>
     <div style="position:relative;margin-bottom:8px">
       <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px">🔍</span>
-      <input type="text" style="width:100%;padding:14px 14px 14px 42px;background:var(--bg);border:1.5px solid var(--border);border-radius:14px;font-size:15px;font-family:inherit;color:var(--text)" id="set-school-input" placeholder="학교 이름 검색" autocomplete="off" oninput="onSetSchoolSearch(this.value)">
+      <input type="text" style="width:100%;padding:14px 14px 14px 42px;background:var(--bg);border:1.5px solid var(--border);border-radius:14px;font-size:15px;font-family:inherit;color:var(--text)" id="set-school-input" placeholder="학교 이름이나 지역 검색" autocomplete="off" oninput="onSetSchoolSearch(this.value)">
     </div>
     <div id="set-school-results"></div>
     <div class="my-activity">
@@ -442,7 +442,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     </div>
     <div class="home-search-big">
       <span class="si">🔍</span>
-      <input type="text" id="home-search" placeholder="학교 이름으로 바로 검색" autocomplete="off" oninput="onHomeSearch(this.value)">
+      <input type="text" id="home-search" placeholder="학교 이름이나 지역으로 검색" autocomplete="off" oninput="onHomeSearch(this.value)">
       <div class="search-results" id="home-results"></div>
     </div>
     <!-- 검색된 학교 상세 -->
@@ -961,12 +961,17 @@ async function selectMySchool(s) {
   }
 }
 let setSchoolTimer = null;
+const SCHOOL_SEARCH_SELECT = 'id,name,type,address,atpt_code,school_code';
+function schoolSearchPath(q, limit = 15) {
+  const term = encodeURIComponent(String(q || '').trim());
+  return `schools?or=(name.ilike.*${term}*,address.ilike.*${term}*)&order=name.asc&limit=${limit}&select=${SCHOOL_SEARCH_SELECT}`;
+}
 async function onSetSchoolSearch(q) {
   clearTimeout(setSchoolTimer);
   const box = document.getElementById('set-school-results');
   if (!q || q.length < 2) { box.innerHTML = ''; return; }
   setSchoolTimer = setTimeout(async () => {
-    const data = await sb(`schools?name=ilike.*${encodeURIComponent(q)}*&limit=10&select=id,name,type,address,atpt_code,school_code`);
+    const data = await sb(schoolSearchPath(q, 10));
     if (!data || data.length === 0) { box.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3);font-size:14px">검색 결과 없음</div>'; }
     else { box.innerHTML = data.map(s => schoolItemHtml(s, `selectMySchool(${JSON.stringify(s).replace(/"/g,'&quot;')})`)).join(''); }
   }, 250);
@@ -1297,7 +1302,7 @@ function onHomeSearch(q) {
   const box = document.getElementById('home-results');
   if (!q || q.length < 2) { box.classList.remove('show'); return; }
   homeSearchTimer = setTimeout(async () => {
-    const data = await sb(`schools?name=ilike.*${encodeURIComponent(q)}*&limit=15&select=id,name,type,address,atpt_code,school_code`);
+    const data = await sb(schoolSearchPath(q, 15));
     if (!data || data.length === 0) { box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3)">검색 결과 없음</div>'; }
     else { box.innerHTML = data.map(s => schoolItemHtml(s, `selectDetailSchool(${JSON.stringify(s).replace(/"/g,'&quot;')})`)).join(''); }
     box.classList.add('show');
