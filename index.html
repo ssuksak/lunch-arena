@@ -962,16 +962,46 @@ async function selectMySchool(s) {
 }
 let setSchoolTimer = null;
 const SCHOOL_SEARCH_SELECT = 'id,name,type,address,atpt_code,school_code';
-function schoolSearchPath(q, limit = 15) {
+function schoolSearchFieldPath(field, q, limit = 15) {
   const term = encodeURIComponent(String(q || '').trim());
-  return `schools?or=(name.ilike.*${term}*,address.ilike.*${term}*)&order=name.asc&limit=${limit}&select=${SCHOOL_SEARCH_SELECT}`;
+  const column = field === 'address' ? 'address' : 'name';
+  return `schools?${column}=ilike.*${term}*&order=name.asc&limit=${limit}&select=${SCHOOL_SEARCH_SELECT}`;
+}
+function schoolSearchRank(s, q) {
+  const term = String(q || '').trim().toLowerCase();
+  const name = String(s?.name || '').toLowerCase();
+  const address = String(s?.address || '').toLowerCase();
+  if (!term) return 9;
+  if (name === term) return 0;
+  if (name.startsWith(term)) return 1;
+  if (name.includes(term)) return 2;
+  if (address.includes(term)) return 3;
+  return 9;
+}
+async function searchSchools(q, limit = 15) {
+  const fetchLimit = Math.max(limit * 4, 80);
+  const [nameMatches, addressMatches] = await Promise.all([
+    sb(schoolSearchFieldPath('name', q, fetchLimit)),
+    sb(schoolSearchFieldPath('address', q, fetchLimit)),
+  ]);
+  const byId = new Map();
+  for (const school of [...(nameMatches || []), ...(addressMatches || [])]) {
+    if (school?.id && !byId.has(school.id)) byId.set(school.id, school);
+  }
+  return [...byId.values()]
+    .sort((a, b) => {
+      const rank = schoolSearchRank(a, q) - schoolSearchRank(b, q);
+      if (rank !== 0) return rank;
+      return String(a.name || '').localeCompare(String(b.name || ''), 'ko');
+    })
+    .slice(0, limit);
 }
 async function onSetSchoolSearch(q) {
   clearTimeout(setSchoolTimer);
   const box = document.getElementById('set-school-results');
   if (!q || q.length < 2) { box.innerHTML = ''; return; }
   setSchoolTimer = setTimeout(async () => {
-    const data = await sb(schoolSearchPath(q, 10));
+    const data = await searchSchools(q, 10);
     if (!data || data.length === 0) { box.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3);font-size:14px">검색 결과 없음</div>'; }
     else { box.innerHTML = data.map(s => schoolItemHtml(s, `selectMySchool(${JSON.stringify(s).replace(/"/g,'&quot;')})`)).join(''); }
   }, 250);
@@ -1302,7 +1332,7 @@ function onHomeSearch(q) {
   const box = document.getElementById('home-results');
   if (!q || q.length < 2) { box.classList.remove('show'); return; }
   homeSearchTimer = setTimeout(async () => {
-    const data = await sb(schoolSearchPath(q, 15));
+    const data = await searchSchools(q, 15);
     if (!data || data.length === 0) { box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3)">검색 결과 없음</div>'; }
     else { box.innerHTML = data.map(s => schoolItemHtml(s, `selectDetailSchool(${JSON.stringify(s).replace(/"/g,'&quot;')})`)).join(''); }
     box.classList.add('show');
