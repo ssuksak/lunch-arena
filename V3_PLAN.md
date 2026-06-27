@@ -27,12 +27,26 @@
 
 ## P0. 바로 확인할 것
 
-- [ ] 토스 인앱에서 최신 AIT 번들이 실제 화면에 반영됐는지 확인
+- [x] 토스 인앱에서 최신 AIT 번들이 실제 화면에 반영됐는지 확인
 - [ ] 2026-06-28 03:40 KST 이후 `cleanup-old-meals-90d` 첫 자동 실행 결과 확인
 - [ ] retention 실행 후 리뷰 피드/우리학교 피드에서 `meal_id = null` 리뷰가 정상 표시되는지 확인
 - [ ] retention 실행 후 `ratings` 총 개수가 줄지 않았는지 확인
 - [ ] 월간 참여 랭킹이 cron 보정 후 정상 유지되는지 확인
 
+## P0 점검 메모 (2026-06-27 22:35 KST)
+
+- AIT 반영: 사용자 확인 기준 완료
+- 현재 시간: 2026-06-27 22:35 KST
+- retention cron 첫 실행 예정: 2026-06-28 03:40 KST
+- `cleanup-old-meals-90d`: 등록 및 활성화 확인
+- `refresh-recent-monthly-rollups`: 등록 및 활성화 확인
+- 현재 90일 초과 meals: 354건
+- 현재 ratings 총계: 149건
+- `meal_id = null` 리뷰: 1건
+- `meal_id = null` 리뷰 중 snapshot 보유: 1건
+- 현재 월간 참여도 row: 100건
+- 현재 월간 대표 메뉴 row: 14건
+- cron 실행 이력은 아직 없음. 첫 실행 후 재확인 필요
 ## P1. 다음 앱 작업
 
 - [ ] 댓글 수정/삭제 UI 추가
@@ -1959,4 +1973,3 @@ ratings.meal_id는 ON DELETE SET NULL이고 ratings snapshot이 있으므로 리
 다만 오래된 meals 원본 row는 제거되므로, 문제가 생기면 cron job을 즉시 비활성화하거나 unschedule한다.
 댓글 수정/삭제 UI는 아직 앱에 붙이지 않았지만 DB 정책은 준비됐다.
 ```
-
