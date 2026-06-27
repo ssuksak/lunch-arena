@@ -1314,7 +1314,7 @@ function activateMealPanel(scope, index) {
     const mealLabelEl = document.getElementById('msc-meal-label');
     if (mealLabelEl) { mealLabelEl.textContent = `${relativeMealDateLabel(state.date || myMealDate)} ${mealTypeLabel(meal)}`; mealLabelEl.style.display = ''; }
   }
-  if (state.ratingContainerId) renderRating(meal.id, document.getElementById(state.ratingContainerId), meal);
+  if (state.ratingContainerId) renderRating(meal.id, document.getElementById(state.ratingContainerId), meal, scope);
   if (state.reviewsContainerId) loadReviews(meal.id, document.getElementById(state.reviewsContainerId));
   if (!sessionStorage.getItem('effect_shown_' + meal.id)) {
     if (rank.r === 'S' || rank.r === 'D' || rank.r === 'A') {
@@ -1562,9 +1562,20 @@ function getRank(s) {
 // wrap: DOM element (my school meal div) or {rating, reviews} object
 const ratingStates = {};
 let currentRatingMealId = null;
-function getRatingState(mealId) {
-  if (!ratingStates[mealId]) ratingStates[mealId] = { score: 0, selectedMenuItem: '', photoFile: null, photoUrl: null, menus: [], schoolId: null };
-  return ratingStates[mealId];
+let currentRatingScope = 'default';
+function ratingStateKey(mealId, scope = 'default') {
+  return `${scope}:${mealId}`;
+}
+function ratingDomKey(scope = 'default', mealId) {
+  return `${String(scope || 'default').replace(/[^a-zA-Z0-9_-]/g, '_')}-${mealId}`;
+}
+function inlineJsString(value) {
+  return JSON.stringify(String(value || 'default')).replace(/"/g, '&quot;');
+}
+function getRatingState(mealId, scope = 'default') {
+  const key = ratingStateKey(mealId, scope);
+  if (!ratingStates[key]) ratingStates[key] = { score: 0, selectedMenuItem: '', photoFile: null, photoUrl: null, menus: [], schoolId: null };
+  return ratingStates[key];
 }
 function canWriteReviewForSchool(schoolId) {
   return !!(schoolId && mySchool?.id && String(mySchool.id) === String(schoolId));
@@ -1577,8 +1588,8 @@ function reviewWriteBlockedHtml(schoolId) {
     <button class="btn-rate" style="margin-top:14px" onclick="openSchoolSetSheet()">내 학교 설정하기</button>
   </div>`;
 }
-function resetRatingState(mealId, meal = null) {
-  const state = getRatingState(mealId);
+function resetRatingState(mealId, meal = null, scope = 'default') {
+  const state = getRatingState(mealId, scope);
   state.score = 0;
   state.selectedMenuItem = '';
   state.photoFile = null;
@@ -1587,12 +1598,14 @@ function resetRatingState(mealId, meal = null) {
   state.schoolId = meal?.school_id || meal?.schools?.id || currentSchool?.id || mySchool?.id || null;
   return state;
 }
-function renderRating(mealId, targetEl, meal = null) {
+function renderRating(mealId, targetEl, meal = null, scope = 'default') {
   if (!targetEl) return;
-  resetRatingState(mealId, meal);
+  const state = resetRatingState(mealId, meal, scope);
+  const domKey = ratingDomKey(scope, mealId);
+  const scopeArg = inlineJsString(scope);
   const alreadyRated = localStorage.getItem(`rated_${mealId}`);
-  if (!alreadyRated && !canWriteReviewForSchool(getRatingState(mealId).schoolId)) {
-    targetEl.innerHTML = reviewWriteBlockedHtml(getRatingState(mealId).schoolId);
+  if (!alreadyRated && !canWriteReviewForSchool(state.schoolId)) {
+    targetEl.innerHTML = reviewWriteBlockedHtml(state.schoolId);
     return;
   }
   targetEl.innerHTML = alreadyRated ? `
@@ -1601,42 +1614,46 @@ function renderRating(mealId, targetEl, meal = null) {
       <div style="font-size:14px;font-weight:700;color:var(--green)">오늘 평가 완료!</div>
       <div style="font-size:12px;color:var(--text3);margin-top:4px">${alreadyRated}점 등록</div>
     </div>` :
-  `<div class="rating-section" id="rating-box-${mealId}">
+  `<div class="rating-section" id="rating-box-${domKey}">
     <div class="rating-title">오늘 급식 어땠어?</div>
     <div class="rating-subtitle">총별점</div>
-    <div class="stars" id="stars-${mealId}">
-      ${[1,2,3,4,5].map(i => `<button type="button" class="star star-empty" onclick="setRating(${i},${mealId})" aria-label="${i}점"><span class="star-icon">⭐</span></button>`).join('')}
+    <div class="stars" id="stars-${domKey}">
+      ${[1,2,3,4,5].map(i => `<button type="button" class="star star-empty" onclick="setRating(${i},${mealId},${scopeArg})" aria-label="${i}점"><span class="star-icon">⭐</span></button>`).join('')}
     </div>
-    ${ratingMenuPickerHtml(mealId)}
-    <textarea class="comment-input" id="comment-${mealId}" placeholder="한줄평 (선택, 100자)"></textarea>
+    ${ratingMenuPickerHtml(mealId, scope)}
+    <textarea class="comment-input" id="comment-${domKey}" placeholder="한줄평 (선택, 100자)"></textarea>
     <div class="photo-upload">
-      <label class="photo-label" for="photo-input" onclick="currentRatingMealId=${mealId}">
+      <label class="photo-label" for="photo-input" onclick="currentRatingMealId=${mealId};currentRatingScope=${scopeArg}">
         📷 사진 첨부 (선택)
       </label>
-      <div class="photo-preview" id="photo-prev-${mealId}">
-        <img id="photo-img-${mealId}" src="">
-        <button class="photo-remove" onclick="removePhoto(${mealId})">✕</button>
+      <div class="photo-preview" id="photo-prev-${domKey}">
+        <img id="photo-img-${domKey}" src="">
+        <button class="photo-remove" onclick="removePhoto(${mealId},${scopeArg})">✕</button>
       </div>
     </div>
-    <button class="btn-rate" id="btn-rate-${mealId}" onclick="submitRating(${mealId})" disabled>별점을 선택해주세요</button>
+    <button class="btn-rate" id="btn-rate-${domKey}" onclick="submitRating(${mealId},${scopeArg})" disabled>별점을 선택해주세요</button>
   </div>`;
-  updateRatingSubmitState(mealId);
+  updateRatingSubmitState(mealId, scope);
 }
-function ratingMenuPickerHtml(mealId) {
-  const menus = getRatingState(mealId).menus.slice(0, 12);
+function ratingMenuPickerHtml(mealId, scope = 'default') {
+  const menus = getRatingState(mealId, scope).menus.slice(0, 12);
   if (!menus.length) return '';
-  return `<div class="rating-subtitle">가장 기억나는 메뉴 하나 골라줘</div><div class="rating-menu-picks" id="menu-picks-${mealId}">${menus.map((item, idx) => `<button type="button" class="rating-menu-pick" onclick="selectReviewMenu(${mealId}, ${idx})">${escapeHtml(item)}</button>`).join('')}</div>`;
+  const domKey = ratingDomKey(scope, mealId);
+  const scopeArg = inlineJsString(scope);
+  return `<div class="rating-subtitle">가장 기억나는 메뉴 하나 골라줘</div><div class="rating-menu-picks" id="menu-picks-${domKey}">${menus.map((item, idx) => `<button type="button" class="rating-menu-pick" onclick="selectReviewMenu(${mealId}, ${idx}, ${scopeArg})">${escapeHtml(item)}</button>`).join('')}</div>`;
 }
-function selectReviewMenu(mealId, idx) {
-  const state = getRatingState(mealId);
+function selectReviewMenu(mealId, idx, scope = 'default') {
+  const state = getRatingState(mealId, scope);
+  const domKey = ratingDomKey(scope, mealId);
   state.selectedMenuItem = state.menus[idx] || '';
-  document.querySelectorAll(`#menu-picks-${mealId} .rating-menu-pick`).forEach((btn, i) => btn.classList.toggle('selected', i === idx));
-  updateRatingSubmitState(mealId);
+  document.querySelectorAll(`#menu-picks-${domKey} .rating-menu-pick`).forEach((btn, i) => btn.classList.toggle('selected', i === idx));
+  updateRatingSubmitState(mealId, scope);
 }
-function updateRatingSubmitState(mealId) {
-  const btn = document.getElementById(`btn-rate-${mealId}`);
+function updateRatingSubmitState(mealId, scope = 'default') {
+  const domKey = ratingDomKey(scope, mealId);
+  const btn = document.getElementById(`btn-rate-${domKey}`);
   if (!btn) return;
-  const state = getRatingState(mealId);
+  const state = getRatingState(mealId, scope);
   const needsMenu = state.menus.length > 0;
   if (!state.score) {
     btn.disabled = true;
@@ -1649,34 +1666,47 @@ function updateRatingSubmitState(mealId) {
     btn.textContent = `${state.score}점으로 평가하기`;
   }
 }
-function setRating(n, mealId) {
-  const state = getRatingState(mealId);
+function setRating(n, mealId, scope = 'default') {
+  const state = getRatingState(mealId, scope);
+  const domKey = ratingDomKey(scope, mealId);
   state.score = n;
-  document.querySelectorAll(`#stars-${mealId} .star`).forEach((s, i) => {
+  document.querySelectorAll(`#stars-${domKey} .star`).forEach((s, i) => {
     s.classList.toggle('filled', i < n); s.classList.toggle('star-empty', i >= n);
   });
-  updateRatingSubmitState(mealId);
+  updateRatingSubmitState(mealId, scope);
+}
+function rerenderRatingForMeal(mealId) {
+  if (!mealId) return;
+  Object.entries(mealPanelState || {}).forEach(([scope, state]) => {
+    if (!state?.ratingContainerId || !Array.isArray(state.meals)) return;
+    const meal = state.meals.find(m => String(m.id) === String(mealId));
+    if (!meal) return;
+    renderRating(meal.id, document.getElementById(state.ratingContainerId), meal, scope);
+  });
 }
 function onPhotoSelected(input) {
   const file = input.files[0];
   if (!file) return;
   const mid = currentRatingMealId;
+  const scope = currentRatingScope || 'default';
   if (!mid) return;
-  const state = getRatingState(mid);
+  const state = getRatingState(mid, scope);
+  const domKey = ratingDomKey(scope, mid);
   state.photoFile = file;
   const reader = new FileReader();
   reader.onload = e => {
-    const prev = document.getElementById(`photo-prev-${mid}`);
-    const img = document.getElementById(`photo-img-${mid}`);
+    const prev = document.getElementById(`photo-prev-${domKey}`);
+    const img = document.getElementById(`photo-img-${domKey}`);
     if (prev && img) { img.src = e.target.result; prev.style.display = 'block'; }
   };
   reader.readAsDataURL(file);
 }
-function removePhoto(mealId) {
-  const state = getRatingState(mealId);
+function removePhoto(mealId, scope = 'default') {
+  const state = getRatingState(mealId, scope);
+  const domKey = ratingDomKey(scope, mealId);
   state.photoFile = null;
   state.photoUrl = null;
-  const prev = document.getElementById(`photo-prev-${mealId}`);
+  const prev = document.getElementById(`photo-prev-${domKey}`);
   if (prev) prev.style.display = 'none';
   const input = document.getElementById('photo-input');
   if (input) input.value = '';
@@ -1692,18 +1722,19 @@ async function uploadPhoto(file) {
   if (!res.ok) throw new Error('업로드 실패');
   return `${SUPABASE_URL}/storage/v1/object/public/reviews/${path}`;
 }
-async function submitRating(mealId) {
-  const state = getRatingState(mealId);
-  const comment = (document.getElementById(`comment-${mealId}`) || {}).value?.trim() || '';
+async function submitRating(mealId, scope = 'default') {
+  const state = getRatingState(mealId, scope);
+  const domKey = ratingDomKey(scope, mealId);
+  const comment = (document.getElementById(`comment-${domKey}`) || {}).value?.trim() || '';
   if (!canWriteReviewForSchool(state.schoolId)) {
     alert('내 학교로 등록한 학교의 급식만 리뷰를 작성할 수 있어요.');
     return;
   }
   if (!state.score || (state.menus.length > 0 && !state.selectedMenuItem)) {
-    updateRatingSubmitState(mealId);
+    updateRatingSubmitState(mealId, scope);
     return;
   }
-  const btn = document.getElementById(`btn-rate-${mealId}`);
+  const btn = document.getElementById(`btn-rate-${domKey}`);
   if (btn) { btn.disabled = true; btn.textContent = '등록 중...'; }
 
   try {
@@ -1725,19 +1756,13 @@ async function submitRating(mealId) {
     if (!res.ok && res.status !== 409) {
       const errorText = await res.text().catch(() => '');
       console.warn('리뷰 저장 실패:', res.status, errorText);
-      if (btn) updateRatingSubmitState(mealId);
+      if (btn) updateRatingSubmitState(mealId, scope);
       alert('평가 저장에 실패했어요. 잠시 후 다시 시도해줘.');
       return;
     }
 
     localStorage.setItem(`rated_${mealId}`, state.score);
-    const box = document.getElementById(`rating-box-${mealId}`);
-    if (box) box.innerHTML = `
-      <div style="text-align:center">
-        <div style="font-size:36px;margin-bottom:8px">🎉</div>
-        <div style="font-size:15px;font-weight:700">${res.status === 409 ? '이미 평가했어요' : '평가 완료!'}</div>
-        <div style="font-size:13px;color:var(--text3);margin-top:4px">${state.score}점 등록했어요</div>
-      </div>`;
+    rerenderRatingForMeal(mealId);
     const detailRevEl = document.getElementById('detail-reviews-wrap');
     if (detailRevEl && currentSchool?.id && String(currentSchool.id) === String(state.schoolId)) loadSchoolReviews(currentSchool.id, detailRevEl);
     const msRevEl = document.getElementById('ms-reviews-wrap');
@@ -1745,7 +1770,7 @@ async function submitRating(mealId) {
     if (latestReviewsVisible) loadLatestReviews();
   } catch (e) {
     console.warn('평가 저장 중 오류:', e);
-    if (btn) updateRatingSubmitState(mealId);
+    if (btn) updateRatingSubmitState(mealId, scope);
     alert('평가 저장 중 문제가 생겼어요. 네트워크 상태를 확인하고 다시 시도해줘.');
   }
 }
@@ -2060,7 +2085,10 @@ async function deleteReview(ratingId, mealId = null) {
     alert('삭제할 수 있는 내 리뷰를 찾지 못했어요.');
     return;
   }
-  if (mealId) localStorage.removeItem(`rated_${mealId}`);
+  if (mealId) {
+    localStorage.removeItem(`rated_${mealId}`);
+    rerenderRatingForMeal(mealId);
+  }
   editingReviewIds.delete(String(ratingId));
   refreshVisibleReviews();
 }
