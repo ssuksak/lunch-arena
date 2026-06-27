@@ -1819,3 +1819,53 @@ ratings.meal_id ON DELETE SET NULL 구조가 정상 동작했다.
 5. 전체 리뷰 피드는 급식톡 탭으로 분리
 6. 지도/배틀은 하단 탭에서 제거하고 랭킹 하단 실험실 진입으로 이동
 ```
+
+### 22.11 v3 DB 운영 안정화 적용
+
+2026-06-27 기준으로 v3 MVP 이후 남은 DB 운영 작업 중 안전하게 바로 적용 가능한 항목을 반영했다.
+
+적용 내용:
+
+```text
+1. review_comments 수정/삭제 RLS 정책 추가
+2. 댓글 수정/삭제 권한은 x-comment-owner-key 헤더와 user_key 일치 조건으로 제한
+3. cleanup_old_meals(keep_days, batch_size, dry_run) 함수 추가
+4. cleanup_old_meals는 keep_days 60일 미만 실행을 거부하도록 안전장치 추가
+5. cleanup_old_meals는 public/anon/authenticated 실행 권한을 회수하고 postgres/service_role만 실행 가능
+6. refresh_recent_monthly_rollups(months) 함수 추가
+7. 매일 03:40 KST 90일 초과 meals retention cron 등록
+8. 매일 03:50 KST 최근 2개월 월간 집계 보정 cron 등록
+```
+
+마이그레이션 파일:
+
+```text
+migrations/20260627_v3_db_ops_hardening.sql
+```
+
+적용 직후 검증:
+
+```text
+cleanup_old_meals(90, 5000, true)
+- ok: true
+- cutoff_date: 2026-03-29
+- candidate_count: 354
+- deleted_count: 0
+
+refresh_recent_monthly_rollups(2)
+- ok: true
+- months_refreshed: 2
+
+cron 등록:
+- cleanup-old-meals-90d: 40 18 * * * UTC
+- refresh-recent-monthly-rollups: 50 18 * * * UTC
+```
+
+운영 메모:
+
+```text
+90일 retention cron은 실제 삭제를 수행한다.
+ratings.meal_id는 ON DELETE SET NULL이고 ratings snapshot이 있으므로 리뷰 자체는 삭제되지 않는다.
+다만 오래된 meals 원본 row는 제거되므로, 문제가 생기면 cron job을 즉시 비활성화하거나 unschedule한다.
+댓글 수정/삭제 UI는 아직 앱에 붙이지 않았지만 DB 정책은 준비됐다.
+```
