@@ -1694,3 +1694,66 @@ ratings.meal_id는 ON DELETE SET NULL로 변경 필요
 battles는 과거 battle 삭제 또는 meal FK SET NULL 중 하나를 선택해야 함
 그 전까지는 오래된 meals 삭제 금지
 ```
+### 22.8 v3 retention foundation 적용
+
+2026-06-27 기준으로 오래된 `meals`를 안전하게 줄이기 위한 2차 DB 구조 변경을 적용했다.
+
+마이그레이션 파일:
+
+```text
+migrations/20260627_v3_retention_and_rollups.sql
+```
+
+적용 내용:
+
+```text
+1. ratings.meal_id FK를 ON DELETE CASCADE → ON DELETE SET NULL로 변경
+2. battles.meal_a_id FK를 ON DELETE SET NULL로 변경
+3. battles.meal_b_id FK를 ON DELETE SET NULL로 변경
+4. 학교 1개/월 1개 단위로 월간 집계를 재계산하는 함수 추가
+5. ratings insert/update/delete 시 월간 참여도/대표메뉴 집계 자동 갱신
+6. review_comments insert/update/delete 시 월간 참여도 집계 자동 갱신
+7. review_reactions insert/update/delete 시 월간 참여도 집계 자동 갱신
+8. 이번 달 월간 집계 재생성
+```
+
+검증 결과:
+
+```text
+ratings_meal_id_fkey: ON DELETE SET NULL
+battles_meal_a_id_fkey: ON DELETE SET NULL
+battles_meal_b_id_fkey: ON DELETE SET NULL
+trg_refresh_monthly_rollups_ratings: enabled
+trg_refresh_monthly_rollups_review_comments: enabled
+trg_refresh_monthly_rollups_review_reactions: enabled
+현재 월 참여도 집계 rows: 100
+현재 월 대표메뉴 집계 rows: 14
+ratings snapshot 누락: 0
+```
+
+의미:
+
+```text
+이제 오래된 meals를 삭제해도 리뷰 자체는 삭제되지 않는다.
+리뷰 카드는 GitHub Pages에 배포된 snapshot fallback으로 식단을 표시할 수 있다.
+오래된 battle이 참조하던 meal은 삭제 시 null이 되므로 retention 삭제가 FK 때문에 실패하지 않는다.
+월간 참여도 랭킹은 새 리뷰/댓글/좋아요 이후 자동 갱신된다.
+```
+
+아직 하지 않은 것:
+
+```text
+실제 오래된 meals 삭제
+retention cron 등록
+공개 write RLS 전면 잠금
+사진 Storage 정책 적용
+```
+
+다음 권장 단계:
+
+```text
+1. 하루 정도 Pages/웹뷰 반영 상태 관찰
+2. 90일 초과 meals부터 소량 삭제 테스트
+3. 문제 없으면 90일 retention cron 적용
+4. 안정화 후 60일 retention으로 축소 검토
+```
