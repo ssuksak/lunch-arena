@@ -1757,3 +1757,65 @@ retention cron 등록
 3. 문제 없으면 90일 retention cron 적용
 4. 안정화 후 60일 retention으로 축소 검토
 ```
+### 22.9 내 리뷰 수정/삭제 기능 적용
+
+2026-06-27 기준으로 사용자가 본인이 작성한 리뷰를 직접 수정하거나 삭제할 수 있는 흐름을 추가했다.
+
+적용 내용:
+
+```text
+1. 리뷰 목록에서 현재 사용자 user_key와 리뷰 user_key가 같은 경우에만 수정/삭제 버튼 표시
+2. 수정 시 별점, 대표 메뉴, 한줄평을 변경 가능
+3. 삭제 시 해당 리뷰 삭제 및 rated_* localStorage 표시 제거
+4. Supabase ratings update/delete RLS 정책 추가
+5. update 권한은 score/comment/selected_menu_item/nickname 컬럼으로 제한
+6. 댓글과 반응은 ratings 삭제 시 기존 FK cascade 구조에 따라 함께 삭제
+```
+
+마이그레이션 파일:
+
+```text
+migrations/20260627_review_edit_delete.sql
+```
+
+보안 메모:
+
+```text
+현재 구현은 토스/웹뷰 사용자 식별키를 x-review-owner-key 헤더로 보내고, DB 정책에서 ratings.user_key와 일치하는지 확인한다.
+기존 익명 클라이언트 구조와 호환되는 방식이지만, 클라이언트가 user_key를 보유하는 구조이므로 v3 보안 강화 단계에서는 Edge Function 또는 수정 전용 토큰 기반 구조로 한 번 더 강화하는 것이 좋다.
+```
+### 22.10 v3 2차 UX 개편 및 90일 retention 소량 테스트
+
+2026-06-27 기준으로 v3 다음 개편의 1차 적용을 진행했다.
+
+DB retention 소량 테스트:
+
+```text
+기준일: 2026-03-29 이전 meals
+삭제 전 90일 초과 meals: 353건
+삭제한 meals: 10건
+삭제 후 90일 초과 meals: 343건
+전체 리뷰: 149건 유지
+삭제된 meal을 참조하던 리뷰: 1건
+해당 리뷰 결과: ratings.meal_id = null, snapshot 유지
+삭제 후보 remaining: 0건
+```
+
+판단:
+
+```text
+ratings.meal_id ON DELETE SET NULL 구조가 정상 동작했다.
+리뷰는 삭제되지 않고 ratings snapshot으로 표시 가능하다.
+다음 단계는 90일 초과 meals를 더 큰 단위로 지우기 전, Pages 반영 후 리뷰 피드와 우리학교 피드를 한 번 더 관찰하는 것이다.
+```
+
+프론트 적용 내용:
+
+```text
+1. 홈을 정적 통계 카드 중심에서 내 학교 급식 + 실시간 급식톡 중심으로 개편
+2. 홈 통계는 작은 보조 문장으로 축소
+3. 하단 탭을 홈 / 우리학교 / 급식톡 / 랭킹으로 변경
+4. 우리학교 탭을 신설하여 내 학교 급식, 대표메뉴, 학교 리뷰를 모아 표시
+5. 전체 리뷰 피드는 급식톡 탭으로 분리
+6. 지도/배틀은 하단 탭에서 제거하고 랭킹 하단 실험실 진입으로 이동
+```
