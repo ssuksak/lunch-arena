@@ -459,6 +459,10 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     <div id="latest-reviews-wrap"></div>
     <div class="section-title">🔥 이번 달 리뷰 참여왕</div>
     <div id="monthly-engagement-ranking"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">참여 랭킹 준비 중...</div></div></div>
+    <div id="monthly-menu-section" class="hide">
+      <div class="section-title">🍽️ 이번 달 우리 학교 대표메뉴</div>
+      <div id="monthly-menu-stats"></div>
+    </div>
     <!-- 오늘 급식왕 -->
     <div class="section-title">🏆 오늘의 급식왕 <span class="section-more" onclick="switchTab('ranking')">더보기</span></div>
     <div id="today-ranking"><div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">랭킹 준비 중...</div></div></div>
@@ -1656,13 +1660,26 @@ function reviewStarsHtml(score) {
   const n = Math.max(0, Math.min(5, Number(score) || 0));
   return Array.from({ length: n }, () => '<span aria-hidden="true">&#11088;</span>').join('');
 }
+function reviewDisplayMeal(review) {
+  if (!review) return null;
+  if (review.meals) return review.meals;
+  if (review.meal_date_snapshot || review.meal_type_snapshot || review.meal_menu_snapshot) {
+    return {
+      meal_date: review.meal_date_snapshot || null,
+      meal_type: review.meal_type_snapshot || null,
+      meal_type_label: review.meal_type_snapshot || null,
+      menu: review.meal_menu_snapshot || []
+    };
+  }
+  return null;
+}
 function reviewMealHtml(meal, score = 0) {
   const stars = reviewStarsHtml(score);
   if (!meal) {
     return `<div class="review-meal"><div class="review-meal-line"><div class="review-meal-meta">식단 정보 없음</div>${stars ? `<div class="review-stars" aria-label="${score}점">${stars}</div>` : ''}</div></div>`;
   }
   const date = mealDateLabel(meal.meal_date);
-  const type = mealTypeLabel(meal);
+  const type = meal.meal_type_label || meal.meal_type || mealTypeLabel(meal);
   const meta = [date, type].filter(Boolean).join(' ');
   const preview = mealPreviewText(meal.menu) || '메뉴 정보 없음';
   return `<div class="review-meal">
@@ -1673,7 +1690,7 @@ function reviewMealHtml(meal, score = 0) {
     <div class="review-menu-preview">${escapeHtml(preview)}</div>
   </div>`;
 }
-const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,meal_type,meal_type_label,menu)';
+const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname,meal_date_snapshot,meal_type_snapshot,meal_menu_snapshot,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,meal_type,meal_type_label,menu)';
 function renderReviewComments(ratingId, comments = []) {
   const isOpen = openCommentThreads.has(String(ratingId));
   const list = comments.length ? comments.map(c => `
@@ -1722,7 +1739,7 @@ function renderReviewItem(r) {
         </div>
         <span class="review-time">${timeAgo(r.created_at)}</span>
       </div>
-      ${reviewMealHtml(r.meals, r.score)}
+      ${reviewMealHtml(reviewDisplayMeal(r), r.score)}
       ${r.selected_menu_item ? `<div class="review-picked-menu">대표 메뉴 ${escapeHtml(r.selected_menu_item)}</div>` : ''}
       ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
       ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
@@ -1908,7 +1925,7 @@ function myCommentsHtml(comments = []) {
       <div class="my-comment-list">
         ${comments.map(c => {
           const r = c.ratings || {};
-          const meal = reviewMealHtml(r.meals);
+          const meal = reviewMealHtml(reviewDisplayMeal(r), r.score || 0);
           const schoolName = r.schools?.name || '학교 정보 없음';
           const score = r.score ? `${'⭐'.repeat(r.score)} ` : '';
           return `
@@ -2499,11 +2516,11 @@ function goMyLocation() {
 function monthlyRange(d = new Date()) {
   const start = new Date(d.getFullYear(), d.getMonth(), 1);
   const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-  return { start: start.toISOString(), end: end.toISOString() };
+  return { start: start.toISOString(), end: end.toISOString(), month: fmtDate(start) };
 }
 function engagementRankCard(item, index) {
   const numCls = index < 3 ? `rank-${index+1}` : '';
-  const score = Math.round(item.score * 10) / 10;
+  const score = Math.round(Number(item.score || 0) * 10) / 10;
   return `<div class="ranking-card" onclick="openReviewSchool(${JSON.stringify(item.school).replace(/"/g,'&quot;')})">
     <div class="rank-num ${numCls}">${index + 1}</div>
     <div class="rank-info">
@@ -2513,55 +2530,103 @@ function engagementRankCard(item, index) {
     <div class="rank-score">${score}</div>
   </div>`;
 }
+function normalizeEngagementRow(row) {
+  return {
+    school: row.schools || null,
+    reviewCount: row.review_count || 0,
+    commentCount: row.comment_count || 0,
+    reactionCount: row.reaction_count || 0,
+    photoCount: row.photo_count || 0,
+    score: row.score || 0
+  };
+}
+async function loadMonthlyEngagementRankingFallback(wrap, start, end) {
+  const reviews = await sb(`ratings?created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}&select=id,school_id,schools(id,name,type,address,atpt_code,school_code)`);
+  if (!reviews || !reviews.length) return [];
+  const ratingIds = reviews.map(r => r.id).filter(Boolean);
+  const idFilter = ratingIds.join(',');
+  const [comments, reactions] = idFilter ? await Promise.all([
+    sb(`review_comments?rating_id=in.(${idFilter})&select=rating_id`),
+    sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id`)
+  ]) : [[], []];
+  const schoolByRating = new Map(reviews.map(r => [r.id, r.school_id]));
+  const stats = new Map();
+  function bucket(schoolId) {
+    if (!stats.has(schoolId)) {
+      const review = reviews.find(r => r.school_id === schoolId);
+      stats.set(schoolId, { school: review?.schools || null, reviewCount: 0, commentCount: 0, reactionCount: 0, score: 0 });
+    }
+    return stats.get(schoolId);
+  }
+  for (const r of reviews) {
+    const b = bucket(r.school_id);
+    b.reviewCount += 1;
+    b.score += 10;
+  }
+  for (const c of (comments || [])) {
+    const schoolId = schoolByRating.get(c.rating_id);
+    if (!schoolId) continue;
+    const b = bucket(schoolId);
+    b.commentCount += 1;
+    b.score += 3;
+  }
+  for (const rr of (reactions || [])) {
+    const schoolId = schoolByRating.get(rr.rating_id);
+    if (!schoolId) continue;
+    const b = bucket(schoolId);
+    b.reactionCount += 1;
+    b.score += 1;
+  }
+  return [...stats.values()].filter(x => x.school).sort((a, b) => b.score - a.score || b.reviewCount - a.reviewCount || b.commentCount - a.commentCount).slice(0, 3);
+}
 async function loadMonthlyEngagementRanking() {
   const wrap = document.getElementById('monthly-engagement-ranking');
   if (!wrap) return;
-  const { start, end } = monthlyRange();
+  const { start, end, month } = monthlyRange();
   try {
-    const reviews = await sb(`ratings?created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}&select=id,school_id,schools(id,name,type,address,atpt_code,school_code)`);
-    if (!reviews || !reviews.length) {
-      wrap.innerHTML = `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">💬</div><div>이번 달 리뷰 참여가 아직 없어요</div></div>`;
-      return;
-    }
-    const ratingIds = reviews.map(r => r.id).filter(Boolean);
-    const idFilter = ratingIds.join(',');
-    const [comments, reactions] = idFilter ? await Promise.all([
-      sb(`review_comments?rating_id=in.(${idFilter})&select=rating_id`),
-      sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id`)
-    ]) : [[], []];
-    const schoolByRating = new Map(reviews.map(r => [r.id, r.school_id]));
-    const stats = new Map();
-    function bucket(schoolId) {
-      if (!stats.has(schoolId)) {
-        const review = reviews.find(r => r.school_id === schoolId);
-        stats.set(schoolId, { school: review?.schools || null, reviewCount: 0, commentCount: 0, reactionCount: 0, score: 0 });
-      }
-      return stats.get(schoolId);
-    }
-    for (const r of reviews) {
-      const b = bucket(r.school_id);
-      b.reviewCount += 1;
-      b.score += 1;
-    }
-    for (const c of (comments || [])) {
-      const schoolId = schoolByRating.get(c.rating_id);
-      if (!schoolId) continue;
-      const b = bucket(schoolId);
-      b.commentCount += 1;
-      b.score += 0.5;
-    }
-    for (const rr of (reactions || [])) {
-      const schoolId = schoolByRating.get(rr.rating_id);
-      if (!schoolId) continue;
-      const b = bucket(schoolId);
-      b.reactionCount += 1;
-      b.score += 0.2;
-    }
-    const top = [...stats.values()].filter(x => x.school).sort((a, b) => b.score - a.score || b.reviewCount - a.reviewCount || b.commentCount - a.commentCount).slice(0, 3);
-    wrap.innerHTML = top.length ? top.map(engagementRankCard).join('') : `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">💬</div><div>이번 달 리뷰 참여가 아직 없어요</div></div>`;
+    const rows = await sb(`school_engagement_monthly?month=eq.${month}&order=score.desc&order=review_count.desc&limit=3&select=school_id,review_count,comment_count,reaction_count,photo_count,score,schools(id,name,type,address,atpt_code,school_code)`);
+    const top = (rows || []).map(normalizeEngagementRow).filter(x => x.school);
+    const fallbackTop = top.length ? top : await loadMonthlyEngagementRankingFallback(wrap, start, end);
+    wrap.innerHTML = fallbackTop.length ? fallbackTop.map(engagementRankCard).join('') : `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">💬</div><div>이번 달 리뷰 참여가 아직 없어요</div></div>`;
   } catch (e) {
     console.warn('월간 참여 랭킹 불러오기 실패:', e);
     wrap.innerHTML = `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">😢</div><div>참여 랭킹을 불러오지 못했어요</div></div>`;
+  }
+}
+function menuStatCard(row, index) {
+  const numCls = index < 3 ? `rank-${index+1}` : '';
+  const avg = row.avg_score ? `${Number(row.avg_score).toFixed(1)}점` : '평점 준비중';
+  return `<div class="ranking-card">
+    <div class="rank-num ${numCls}">${index + 1}</div>
+    <div class="rank-info">
+      <div class="rank-school">${escapeHtml(row.menu_item || '대표메뉴')}</div>
+      <div class="rank-menu-preview">선택 ${row.pick_count || 0} · ${avg}${row.photo_count ? ` · 인증샷 ${row.photo_count}` : ''}</div>
+    </div>
+    <div class="rank-score">${row.pick_count || 0}</div>
+  </div>`;
+}
+async function loadMySchoolMenuStats() {
+  const section = document.getElementById('monthly-menu-section');
+  const wrap = document.getElementById('monthly-menu-stats');
+  if (!section || !wrap) return;
+  if (!mySchool?.id) {
+    section.classList.add('hide');
+    wrap.innerHTML = '';
+    return;
+  }
+  const { month } = monthlyRange();
+  try {
+    const rows = await sb(`school_menu_stats_monthly?month=eq.${month}&school_id=eq.${mySchool.id}&order=pick_count.desc&order=avg_score.desc&limit=3&select=menu_item,pick_count,avg_score,photo_count`);
+    if (!rows || !rows.length) {
+      section.classList.add('hide');
+      wrap.innerHTML = '';
+      return;
+    }
+    section.classList.remove('hide');
+    wrap.innerHTML = rows.map(menuStatCard).join('');
+  } catch (e) {
+    console.warn('우리 학교 대표메뉴 불러오기 실패:', e);
+    section.classList.add('hide');
   }
 }
 
@@ -2578,6 +2643,7 @@ async function init() {
   document.getElementById('stat-meals').textContent = mealCount > 0 ? mealCount.toLocaleString() : '-';
   document.getElementById('stat-ratings').textContent = ratingCount > 0 ? ratingCount.toLocaleString() : '0';
   loadMonthlyEngagementRanking();
+  loadMySchoolMenuStats();
   // 오늘 랭킹 TOP5
   const todayMeals = await sb(`meals?meal_date=eq.${fmtDate(mealDate)}&order=auto_score.desc&limit=5&select=auto_score,auto_rank,meal_type,meal_type_label,menu,schools!inner(id,name,type)`);
   if (todayMeals && todayMeals.length > 0) {
