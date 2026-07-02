@@ -596,9 +596,17 @@ const sb = (path, opts = {}) => {
   if (opts.prefer) headers['Prefer'] = opts.prefer;
   return fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers }).then(r => r.json());
 };
-const edge = (fn, body) => fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
-  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-}).then(r => r.json());
+const edge = async (fn, body) => {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok && data && typeof data === 'object') data._status = res.status;
+  return data;
+};
 const rpc = async (fn, body = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
     method: 'POST',
@@ -1195,6 +1203,19 @@ function loadTossFramework() {
   }
   return tossFrameworkPromise;
 }
+async function logAitGoal(logName, params = {}) {
+  try {
+    const mod = await loadTossFramework();
+    if (!mod?.Analytics?.click) return;
+    await mod.Analytics.click({
+      log_name: logName,
+      app_goal: logName,
+      ...params
+    });
+  } catch (e) {
+    console.warn('AIT analytics log failed:', logName, e);
+  }
+}
 function appDeepLinkForSchool(school) {
   return school?.id ? `intoss://lunch-arena?school=${encodeURIComponent(school.id)}` : 'intoss://lunch-arena';
 }
@@ -1711,16 +1732,56 @@ function removePhoto(mealId, scope = 'default') {
   const input = document.getElementById('photo-input');
   if (input) input.value = '';
 }
-async function uploadPhoto(file) {
-  const ext = file.name.split('.').pop() || 'jpg';
-  const path = `${Date.now()}-${getInteractionUserKey()}.${ext}`;
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/reviews/${path}`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type },
+function getImageDimensions(file) {
+  return new Promise(resolve => {
+    if (!file || !file.type?.startsWith('image/') || file.type === 'image/svg+xml') {
+      resolve({ width: null, height: null });
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth || null, height: img.naturalHeight || null });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: null, height: null });
+    };
+    img.src = url;
+  });
+}
+async function uploadPhoto(file, mealId, schoolId) {
+  const mimeType = file.type || 'image/jpeg';
+  const ticket = await edge('create-review-photo-upload', {
+    user_key: getInteractionUserKey(),
+    school_id: schoolId,
+    meal_id: mealId,
+    file_name: file.name || null,
+    mime_type: mimeType,
+    byte_size: file.size
+  });
+  if (!ticket?.upload_url) throw new Error(ticket?.error || 'R2_UPLOAD_TICKET_FAILED');
+
+  const uploadRes = await fetch(ticket.upload_url, {
+    method: ticket.method || 'PUT',
+    headers: ticket.headers || { 'Content-Type': mimeType },
     body: file
   });
-  if (!res.ok) throw new Error('업로드 실패');
-  return `${SUPABASE_URL}/storage/v1/object/public/reviews/${path}`;
+  if (!uploadRes.ok) throw new Error('R2_UPLOAD_FAILED');
+
+  const dims = await getImageDimensions(file);
+  return {
+    bucket_name: ticket.bucket_name,
+    object_key: ticket.object_key,
+    public_url: ticket.public_url || null,
+    thumbnail_object_key: null,
+    mime_type: ticket.mime_type || mimeType,
+    byte_size: ticket.byte_size || file.size,
+    width: dims.width,
+    height: dims.height,
+    r2_etag: uploadRes.headers.get('etag')
+  };
 }
 async function submitRating(mealId, scope = 'default') {
   const state = getRatingState(mealId, scope);
@@ -1739,28 +1800,34 @@ async function submitRating(mealId, scope = 'default') {
 
   try {
     await getUserId();
-    let photoUrl = null;
+    let photo = null;
     if (state.photoFile) {
-      try { photoUrl = await uploadPhoto(state.photoFile); }
+      try { photo = await uploadPhoto(state.photoFile, mealId, state.schoolId); }
       catch(e) { console.warn('사진 업로드 실패:', e); }
     }
     const body = { meal_id: mealId, school_id: state.schoolId, score: state.score, user_key: getInteractionUserKey(), nickname: ensureNickname() };
     if (state.selectedMenuItem) body.selected_menu_item = state.selectedMenuItem;
     if (comment) body.comment = comment;
-    if (photoUrl) body.photo_url = photoUrl;
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok && res.status !== 409) {
-      const errorText = await res.text().catch(() => '');
+    if (photo) body.photo = photo;
+    const result = await edge('submit-review', body);
+    if (result?.error && result._status !== 409 && result.error !== 'REVIEW_ALREADY_EXISTS') {
+      const res = { status: result?._status || 500 };
+      const errorText = JSON.stringify(result || {});
       console.warn('리뷰 저장 실패:', res.status, errorText);
       if (btn) updateRatingSubmitState(mealId, scope);
       alert('평가 저장에 실패했어요. 잠시 후 다시 시도해줘.');
       return;
     }
 
+    void logAitGoal('goal_review_submit', {
+      school_id: String(state.schoolId || ''),
+      meal_id: String(mealId),
+      scope,
+      score: Number(state.score || 0),
+      has_comment: Boolean(comment),
+      has_photo: Boolean(photo),
+      has_selected_menu: Boolean(state.selectedMenuItem)
+    });
     localStorage.setItem(`rated_${mealId}`, state.score);
     rerenderRatingForMeal(mealId);
     const detailRevEl = document.getElementById('detail-reviews-wrap');
@@ -1910,7 +1977,7 @@ function renderReviewItem(r) {
       ${reviewMealHtml(reviewDisplayMeal(r), r.score)}
       ${r.selected_menu_item ? `<div class="review-picked-menu">대표 메뉴 ${escapeHtml(r.selected_menu_item)}</div>` : ''}
       ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
-      ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
+      ${(r.photo_display_url || r.photo_url) ? `<img class="review-photo" src="${escapeHtml(r.photo_display_url || r.photo_url)}" loading="lazy">` : ''}
       <div class="review-actions">
         <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">&#128077; ${likes}</button>
         <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">&#128078; ${dislikes}</button>
@@ -1938,13 +2005,17 @@ async function enrichReviews(data) {
   if (ids.length === 0) return data;
   const idFilter = ids.join(',');
   const myUserKey = getInteractionUserKey();
-  const [reactions, comments, users] = await Promise.all([
+  const [reactions, comments, users, photoUrls] = await Promise.all([
     sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id,reaction,user_key`),
     sb(`review_comments?rating_id=in.(${idFilter})&order=created_at.asc&select=id,rating_id,nickname,comment,created_at`),
     (() => {
       const userKeys = [...new Set(data.map(r => r.user_key).filter(Boolean))];
       return userKeys.length ? sb(`user_schools?user_key=in.(${userKeys.map(encodeURIComponent).join(',')})&select=user_key,nickname`) : Promise.resolve([]);
-    })()
+    })(),
+    edge('review-photo-urls', { rating_ids: ids, user_key: myUserKey }).catch(e => {
+      console.warn('review photo url lookup failed:', e);
+      return null;
+    })
   ]);
   const userNickByKey = new Map((users || []).map(u => [u.user_key, u.nickname]));
   const reactionByRating = new Map();
@@ -1965,6 +2036,8 @@ async function enrichReviews(data) {
     return {
       ...r,
       user_nickname: r.nickname || userNickByKey.get(r.user_key) || '',
+      photo_display_url: photoUrls?.photos?.[String(r.id)]?.url || null,
+      review_photo: photoUrls?.photos?.[String(r.id)] || null,
       reaction_counts: reaction.counts,
       my_reaction: reaction.mine,
       comments: commentsByRating.get(r.id) || []
@@ -2172,6 +2245,10 @@ async function reactToReview(ratingId, reaction, currentReaction = '') {
     console.warn('리뷰 반응 저장 실패:', await res.text().catch(() => ''));
     return;
   }
+  void logAitGoal('goal_review_reaction', {
+    rating_id: String(ratingId),
+    reaction
+  });
   refreshVisibleReviews();
 }
 async function submitReviewComment(ratingId) {
@@ -2189,6 +2266,10 @@ async function submitReviewComment(ratingId) {
     console.warn('댓글 저장 실패:', await res.text().catch(() => ''));
     return;
   }
+  void logAitGoal('goal_review_comment', {
+    rating_id: String(ratingId),
+    comment_length: comment.length
+  });
   input.value = '';
   refreshVisibleReviews();
 }

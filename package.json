@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ait dev",
     "build": "ait build",
-    "build:static": "mkdir -p dist && cp index.html privacy.html icon_600.png icon.png icon.svg thumbnail_1932x828.png dist/ && cp -r migrations dist/migrations",
+    "build:static": "node scripts/build-static.mjs",
     "start": "npx http-server -p 5173 -c-1"
   },
   "dependencies": {
