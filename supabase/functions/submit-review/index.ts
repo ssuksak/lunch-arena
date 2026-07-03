@@ -8,7 +8,7 @@ const R2_BUCKET = Deno.env.get("LUNCH_ARENA_R2_BUCKET") || "lunch-arena";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
 };
 
 type ReviewPhotoInput = {

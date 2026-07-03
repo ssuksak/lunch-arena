@@ -6,7 +6,7 @@ const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
 };
 
 function json(body: unknown, status = 200) {
@@ -108,7 +108,7 @@ Deno.serve(async (req: Request) => {
   const userKey = String(body.user_key || "").trim();
   const source = normalizeSource(body.source, userKey);
   const postId = cleanText(body.post_id, 80);
-  const anonymousName = cleanText(body.anonymous_name, 16) || "익명";
+  const anonymousName = cleanText(body.anonymous_name, 16) || "?�명";
   const commentBody = cleanText(body.body, 1000);
   const idempotencyKey = cleanText(body.idempotency_key, 180);
   if (!validateUserKey(userKey)) return json({ error: "INVALID_USER_KEY" }, 400);
