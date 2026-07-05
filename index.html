@@ -895,31 +895,14 @@ async function loadMySchool() {
 async function saveMySchoolToDb() {
   if (!window.USER || !mySchool || !mySchool.id) return { ok: true };
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_key`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({
-        user_key: window.USER.id,
-        source: window.USER.source,
-        school_id: mySchool.id,
-        school_name: mySchool.name || null,
-        school_type: mySchool.type || null,
-        atpt_code: mySchool.atpt_code || null,
-        school_code: mySchool.school_code || null,
-        address: mySchool.address || null,
-        nickname: ensureNickname(),
-        updated_at: new Date().toISOString()
-      })
+    const result = await edge('set-user-school', {
+      user_key: window.USER.id,
+      source: window.USER.source,
+      school_id: mySchool.id,
+      nickname: ensureNickname(),
+      idempotency_key: `real_app_set_school:${window.USER.id}:${mySchool.id}:sync`
     });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      return { ok: false, code: 'NET', status: res.status, message: text };
-    }
+    if (result?.error) return { ok: false, code: 'EDGE', message: result.error, detail: result.detail };
     return { ok: true };
   } catch (e) {
     return { ok: false, code: 'NET', message: String(e) };
@@ -986,13 +969,15 @@ function confirmSchoolChangeAd() { closeSchoolChangeAd(true); }
 function cancelSchoolChangeAd() { closeSchoolChangeAd(false); }
 async function changeMySchoolToDb(s, adConfirmed = false) {
   await getUserId();
-  return rpc('change_user_school', {
-    p_user_key: window.USER.id,
-    p_source: window.USER.source,
-    p_school_id: s.id,
-    p_nickname: ensureNickname(),
-    p_ad_confirmed: adConfirmed
+  const result = await edge('set-user-school', {
+    user_key: window.USER.id,
+    source: window.USER.source,
+    school_id: s.id,
+    nickname: ensureNickname(),
+    idempotency_key: `real_app_set_school:${window.USER.id}:${s.id}:${adConfirmed ? 'ad' : 'normal'}`
   });
+  if (result?.error) throw new Error(result.error + (result.detail ? `: ${result.detail}` : ''));
+  return result;
 }
 async function confirmSchoolChangeIfNeeded() {
   if (!mySchool || !mySchool.id) return { ok: true, adConfirmed: false, count: 0 };
