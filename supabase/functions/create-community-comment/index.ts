@@ -88,7 +88,7 @@ async function syncProfileAndMembership(
     school_id: schoolId,
     role: "student",
     is_current: true,
-    source: "user_schools",
+    source: "membership",
     metadata: { created_by: "create-community-comment" },
   });
   if (inserted.error) throw new Error(`MEMBERSHIP_CREATE_FAILED:${inserted.error.message}`);
@@ -133,24 +133,31 @@ Deno.serve(async (req: Request) => {
     return json({ error: "POST_NOT_FOUND" }, 404);
   }
 
-  const userSchool = await supabase.from("user_schools").select("school_id").eq("user_key", userKey).maybeSingle();
-  if (userSchool.error) return json({ error: "USER_SCHOOL_LOOKUP_FAILED", detail: userSchool.error.message }, 500);
-  if (!userSchool.data?.school_id) return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
-
   try {
     const userId = await resolveUser(supabase, userKey, source);
+    const membership = await supabase
+      .from("la_user_school_memberships")
+      .select("school_id")
+      .eq("user_id", userId)
+      .eq("is_current", true)
+      .maybeSingle();
+    if (membership.error) return json({ error: "MEMBERSHIP_LOOKUP_FAILED", detail: membership.error.message }, 500);
+    if (!membership.data?.school_id) return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
+    const schoolId = Number(membership.data.school_id);
+    if (schoolId !== Number(post.data.school_id)) return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
+
     await syncProfileAndMembership(
       supabase,
       userId,
       userKey,
-      Number(userSchool.data.school_id),
+      schoolId,
       anonymousName,
     );
     const comment = await supabase.from("la_community_comments").insert({
       post_id: post.data.id,
       author_user_id: userId,
       author_user_key: userKey,
-      school_id: Number(userSchool.data.school_id),
+      school_id: schoolId,
       anonymous_name: anonymousName,
       body: commentBody,
       idempotency_key: idempotencyKey,
@@ -169,7 +176,7 @@ Deno.serve(async (req: Request) => {
       event_type: "community_comment_created",
       actor_user_id: userId,
       actor_user_key: userKey,
-      school_id: Number(userSchool.data.school_id),
+      school_id: schoolId,
       target_type: "community_comment",
       target_id: comment.data.id,
       idempotency_key: `community_comment_created:${comment.data.id}`,

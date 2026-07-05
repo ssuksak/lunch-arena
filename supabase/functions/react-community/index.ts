@@ -62,10 +62,16 @@ Deno.serve(async (req: Request) => {
   if (!idempotencyKey) return json({ error: "INVALID_IDEMPOTENCY_KEY" }, 400);
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
-  const userSchool = await supabase.from("user_schools").select("school_id").eq("user_key", userKey).maybeSingle();
-  if (userSchool.error) return json({ error: "USER_SCHOOL_LOOKUP_FAILED", detail: userSchool.error.message }, 500);
-  if (!userSchool.data?.school_id) return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
   const userId = await resolveUser(supabase, userKey);
+  const membership = await supabase
+    .from("la_user_school_memberships")
+    .select("school_id")
+    .eq("user_id", userId)
+    .eq("is_current", true)
+    .maybeSingle();
+  if (membership.error) return json({ error: "MEMBERSHIP_LOOKUP_FAILED", detail: membership.error.message }, 500);
+  if (!membership.data?.school_id) return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
+  const schoolId = Number(membership.data.school_id);
 
   const table = targetType === "post" ? "la_community_posts" : "la_community_comments";
   const targetColumns = targetType === "post"
@@ -85,6 +91,7 @@ Deno.serve(async (req: Request) => {
   ) {
     return json({ error: "TARGET_NOT_FOUND" }, 404);
   }
+  if (schoolId !== Number(target.data.school_id)) return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
 
   const match = targetType === "post" ? { post_id: targetId } : { comment_id: targetId };
   const existing = await supabase
@@ -105,7 +112,7 @@ Deno.serve(async (req: Request) => {
       ...match,
       user_id: userId,
       user_key: userKey,
-      school_id: Number(target.data.school_id || userSchool.data.school_id),
+      school_id: Number(target.data.school_id || schoolId),
       reaction: "like",
       idempotency_key: idempotencyKey,
     });
@@ -126,7 +133,7 @@ Deno.serve(async (req: Request) => {
     event_type: delta > 0 ? "community_reaction_created" : "community_reaction_deleted",
     actor_user_id: userId,
     actor_user_key: userKey,
-    school_id: Number(target.data.school_id || userSchool.data.school_id),
+    school_id: Number(target.data.school_id || schoolId),
     target_type: targetType === "post" ? "community_post" : "community_comment",
     target_id: targetId,
     idempotency_key: `${delta > 0 ? "community_reaction_created" : "community_reaction_deleted"}:${targetType}:${targetId}:${userKey}:${Date.now()}`,

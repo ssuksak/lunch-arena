@@ -113,7 +113,7 @@ async function syncCurrentSchoolMembership(
     school_id: schoolId,
     role: "student",
     is_current: true,
-    source: "user_schools",
+    source: "membership",
     metadata: { created_by: "create-community-post" },
   });
   if (inserted.error) throw new Error(`MEMBERSHIP_CREATE_FAILED:${inserted.error.message}`);
@@ -146,17 +146,18 @@ Deno.serve(async (req: Request) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
 
-  const userSchool = await supabase
-    .from("user_schools")
-    .select("school_id,nickname")
-    .eq("user_key", userKey)
-    .maybeSingle();
-  if (userSchool.error) return json({ error: "USER_SCHOOL_LOOKUP_FAILED", detail: userSchool.error.message }, 500);
-  if (!userSchool.data?.school_id) return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
-
-  const schoolId = Number(userSchool.data.school_id);
   try {
     const userId = await resolveUser(supabase, userKey, source);
+    const membership = await supabase
+      .from("la_user_school_memberships")
+      .select("school_id")
+      .eq("user_id", userId)
+      .eq("is_current", true)
+      .maybeSingle();
+    if (membership.error) return json({ error: "MEMBERSHIP_LOOKUP_FAILED", detail: membership.error.message }, 500);
+    if (!membership.data?.school_id) return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
+    const schoolId = Number(membership.data.school_id);
+
     const activeFlag = await supabase
       .from("la_user_safety_flags")
       .select("id,flag_type,expires_at")
@@ -170,7 +171,7 @@ Deno.serve(async (req: Request) => {
     const now = new Date().toISOString();
     const profile = await supabase.from("la_user_profiles").upsert({
       user_id: userId,
-      display_name: userSchool.data.nickname || anonymousName,
+      display_name: anonymousName,
       selected_school_id: schoolId,
       last_seen_at: now,
       updated_at: now,

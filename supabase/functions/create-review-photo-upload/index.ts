@@ -96,14 +96,23 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false },
   });
 
-  const selectedSchool = await supabase
-    .from("user_schools")
-    .select("school_id")
+  const user = await supabase
+    .from("la_user_keys")
+    .select("user_id")
     .eq("user_key", userKey)
     .maybeSingle();
+  if (user.error) return json({ error: "USER_KEY_LOOKUP_FAILED" }, 500);
+  if (!user.data?.user_id) return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
 
-  if (selectedSchool.error) return json({ error: "USER_SCHOOL_LOOKUP_FAILED" }, 500);
-  if (!selectedSchool.data?.school_id || Number(selectedSchool.data.school_id) !== schoolId) {
+  const membership = await supabase
+    .from("la_user_school_memberships")
+    .select("school_id")
+    .eq("user_id", user.data.user_id)
+    .eq("is_current", true)
+    .maybeSingle();
+
+  if (membership.error) return json({ error: "MEMBERSHIP_LOOKUP_FAILED" }, 500);
+  if (!membership.data?.school_id || Number(membership.data.school_id) !== schoolId) {
     return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
   }
 

@@ -263,17 +263,6 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false },
   });
 
-  const selectedSchool = await supabase
-    .from("user_schools")
-    .select("school_id")
-    .eq("user_key", userKey)
-    .maybeSingle();
-
-  if (selectedSchool.error) return json({ error: "USER_SCHOOL_LOOKUP_FAILED" }, 500);
-  if (!selectedSchool.data?.school_id || Number(selectedSchool.data.school_id) !== schoolId) {
-    return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
-  }
-
   const meal = await supabase
     .from("meals")
     .select("id,school_id")
@@ -286,6 +275,17 @@ Deno.serve(async (req: Request) => {
 
   try {
     const userId = await resolveUser(supabase, userKey, source);
+    const membership = await supabase
+      .from("la_user_school_memberships")
+      .select("school_id")
+      .eq("user_id", userId)
+      .eq("is_current", true)
+      .maybeSingle();
+    if (membership.error) return json({ error: "MEMBERSHIP_LOOKUP_FAILED", detail: membership.error.message }, 500);
+    if (!membership.data?.school_id || Number(membership.data.school_id) !== schoolId) {
+      return json({ error: "SCHOOL_OWNERSHIP_REQUIRED" }, 403);
+    }
+
     let ratingId: number | null = null;
     const createdEventKeys: string[] = [];
 
