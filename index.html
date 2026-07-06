@@ -737,18 +737,16 @@ function setNickname(value) {
 async function saveNicknameToDb() {
   await getUserId();
   const nick = ensureNickname();
+  if (!mySchool || !mySchool.id) return { ok: true, skipped: 'NO_SCHOOL' };
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_key`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ user_key: window.USER.id, source: window.USER.source, nickname: nick, updated_at: new Date().toISOString() })
+    const result = await edge('set-user-school', {
+      user_key: window.USER.id,
+      source: window.USER.source,
+      school_id: mySchool.id,
+      nickname: nick,
+      idempotency_key: `real_app_set_school:${window.USER.id}:${mySchool.id}:nickname`
     });
-    if (!res.ok) return { ok: false, status: res.status, message: await res.text().catch(() => '') };
+    if (result?.error) return { ok: false, code: 'EDGE', message: result.error, detail: result.detail };
     return { ok: true };
   } catch (e) {
     return { ok: false, message: String(e) };
@@ -842,7 +840,7 @@ function switchTab(tab) {
 }
 
 // ===== MY SCHOOL =====
-// 우선순위: Supabase user_schools → localStorage (기존 사용자 호환)
+// 우선순위: LA user profile/membership → localStorage
 async function loadMySchool() {
   await getUserId(); // window.USER 준비
   ensureNickname();
@@ -850,22 +848,21 @@ async function loadMySchool() {
 
   // 1순위: Supabase에서 user_key로 조회
   try {
-    const rows = await sb(`user_schools?user_key=eq.${encodeURIComponent(window.USER.id)}&select=*`);
-    if (Array.isArray(rows) && rows.length > 0) {
-      const r = rows[0];
-      if (r.nickname) {
-        userNickname = normalizeNickname(r.nickname) || userNickname;
+    const state = await edge('get-user-school', { user_key: window.USER.id });
+    if (state?.ok) {
+      if (state.profile?.display_name) {
+        userNickname = normalizeNickname(state.profile.display_name) || userNickname;
         localStorage.setItem('arena_nickname', userNickname);
         applyNickname();
       }
-      if (r.school_id) {
+      if (state.school?.id) {
         mySchool = {
-          id: r.school_id,
-          name: r.school_name,
-          type: r.school_type,
-          atpt_code: r.atpt_code,
-          school_code: r.school_code,
-          address: r.address
+          id: state.school.id,
+          name: state.school.name,
+          type: state.school.type,
+          atpt_code: state.school.atpt_code,
+          school_code: state.school.school_code,
+          address: state.school.address
         };
         localStorage.setItem('arena_school', JSON.stringify(mySchool));
         applyMySchool();
@@ -890,7 +887,7 @@ async function loadMySchool() {
   saveNicknameToDb();
 }
 
-// Supabase user_schools 테이블에 현재 mySchool 저장 (upsert)
+// LA membership/profile에 현재 mySchool 저장 (upsert)
 // 반환: { ok: true } | { ok: false, code: 'NET', ... }
 async function saveMySchoolToDb() {
   if (!window.USER || !mySchool || !mySchool.id) return { ok: true };
@@ -1995,7 +1992,7 @@ async function enrichReviews(data) {
     sb(`review_comments?rating_id=in.(${idFilter})&order=created_at.asc&select=id,rating_id,nickname,comment,created_at`),
     (() => {
       const userKeys = [...new Set(data.map(r => r.user_key).filter(Boolean))];
-      return userKeys.length ? sb(`user_schools?user_key=in.(${userKeys.map(encodeURIComponent).join(',')})&select=user_key,nickname`) : Promise.resolve([]);
+      return Promise.resolve([]);
     })(),
     edge('review-photo-urls', { rating_ids: ids, user_key: myUserKey }).catch(e => {
       console.warn('review photo url lookup failed:', e);

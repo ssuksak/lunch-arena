@@ -163,20 +163,6 @@ Deno.serve(async (req: Request) => {
     const now = new Date().toISOString();
     const userId = await resolveUser(supabase, userKey, source);
 
-    const legacy = await supabase.from("user_schools").upsert({
-      user_key: userKey,
-      source,
-      school_id: schoolId,
-      school_name: school.data.name,
-      school_type: school.data.type,
-      atpt_code: school.data.atpt_code,
-      school_code: school.data.school_code,
-      address: school.data.address,
-      nickname,
-      updated_at: now,
-    }, { onConflict: "user_key" }).select("*").single();
-    if (legacy.error) return json({ error: "USER_SCHOOL_UPSERT_FAILED", detail: legacy.error.message }, 500);
-
     const profile = await supabase.from("la_user_profiles").upsert({
       user_id: userId,
       display_name: nickname,
@@ -211,7 +197,6 @@ Deno.serve(async (req: Request) => {
       user_key: userKey,
       user_id: userId,
       school: school.data,
-      legacy_user_school: legacy.data,
       membership_changed: membership.changed,
       event_id: event.data?.id || null,
     });
