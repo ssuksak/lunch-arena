@@ -2154,60 +2154,20 @@ async function sha256Hex(value) {
 async function reactionCancelHash(ratingId) {
   return sha256Hex(getReactionCancelToken(ratingId));
 }
-async function deleteMyReviewReaction(ratingId) {
-  const userKey = getInteractionUserKey();
-  const tokenHash = await reactionCancelHash(ratingId);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/la_review_reactions?rating_id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id`, {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      'x-reaction-cancel-token-hash': tokenHash
-    }
-  });
-  if (!res.ok) {
-    console.warn('리뷰 반응 취소 실패:', await res.text().catch(() => ''));
-    return false;
-  }
-  const deleted = await res.json().catch(() => []);
-  if (Array.isArray(deleted) && deleted.length > 0) {
-    clearReactionCancelToken(ratingId);
-    return true;
-  }
-  return false;
-}
 async function reactToReview(ratingId, reaction, currentReaction = '') {
   await getUserId();
-  if (currentReaction === reaction) {
-    const deleted = await deleteMyReviewReaction(ratingId);
-    if (!deleted) alert('이전 버전에서 남긴 반응은 취소할 수 없어요. 새로 누른 반응부터 취소돼요.');
-    refreshVisibleReviews();
-    return;
-  }
-  if (currentReaction) {
-    const deleted = await deleteMyReviewReaction(ratingId);
-    if (!deleted) {
-      alert('기존 반응을 먼저 취소할 수 없어서 변경하지 못했어요. 새로 누른 반응부터 변경할 수 있어요.');
-      refreshVisibleReviews();
-      return;
-    }
-  }
-  const tokenHash = await reactionCancelHash(ratingId);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/la_review_reactions`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ rating_id: ratingId, user_key: getInteractionUserKey(), nickname: ensureNickname(), reaction, cancel_token_hash: tokenHash })
+  const result = await edge('react-review', {
+    rating_id: ratingId,
+    user_key: getInteractionUserKey(),
+    nickname: ensureNickname(),
+    reaction
   });
-  if (res.status === 409) {
-    alert('이미 이 리뷰에 표시했어요');
+  if (!result?.ok) {
+    console.warn('Review reaction save failed:', result);
+    alert(result?.error === 'REVIEW_NOT_FOUND' ? 'Review not found.' : 'Failed to save reaction.');
     return;
   }
-  if (!res.ok) {
-    console.warn('리뷰 반응 저장 실패:', await res.text().catch(() => ''));
-    return;
-  }
+  if (!result.selected) clearReactionCancelToken(ratingId);
   void logAitGoal('goal_review_reaction', {
     rating_id: String(ratingId),
     reaction
@@ -2220,13 +2180,15 @@ async function submitReviewComment(ratingId) {
   if (!comment) return;
   openCommentThreads.add(String(ratingId));
   await getUserId();
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/la_review_comments`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ rating_id: ratingId, user_key: getInteractionUserKey(), nickname: ensureNickname(), comment })
+  const result = await edge('create-review-comment', {
+    rating_id: ratingId,
+    user_key: getInteractionUserKey(),
+    nickname: ensureNickname(),
+    comment
   });
-  if (!res.ok) {
-    console.warn('댓글 저장 실패:', await res.text().catch(() => ''));
+  if (!result?.ok) {
+    console.warn('Comment save failed:', result);
+    alert(result?.error === 'REVIEW_NOT_FOUND' ? 'Review not found.' : 'Failed to save comment.');
     return;
   }
   void logAitGoal('goal_review_comment', {
@@ -2438,18 +2400,17 @@ async function loadBattle() {
   const aId = Math.min(mySchool.id, oppSchool.id);
   const bId = Math.max(mySchool.id, oppSchool.id);
   const isA = mySchool.id === aId;
-  const newBattle = await fetch(`${SUPABASE_URL}/rest/v1/la_battles`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-    body: JSON.stringify({
-      battle_date: today,
-      school_a_id: aId, school_b_id: bId,
-      meal_a_id: isA ? myMealResult.meal.id : oppMeal.id,
-      meal_b_id: isA ? oppMeal.id : myMealResult.meal.id,
-      score_a: isA ? myMealResult.meal.auto_score : oppMeal.auto_score,
-      score_b: isA ? oppMeal.auto_score : myMealResult.meal.auto_score,
-    })
-  }).then(r => r.json());
+  const newBattleResult = await edge('create-battle', {
+    user_key: getInteractionUserKey(),
+    battle_date: today,
+    school_a_id: aId,
+    school_b_id: bId,
+    meal_a_id: isA ? myMealResult.meal.id : oppMeal.id,
+    meal_b_id: isA ? oppMeal.id : myMealResult.meal.id,
+    score_a: isA ? myMealResult.meal.auto_score : oppMeal.auto_score,
+    score_b: isA ? oppMeal.auto_score : myMealResult.meal.auto_score,
+  });
+  const newBattle = newBattleResult?.battle || null;
   if (newBattle && !newBattle.error) {
     // 방금 생성한 배틀 다시 fetch (조인 포함)
     const fresh = await sb(`la_battles?id=eq.${newBattle[0]?.id || newBattle.id}&select=*,school_a:la_schools!la_battles_school_a_id_fkey(id,name,type,address),school_b:la_schools!la_battles_school_b_id_fkey(id,name,type,address),meal_a:la_meals!la_battles_meal_a_id_fkey(menu,auto_score),meal_b:la_meals!la_battles_meal_b_id_fkey(menu,auto_score)&limit=1`);
@@ -2611,15 +2572,8 @@ function closeBattleOppSheet() {
 async function pickBattleOpponent(oldBattleId, newOppId, newMealId, newScore) {
   closeBattleOppSheet();
   const wrap = document.getElementById('battle-content');
-  wrap.innerHTML = '<div class="loading"><div class="loading-emoji">🔄</div><div class="loading-text">상대 바꾸는 중...</div></div>';
+  wrap.innerHTML = '<div class="loading"><div class="loading-emoji">...</div><div class="loading-text">Changing opponent...</div></div>';
 
-  // 기존 배틀 삭제 (투표 없는 경우에만)
-  await fetch(`${SUPABASE_URL}/rest/v1/la_battles?id=eq.${oldBattleId}`, {
-    method: 'DELETE',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-  });
-
-  // 내 학교 meal 재조회 (현재 날짜)
   const today = fmtDate(fixWeekend(new Date()));
   const myMealResult = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: today });
   if (!myMealResult.meal) { loadBattle(); return; }
@@ -2628,45 +2582,44 @@ async function pickBattleOpponent(oldBattleId, newOppId, newMealId, newScore) {
   const bId = Math.max(mySchool.id, newOppId);
   const isA = mySchool.id === aId;
 
-  await fetch(`${SUPABASE_URL}/rest/v1/la_battles`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({
-      battle_date: today,
-      school_a_id: aId, school_b_id: bId,
-      meal_a_id: isA ? myMealResult.meal.id : newMealId,
-      meal_b_id: isA ? newMealId : myMealResult.meal.id,
-      score_a: isA ? myMealResult.meal.auto_score : newScore,
-      score_b: isA ? newScore : myMealResult.meal.auto_score,
-    })
+  const result = await edge('replace-battle-opponent', {
+    user_key: getInteractionUserKey(),
+    old_battle_id: oldBattleId,
+    battle_date: today,
+    school_a_id: aId,
+    school_b_id: bId,
+    meal_a_id: isA ? myMealResult.meal.id : newMealId,
+    meal_b_id: isA ? newMealId : myMealResult.meal.id,
+    score_a: isA ? myMealResult.meal.auto_score : newScore,
+    score_b: isA ? newScore : myMealResult.meal.auto_score,
   });
+  if (!result?.ok) {
+    console.warn('Battle opponent replace failed:', result);
+    alert(result?.error === 'BATTLE_ALREADY_VOTED' ? 'This battle already has votes.' : 'Failed to change opponent.');
+  }
 
   loadBattle();
 }
 async function voteBattle(battleId, schoolId, side) {
   const voted = localStorage.getItem(`voted_battle_${battleId}`);
   if (voted) return;
-  // 낙관적 UI 업데이트
   document.querySelectorAll('.btn-vote').forEach(b => {
     b.classList.toggle('selected', b === event.target);
     b.classList.toggle('unselected', b !== event.target);
   });
   await getUserId();
-  // DB insert
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/la_battle_votes`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ battle_id: battleId, voted_school_id: schoolId, user_key: getInteractionUserKey() })
+  const result = await edge('vote-battle', {
+    battle_id: battleId,
+    voted_school_id: schoolId,
+    user_key: getInteractionUserKey()
   });
-  // vote_a/vote_b 업데이트
-  const field = side === 'a' ? 'vote_a' : 'vote_b';
-  await fetch(`${SUPABASE_URL}/rest/v1/la_battles?id=eq.${battleId}`, {
-    method: 'PATCH',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ [field]: (await sb(`la_battles?id=eq.${battleId}&select=${field}`).then(d => (d[0]?.[field] || 0))) + 1 })
-  });
-  localStorage.setItem(`voted_battle_${battleId}`, side);
-  // 다시 렌더
+  if (!result?.ok) {
+    console.warn('Battle vote failed:', result);
+    if (result?.error === 'ALREADY_VOTED') localStorage.setItem(`voted_battle_${battleId}`, side);
+    else alert('Failed to save vote.');
+  } else {
+    localStorage.setItem(`voted_battle_${battleId}`, side);
+  }
   const fresh = await sb(`la_battles?id=eq.${battleId}&select=*,school_a:la_schools!la_battles_school_a_id_fkey(id,name,type),school_b:la_schools!la_battles_school_b_id_fkey(id,name,type),meal_a:la_meals!la_battles_meal_a_id_fkey(menu,auto_score),meal_b:la_meals!la_battles_meal_b_id_fkey(menu,auto_score)&limit=1`);
   if (fresh && fresh.length > 0) renderBattleCard(fresh[0]);
 }
