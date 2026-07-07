@@ -1012,7 +1012,7 @@ const SCHOOL_SEARCH_SELECT = 'id,name,type,address,atpt_code,school_code';
 function schoolSearchFieldPath(field, q, limit = 15) {
   const term = encodeURIComponent(String(q || '').trim());
   const column = field === 'address' ? 'address' : 'name';
-  return `schools?${column}=ilike.*${term}*&order=name.asc&limit=${limit}&select=${SCHOOL_SEARCH_SELECT}`;
+  return `la_schools?${column}=ilike.*${term}*&order=name.asc&limit=${limit}&select=${SCHOOL_SEARCH_SELECT}`;
 }
 function schoolSearchRank(s, q) {
   const term = String(q || '').trim().toLowerCase();
@@ -2969,7 +2969,7 @@ async function init() {
   await loadMySchool();
   // 스탯 카운트
   const [schoolCount, mealCount, ratingCount] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/schools?select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
+    fetch(`${SUPABASE_URL}/rest/v1/la_schools?select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
     fetch(`${SUPABASE_URL}/rest/v1/meals?meal_date=eq.${fmtDate(mealDate)}&select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
     fetch(`${SUPABASE_URL}/rest/v1/ratings?select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
   ]);
@@ -3003,7 +3003,7 @@ async function handleUrlParam() {
   if (!schoolId) return;
 
   // 학교 정보 조회
-  const schools = await sb(`schools?id=eq.${encodeURIComponent(schoolId)}&limit=1`);
+  const schools = await sb(`la_schools?id=eq.${encodeURIComponent(schoolId)}&limit=1`);
   if (!schools || schools.length === 0) return;
 
   const school = schools[0];

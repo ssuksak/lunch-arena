@@ -195,7 +195,7 @@ Deno.serve(async (req: Request) => {
     const skippedDuplicates = rawRows.length - schools.length;
 
     const { error } = await supabase
-      .from('schools')
+      .from('la_schools')
       .upsert(schools, { onConflict: 'atpt_code,school_code' });
 
     if (error) {

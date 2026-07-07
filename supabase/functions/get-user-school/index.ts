@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
   let school = null;
   if (membership.data?.school_id) {
     const schoolResult = await supabase
-      .from("schools")
+      .from("la_schools")
       .select("id,name,type,address,atpt_code,school_code")
       .eq("id", Number(membership.data.school_id))
       .maybeSingle();

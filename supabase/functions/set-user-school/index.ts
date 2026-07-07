@@ -152,7 +152,7 @@ Deno.serve(async (req: Request) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
 
   const school = await supabase
-    .from("schools")
+    .from("la_schools")
     .select("id,name,type,address,atpt_code,school_code")
     .eq("id", schoolId)
     .maybeSingle();
