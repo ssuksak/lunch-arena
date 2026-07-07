@@ -117,7 +117,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const meal = await supabase
-    .from("meals")
+    .from("la_meals")
     .select("id,school_id")
     .eq("id", mealId)
     .maybeSingle();

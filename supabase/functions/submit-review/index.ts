@@ -217,7 +217,7 @@ async function cleanupReviewWrite(
     await supabase.from("la_activity_events").delete().eq("idempotency_key", key);
   }
   if (ratingId) {
-    await supabase.from("ratings").delete().eq("id", ratingId);
+    await supabase.from("la_reviews").delete().eq("id", ratingId);
   }
 }
 
@@ -264,7 +264,7 @@ Deno.serve(async (req: Request) => {
   });
 
   const meal = await supabase
-    .from("meals")
+    .from("la_meals")
     .select("id,school_id")
     .eq("id", mealId)
     .maybeSingle();
@@ -317,7 +317,7 @@ Deno.serve(async (req: Request) => {
     if (photo?.public_url) ratingBody.photo_url = photo.public_url;
 
     const rating = await supabase
-      .from("ratings")
+      .from("la_reviews")
       .insert(ratingBody)
       .select("id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname")
       .single();
@@ -369,6 +369,7 @@ Deno.serve(async (req: Request) => {
         .from("la_review_photos")
         .insert({
           rating_id: ratingId,
+          review_id: ratingId,
           school_id: schoolId,
           meal_id: mealId,
           owner_user_id: userId,

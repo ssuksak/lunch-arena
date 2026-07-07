@@ -127,11 +127,11 @@ Deno.serve(async (req: Request) => {
   const date_from = String(body.date_from ?? new Date().toISOString().slice(0, 10));
   const date_to = String(body.date_to ?? date_from);
 
-  const { count } = await supabase.from('schools').select('*', { count: 'exact', head: true });
+  const { count } = await supabase.from('la_schools').select('*', { count: 'exact', head: true });
   const total = count ?? 0;
 
   const { data: schools, error: schoolsErr } = await supabase
-    .from('schools')
+    .from('la_schools')
     .select('id,atpt_code,school_code')
     .order('id')
     .range(offset, offset + batch_size - 1);
@@ -155,7 +155,7 @@ Deno.serve(async (req: Request) => {
 
         const rows = meals.map((meal) => ({ ...meal, school_id: school.id }));
         const { error } = await supabase
-          .from('meals')
+          .from('la_meals')
           .upsert(rows, { onConflict: 'school_id,meal_date,meal_type' });
 
         if (error) errors++;

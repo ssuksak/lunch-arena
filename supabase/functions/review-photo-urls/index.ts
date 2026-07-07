@@ -20,6 +20,7 @@ const corsHeaders = {
 
 type RequestBody = {
   rating_ids?: unknown;
+  review_ids?: unknown;
   user_key?: string | null;
 };
 
@@ -51,7 +52,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: "INVALID_JSON" }, 400);
   }
 
-  const ratingIds = normalizeRatingIds(body.rating_ids);
+  const ratingIds = normalizeRatingIds(body.review_ids || body.rating_ids);
   const userKey = String(body.user_key || "").trim();
   if (!ratingIds.length) return json({ ok: true, photos: {}, expires_in: EXPIRES_IN });
   if (userKey && !validateUserKey(userKey)) return json({ error: "INVALID_USER_KEY" }, 400);
@@ -62,8 +63,8 @@ Deno.serve(async (req: Request) => {
 
   const { data, error } = await supabase
     .from("la_review_photos")
-    .select("id,rating_id,bucket_name,object_key,public_url,mime_type,status,moderation_status,owner_user_key,deleted_at,created_at")
-    .in("rating_id", ratingIds)
+    .select("id,review_id,rating_id,bucket_name,object_key,public_url,mime_type,status,moderation_status,owner_user_key,deleted_at,created_at")
+    .in("review_id", ratingIds)
     .eq("storage_provider", "r2")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -81,7 +82,7 @@ Deno.serve(async (req: Request) => {
 
   const photos: Record<string, unknown> = {};
   for (const row of data || []) {
-    const ratingId = String(row.rating_id);
+    const ratingId = String(row.review_id || row.rating_id);
     if (photos[ratingId]) continue;
 
     const isPublic = row.status === "active" && row.moderation_status === "approved";

@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
     );
 
     const { data: school } = await supabase
-      .from('schools')
+      .from('la_schools')
       .select('id')
       .eq('atpt_code', atpt_code)
       .eq('school_code', school_code)
@@ -107,7 +107,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { data: existing } = await supabase
-      .from('meals')
+      .from('la_meals')
       .select('*')
       .eq('school_id', school.id)
       .eq('meal_date', date);
@@ -151,7 +151,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { data: inserted, error } = await supabase
-      .from('meals')
+      .from('la_meals')
       .upsert(mealRows, { onConflict: 'school_id,meal_date,meal_type' })
       .select()
       .order('meal_type', { ascending: true });
