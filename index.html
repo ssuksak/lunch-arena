@@ -2088,29 +2088,20 @@ async function saveReviewEdit(ratingId) {
   }
   const userKey = getInteractionUserKey();
   const body = {
+    review_id: ratingId,
+    user_key: userKey,
     score,
     selected_menu_item: selectedMenuItem || null,
     comment: comment || null,
     nickname: ensureNickname()
   };
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/la_reviews?id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id,score,comment,selected_menu_item,nickname`, {
-    method: 'PATCH',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      'x-review-owner-key': userKey
-    },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    console.warn('리뷰 수정 실패:', await res.text().catch(() => ''));
+  const result = await edge('update-review', body);
+  if (result?.error) {
+    console.warn('리뷰 수정 실패:', result);
     alert('리뷰 수정에 실패했어요. 잠시 후 다시 시도해줘.');
     return;
   }
-  const updated = await res.json().catch(() => []);
-  if (Array.isArray(updated) && updated.length === 0) {
+  if (!result?.review?.id) {
     alert('수정할 수 있는 내 리뷰를 찾지 못했어요.');
     return;
   }
@@ -2120,23 +2111,13 @@ async function saveReviewEdit(ratingId) {
 async function deleteReview(ratingId, mealId = null) {
   if (!confirm('이 리뷰를 삭제할까요? 댓글과 좋아요도 함께 삭제돼요.')) return;
   const userKey = getInteractionUserKey();
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/la_reviews?id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id`, {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      'x-review-owner-key': userKey
-    }
-  });
-  if (!res.ok) {
-    console.warn('리뷰 삭제 실패:', await res.text().catch(() => ''));
+  const result = await edge('delete-review', { review_id: ratingId, user_key: userKey });
+  if (result?.error) {
+    console.warn('리뷰 삭제 실패:', result);
     alert('리뷰 삭제에 실패했어요. 잠시 후 다시 시도해줘.');
     return;
   }
-  const deleted = await res.json().catch(() => []);
-  if (Array.isArray(deleted) && deleted.length === 0) {
+  if (!result?.review?.id) {
     alert('삭제할 수 있는 내 리뷰를 찾지 못했어요.');
     return;
   }
@@ -2145,7 +2126,7 @@ async function deleteReview(ratingId, mealId = null) {
     rerenderRatingForMeal(mealId);
   }
   editingReviewIds.delete(String(ratingId));
-  refreshVisibleReviews();
+  await refreshVisibleReviews();
 }
 function reactionTokenKey(ratingId) {
   return `review_reaction_token_${ratingId}`;
