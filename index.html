@@ -2285,7 +2285,7 @@ async function loadMyActivity() {
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div>';
   await getUserId();
   const userKey = encodeURIComponent(getInteractionUserKey());
-  const commentSelect = `id,rating_id,nickname,comment,created_at,ratings(${REVIEW_SELECT})`;
+  const commentSelect = `id,rating_id,nickname,comment,created_at,ratings:la_reviews(${REVIEW_SELECT})`;
   const [reviews, comments] = await Promise.all([
     sb(`la_reviews?user_key=eq.${userKey}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`),
     sb(`la_review_comments?user_key=eq.${userKey}&order=created_at.desc&limit=20&select=${commentSelect}`)
