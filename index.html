@@ -594,11 +594,19 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = (path, opts = {}) => {
   const headers = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', ...opts.headers };
   if (opts.prefer) headers['Prefer'] = opts.prefer;
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers }).then(r => r.json());
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, { cache: 'no-store', ...opts, headers }).then(r => r.json());
 };
-const edge = (fn, body) => fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
-  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-}).then(r => r.json());
+const edge = async (fn, body) => {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok && data && typeof data === 'object') data._status = res.status;
+  return data;
+};
 const rpc = async (fn, body = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
     method: 'POST',
@@ -729,18 +737,16 @@ function setNickname(value) {
 async function saveNicknameToDb() {
   await getUserId();
   const nick = ensureNickname();
+  if (!mySchool || !mySchool.id) return { ok: true, skipped: 'NO_SCHOOL' };
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_key`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ user_key: window.USER.id, source: window.USER.source, nickname: nick, updated_at: new Date().toISOString() })
+    const result = await edge('set-user-school', {
+      user_key: window.USER.id,
+      source: window.USER.source,
+      school_id: mySchool.id,
+      nickname: nick,
+      idempotency_key: `real_app_set_school:${window.USER.id}:${mySchool.id}:nickname`
     });
-    if (!res.ok) return { ok: false, status: res.status, message: await res.text().catch(() => '') };
+    if (result?.error) return { ok: false, code: 'EDGE', message: result.error, detail: result.detail };
     return { ok: true };
   } catch (e) {
     return { ok: false, message: String(e) };
@@ -834,7 +840,7 @@ function switchTab(tab) {
 }
 
 // ===== MY SCHOOL =====
-// 우선순위: Supabase user_schools → localStorage (기존 사용자 호환)
+// 우선순위: LA user profile/membership → localStorage
 async function loadMySchool() {
   await getUserId(); // window.USER 준비
   ensureNickname();
@@ -842,22 +848,21 @@ async function loadMySchool() {
 
   // 1순위: Supabase에서 user_key로 조회
   try {
-    const rows = await sb(`user_schools?user_key=eq.${encodeURIComponent(window.USER.id)}&select=*`);
-    if (Array.isArray(rows) && rows.length > 0) {
-      const r = rows[0];
-      if (r.nickname) {
-        userNickname = normalizeNickname(r.nickname) || userNickname;
+    const state = await edge('get-user-school', { user_key: window.USER.id });
+    if (state?.ok) {
+      if (state.profile?.display_name) {
+        userNickname = normalizeNickname(state.profile.display_name) || userNickname;
         localStorage.setItem('arena_nickname', userNickname);
         applyNickname();
       }
-      if (r.school_id) {
+      if (state.school?.id) {
         mySchool = {
-          id: r.school_id,
-          name: r.school_name,
-          type: r.school_type,
-          atpt_code: r.atpt_code,
-          school_code: r.school_code,
-          address: r.address
+          id: state.school.id,
+          name: state.school.name,
+          type: state.school.type,
+          atpt_code: state.school.atpt_code,
+          school_code: state.school.school_code,
+          address: state.school.address
         };
         localStorage.setItem('arena_school', JSON.stringify(mySchool));
         applyMySchool();
@@ -882,36 +887,19 @@ async function loadMySchool() {
   saveNicknameToDb();
 }
 
-// Supabase user_schools 테이블에 현재 mySchool 저장 (upsert)
+// LA membership/profile에 현재 mySchool 저장 (upsert)
 // 반환: { ok: true } | { ok: false, code: 'NET', ... }
 async function saveMySchoolToDb() {
   if (!window.USER || !mySchool || !mySchool.id) return { ok: true };
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/user_schools?on_conflict=user_key`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({
-        user_key: window.USER.id,
-        source: window.USER.source,
-        school_id: mySchool.id,
-        school_name: mySchool.name || null,
-        school_type: mySchool.type || null,
-        atpt_code: mySchool.atpt_code || null,
-        school_code: mySchool.school_code || null,
-        address: mySchool.address || null,
-        nickname: ensureNickname(),
-        updated_at: new Date().toISOString()
-      })
+    const result = await edge('set-user-school', {
+      user_key: window.USER.id,
+      source: window.USER.source,
+      school_id: mySchool.id,
+      nickname: ensureNickname(),
+      idempotency_key: `real_app_set_school:${window.USER.id}:${mySchool.id}:sync`
     });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      return { ok: false, code: 'NET', status: res.status, message: text };
-    }
+    if (result?.error) return { ok: false, code: 'EDGE', message: result.error, detail: result.detail };
     return { ok: true };
   } catch (e) {
     return { ok: false, code: 'NET', message: String(e) };
@@ -978,13 +966,15 @@ function confirmSchoolChangeAd() { closeSchoolChangeAd(true); }
 function cancelSchoolChangeAd() { closeSchoolChangeAd(false); }
 async function changeMySchoolToDb(s, adConfirmed = false) {
   await getUserId();
-  return rpc('change_user_school', {
-    p_user_key: window.USER.id,
-    p_source: window.USER.source,
-    p_school_id: s.id,
-    p_nickname: ensureNickname(),
-    p_ad_confirmed: adConfirmed
+  const result = await edge('set-user-school', {
+    user_key: window.USER.id,
+    source: window.USER.source,
+    school_id: s.id,
+    nickname: ensureNickname(),
+    idempotency_key: `real_app_set_school:${window.USER.id}:${s.id}:${adConfirmed ? 'ad' : 'normal'}`
   });
+  if (result?.error) throw new Error(result.error + (result.detail ? `: ${result.detail}` : ''));
+  return result;
 }
 async function confirmSchoolChangeIfNeeded() {
   if (!mySchool || !mySchool.id) return { ok: true, adConfirmed: false, count: 0 };
@@ -1022,7 +1012,7 @@ const SCHOOL_SEARCH_SELECT = 'id,name,type,address,atpt_code,school_code';
 function schoolSearchFieldPath(field, q, limit = 15) {
   const term = encodeURIComponent(String(q || '').trim());
   const column = field === 'address' ? 'address' : 'name';
-  return `schools?${column}=ilike.*${term}*&order=name.asc&limit=${limit}&select=${SCHOOL_SEARCH_SELECT}`;
+  return `la_schools?${column}=ilike.*${term}*&order=name.asc&limit=${limit}&select=${SCHOOL_SEARCH_SELECT}`;
 }
 function schoolSearchRank(s, q) {
   const term = String(q || '').trim().toLowerCase();
@@ -1194,6 +1184,19 @@ function loadTossFramework() {
     tossFrameworkPromise = import('https://esm.sh/@apps-in-toss/web-framework@^2.4.5').catch(() => null);
   }
   return tossFrameworkPromise;
+}
+async function logAitGoal(logName, params = {}) {
+  try {
+    const mod = await loadTossFramework();
+    if (!mod?.Analytics?.click) return;
+    await mod.Analytics.click({
+      log_name: logName,
+      app_goal: logName,
+      ...params
+    });
+  } catch (e) {
+    console.warn('AIT analytics log failed:', logName, e);
+  }
 }
 function appDeepLinkForSchool(school) {
   return school?.id ? `intoss://lunch-arena?school=${encodeURIComponent(school.id)}` : 'intoss://lunch-arena';
@@ -1711,16 +1714,56 @@ function removePhoto(mealId, scope = 'default') {
   const input = document.getElementById('photo-input');
   if (input) input.value = '';
 }
-async function uploadPhoto(file) {
-  const ext = file.name.split('.').pop() || 'jpg';
-  const path = `${Date.now()}-${getInteractionUserKey()}.${ext}`;
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/reviews/${path}`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type },
+function getImageDimensions(file) {
+  return new Promise(resolve => {
+    if (!file || !file.type?.startsWith('image/') || file.type === 'image/svg+xml') {
+      resolve({ width: null, height: null });
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth || null, height: img.naturalHeight || null });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: null, height: null });
+    };
+    img.src = url;
+  });
+}
+async function uploadPhoto(file, mealId, schoolId) {
+  const mimeType = file.type || 'image/jpeg';
+  const ticket = await edge('create-review-photo-upload', {
+    user_key: getInteractionUserKey(),
+    school_id: schoolId,
+    meal_id: mealId,
+    file_name: file.name || null,
+    mime_type: mimeType,
+    byte_size: file.size
+  });
+  if (!ticket?.upload_url) throw new Error(ticket?.error || 'R2_UPLOAD_TICKET_FAILED');
+
+  const uploadRes = await fetch(ticket.upload_url, {
+    method: ticket.method || 'PUT',
+    headers: ticket.headers || { 'Content-Type': mimeType },
     body: file
   });
-  if (!res.ok) throw new Error('업로드 실패');
-  return `${SUPABASE_URL}/storage/v1/object/public/reviews/${path}`;
+  if (!uploadRes.ok) throw new Error('R2_UPLOAD_FAILED');
+
+  const dims = await getImageDimensions(file);
+  return {
+    bucket_name: ticket.bucket_name,
+    object_key: ticket.object_key,
+    public_url: ticket.public_url || null,
+    thumbnail_object_key: null,
+    mime_type: ticket.mime_type || mimeType,
+    byte_size: ticket.byte_size || file.size,
+    width: dims.width,
+    height: dims.height,
+    r2_etag: uploadRes.headers.get('etag')
+  };
 }
 async function submitRating(mealId, scope = 'default') {
   const state = getRatingState(mealId, scope);
@@ -1739,28 +1782,34 @@ async function submitRating(mealId, scope = 'default') {
 
   try {
     await getUserId();
-    let photoUrl = null;
+    let photo = null;
     if (state.photoFile) {
-      try { photoUrl = await uploadPhoto(state.photoFile); }
+      try { photo = await uploadPhoto(state.photoFile, mealId, state.schoolId); }
       catch(e) { console.warn('사진 업로드 실패:', e); }
     }
     const body = { meal_id: mealId, school_id: state.schoolId, score: state.score, user_key: getInteractionUserKey(), nickname: ensureNickname() };
     if (state.selectedMenuItem) body.selected_menu_item = state.selectedMenuItem;
     if (comment) body.comment = comment;
-    if (photoUrl) body.photo_url = photoUrl;
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok && res.status !== 409) {
-      const errorText = await res.text().catch(() => '');
+    if (photo) body.photo = photo;
+    const result = await edge('submit-review', body);
+    if (result?.error && result._status !== 409 && result.error !== 'REVIEW_ALREADY_EXISTS') {
+      const res = { status: result?._status || 500 };
+      const errorText = JSON.stringify(result || {});
       console.warn('리뷰 저장 실패:', res.status, errorText);
       if (btn) updateRatingSubmitState(mealId, scope);
       alert('평가 저장에 실패했어요. 잠시 후 다시 시도해줘.');
       return;
     }
 
+    void logAitGoal('goal_review_submit', {
+      school_id: String(state.schoolId || ''),
+      meal_id: String(mealId),
+      scope,
+      score: Number(state.score || 0),
+      has_comment: Boolean(comment),
+      has_photo: Boolean(photo),
+      has_selected_menu: Boolean(state.selectedMenuItem)
+    });
     localStorage.setItem(`rated_${mealId}`, state.score);
     rerenderRatingForMeal(mealId);
     const detailRevEl = document.getElementById('detail-reviews-wrap');
@@ -1827,7 +1876,7 @@ function reviewMealHtml(meal, score = 0) {
     <div class="review-menu-preview">${escapeHtml(preview)}</div>
   </div>`;
 }
-const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname,meal_date_snapshot,meal_type_snapshot,meal_menu_snapshot,schools(id,name,type,address,atpt_code,school_code),meals(id,meal_date,meal_type,meal_type_label,menu)';
+const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname,meal_date_snapshot,meal_type_snapshot,meal_menu_snapshot,schools:la_schools(id,name,type,address,atpt_code,school_code),meals:la_meals(id,meal_date,meal_type,meal_type_label,menu)';
 function renderReviewComments(ratingId, comments = []) {
   const isOpen = openCommentThreads.has(String(ratingId));
   const list = comments.length ? comments.map(c => `
@@ -1840,27 +1889,27 @@ function renderReviewComments(ratingId, comments = []) {
     <div class="review-comments${isOpen ? '' : ' hide'}" id="review-comments-${ratingId}">
       ${list}
       <div class="review-comment-form">
-        <input class="review-comment-input" id="review-comment-${ratingId}" maxlength="300" placeholder="댓글 달기" oninput="updateReviewCommentSubmit(${ratingId})" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId})">
-        <button class="review-comment-submit" id="review-comment-submit-${ratingId}" onclick="submitReviewComment(${ratingId})" disabled>등록</button>
+        <input class="review-comment-input" maxlength="300" placeholder="댓글 달기" oninput="updateReviewCommentSubmit(this)" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId}, this)">
+        <button class="review-comment-submit" onclick="submitReviewComment(${ratingId}, this)" disabled>등록</button>
       </div>
     </div>`;
 }
-function toggleReviewComments(ratingId) {
+function toggleReviewComments(ratingId, trigger = null) {
   const key = String(ratingId);
-  const el = document.getElementById(`review-comments-${ratingId}`);
+  const item = trigger?.closest?.('.review-item') || null;
+  const el = item?.querySelector?.('.review-comments') || document.getElementById(`review-comments-${ratingId}`);
   const shouldOpen = !el || el.classList.contains('hide');
   if (shouldOpen) openCommentThreads.add(key);
   else openCommentThreads.delete(key);
   if (el) {
     el.classList.toggle('hide', !shouldOpen);
-    const btn = document.getElementById(`review-comment-toggle-${ratingId}`);
+    const btn = item?.querySelector?.(`#review-comment-toggle-${ratingId}`) || document.getElementById(`review-comment-toggle-${ratingId}`);
     if (btn) btn.classList.toggle('selected', shouldOpen);
-    if (shouldOpen) setTimeout(() => document.getElementById(`review-comment-${ratingId}`)?.focus(), 0);
+    if (shouldOpen) setTimeout(() => (item?.querySelector?.('.review-comment-input') || document.getElementById(`review-comment-${ratingId}`))?.focus(), 0);
   }
 }
-function updateReviewCommentSubmit(ratingId) {
-  const input = document.getElementById(`review-comment-${ratingId}`);
-  const btn = document.getElementById(`review-comment-submit-${ratingId}`);
+function updateReviewCommentSubmit(input) {
+  const btn = input?.closest?.('.review-comment-form')?.querySelector?.('.review-comment-submit');
   if (btn) btn.disabled = !input?.value?.trim();
 }
 function isMyReview(r) {
@@ -1880,16 +1929,16 @@ function reviewEditHtml(r) {
   const picked = r.selected_menu_item || '';
   const menuButtons = menus.length ? `<div class="review-edit-menu">${menus.map(item => {
     const selected = item === picked ? ' selected' : '';
-    return `<button class="${selected.trim()}" onclick="setReviewEditMenu(${r.id}, ${jsString(item)})">${escapeHtml(item)}</button>`;
+    return `<button class="${selected.trim()}" onclick="setReviewEditMenu(this, ${jsString(item)})">${escapeHtml(item)}</button>`;
   }).join('')}</div>` : '';
-  return `<div class="review-edit" id="review-edit-${r.id}" data-score="${Number(r.score || 0)}" data-menu="${escapeHtml(picked)}">
+  return `<div class="review-edit" data-score="${Number(r.score || 0)}" data-menu="${escapeHtml(picked)}">
     <div class="rating-subtitle">별점</div>
-    <div class="review-edit-stars">${[1,2,3,4,5].map(n => `<button class="review-edit-star${n <= Number(r.score || 0) ? ' filled' : ''}" onclick="setReviewEditScore(${r.id}, ${n})">★</button>`).join('')}</div>
+    <div class="review-edit-stars">${[1,2,3,4,5].map(n => `<button class="review-edit-star${n <= Number(r.score || 0) ? ' filled' : ''}" onclick="setReviewEditScore(this, ${n})">★</button>`).join('')}</div>
     ${menus.length ? `<div class="rating-subtitle">대표 메뉴</div>${menuButtons}` : ''}
-    <textarea class="review-edit-text" id="review-edit-comment-${r.id}" maxlength="100" placeholder="한줄평 (선택, 100자)">${escapeHtml(r.comment || '')}</textarea>
+    <textarea class="review-edit-text" maxlength="100" placeholder="한줄평 (선택, 100자)">${escapeHtml(r.comment || '')}</textarea>
     <div class="review-edit-buttons">
       <button onclick="cancelReviewEdit(${r.id})">취소</button>
-      <button class="primary" onclick="saveReviewEdit(${r.id})">저장</button>
+      <button class="primary" onclick="saveReviewEdit(${r.id}, this)">저장</button>
     </div>
   </div>`;
 }
@@ -1910,11 +1959,11 @@ function renderReviewItem(r) {
       ${reviewMealHtml(reviewDisplayMeal(r), r.score)}
       ${r.selected_menu_item ? `<div class="review-picked-menu">대표 메뉴 ${escapeHtml(r.selected_menu_item)}</div>` : ''}
       ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
-      ${r.photo_url ? `<img class="review-photo" src="${r.photo_url}" loading="lazy">` : ''}
+      ${(r.photo_display_url || r.photo_url) ? `<img class="review-photo" src="${escapeHtml(r.photo_display_url || r.photo_url)}" loading="lazy">` : ''}
       <div class="review-actions">
         <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">&#128077; ${likes}</button>
         <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">&#128078; ${dislikes}</button>
-        <button class="review-action-btn${openCommentThreads.has(String(r.id)) ? ' selected' : ''}" id="review-comment-toggle-${r.id}" onclick="toggleReviewComments(${r.id})">&#128172; 댓글 ${(r.comments || []).length}</button>
+        <button class="review-action-btn${openCommentThreads.has(String(r.id)) ? ' selected' : ''}" id="review-comment-toggle-${r.id}" onclick="toggleReviewComments(${r.id}, this)">&#128172; 댓글 ${(r.comments || []).length}</button>
         ${mine ? `<button class="review-action-btn${editingReviewIds.has(String(r.id)) ? ' selected' : ''}" onclick="startReviewEdit(${r.id})">수정</button><button class="review-action-btn danger" onclick="deleteReview(${r.id}, ${r.meal_id || 'null'})">삭제</button>` : ''}
       </div>
       ${reviewEditHtml(r)}
@@ -1938,13 +1987,17 @@ async function enrichReviews(data) {
   if (ids.length === 0) return data;
   const idFilter = ids.join(',');
   const myUserKey = getInteractionUserKey();
-  const [reactions, comments, users] = await Promise.all([
-    sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id,reaction,user_key`),
-    sb(`review_comments?rating_id=in.(${idFilter})&order=created_at.asc&select=id,rating_id,nickname,comment,created_at`),
+  const [reactions, comments, users, photoUrls] = await Promise.all([
+    sb(`la_review_reactions?rating_id=in.(${idFilter})&select=rating_id,reaction,user_key`),
+    sb(`la_review_comments?rating_id=in.(${idFilter})&order=created_at.asc&select=id,rating_id,nickname,comment,created_at`),
     (() => {
       const userKeys = [...new Set(data.map(r => r.user_key).filter(Boolean))];
-      return userKeys.length ? sb(`user_schools?user_key=in.(${userKeys.map(encodeURIComponent).join(',')})&select=user_key,nickname`) : Promise.resolve([]);
-    })()
+      return Promise.resolve([]);
+    })(),
+    edge('review-photo-urls', { rating_ids: ids, user_key: myUserKey }).catch(e => {
+      console.warn('review photo url lookup failed:', e);
+      return null;
+    })
   ]);
   const userNickByKey = new Map((users || []).map(u => [u.user_key, u.nickname]));
   const reactionByRating = new Map();
@@ -1965,6 +2018,8 @@ async function enrichReviews(data) {
     return {
       ...r,
       user_nickname: r.nickname || userNickByKey.get(r.user_key) || '',
+      photo_display_url: photoUrls?.photos?.[String(r.id)]?.url || null,
+      review_photo: photoUrls?.photos?.[String(r.id)] || null,
       reaction_counts: reaction.counts,
       my_reaction: reaction.mine,
       comments: commentsByRating.get(r.id) || []
@@ -1977,23 +2032,25 @@ async function renderReviews(data, targetEl, title, emptyText = '') {
   targetEl.innerHTML = reviewListHtml(enriched, title, emptyText);
 }
 async function refreshVisibleReviews() {
-  if (document.getElementById('latest-reviews-wrap')) loadLatestReviews(5, 'latest-reviews-wrap', '최신 급식톡');
-  if (document.getElementById('page-feed')?.classList.contains('active')) loadFeedReviews();
-  if (document.getElementById('school-set-sheet')?.classList.contains('show')) loadMyActivity();
+  const jobs = [];
+  if (document.getElementById('latest-reviews-wrap')) jobs.push(loadLatestReviews(5, 'latest-reviews-wrap', '최신 급식톡'));
+  if (document.getElementById('page-feed')?.classList.contains('active')) jobs.push(loadFeedReviews());
+  if (document.getElementById('school-set-sheet')?.classList.contains('show')) jobs.push(loadMyActivity());
   const detailRevEl = document.getElementById('detail-reviews-wrap');
-  if (detailRevEl && currentSchool?.id) loadSchoolReviews(currentSchool.id, detailRevEl);
+  if (detailRevEl && currentSchool?.id) jobs.push(loadSchoolReviews(currentSchool.id, detailRevEl));
   const msRevEl = document.getElementById('ms-reviews-wrap');
   if (msRevEl && mySchool) {
     const ratedMealId = msRevEl.dataset.mealId;
-    if (ratedMealId) loadReviews(ratedMealId, msRevEl);
+    if (ratedMealId) jobs.push(loadReviews(ratedMealId, msRevEl));
   }
   const schoolMealRevEl = document.getElementById('school-page-meal-reviews-wrap');
   if (schoolMealRevEl && mySchool) {
     const ratedMealId = schoolMealRevEl.dataset.mealId;
-    if (ratedMealId) loadReviews(ratedMealId, schoolMealRevEl);
+    if (ratedMealId) jobs.push(loadReviews(ratedMealId, schoolMealRevEl));
   }
   const schoolRevEl = document.getElementById('school-page-reviews');
-  if (schoolRevEl && mySchool?.id && document.getElementById('page-school')?.classList.contains('active')) loadSchoolReviews(mySchool.id, schoolRevEl);
+  if (schoolRevEl && mySchool?.id && document.getElementById('page-school')?.classList.contains('active')) jobs.push(loadSchoolReviews(mySchool.id, schoolRevEl));
+  await Promise.all(jobs);
 }
 function startReviewEdit(ratingId) {
   const key = String(ratingId);
@@ -2005,25 +2062,26 @@ function cancelReviewEdit(ratingId) {
   editingReviewIds.delete(String(ratingId));
   refreshVisibleReviews();
 }
-function setReviewEditScore(ratingId, score) {
-  const box = document.getElementById(`review-edit-${ratingId}`);
+function setReviewEditScore(trigger, score) {
+  const box = trigger?.closest?.('.review-edit');
   if (!box) return;
   box.dataset.score = String(score);
   box.querySelectorAll('.review-edit-star').forEach((star, idx) => {
     star.classList.toggle('filled', idx < score);
   });
 }
-function setReviewEditMenu(ratingId, menuItem) {
-  const box = document.getElementById(`review-edit-${ratingId}`);
+function setReviewEditMenu(trigger, menuItem) {
+  const box = trigger?.closest?.('.review-edit');
   if (!box) return;
   box.dataset.menu = menuItem || '';
   box.querySelectorAll('.review-edit-menu button').forEach(btn => {
     btn.classList.toggle('selected', btn.textContent === menuItem);
   });
 }
-async function saveReviewEdit(ratingId) {
-  const box = document.getElementById(`review-edit-${ratingId}`);
-  const input = document.getElementById(`review-edit-comment-${ratingId}`);
+async function saveReviewEdit(ratingId, trigger = null) {
+  const item = trigger?.closest?.('.review-item') || null;
+  const box = item?.querySelector?.('.review-edit') || null;
+  const input = box?.querySelector?.('.review-edit-text') || null;
   const score = Number(box?.dataset.score || 0);
   const selectedMenuItem = box?.dataset.menu || '';
   const comment = input?.value?.trim() || '';
@@ -2033,55 +2091,36 @@ async function saveReviewEdit(ratingId) {
   }
   const userKey = getInteractionUserKey();
   const body = {
+    review_id: ratingId,
+    user_key: userKey,
     score,
     selected_menu_item: selectedMenuItem || null,
     comment: comment || null,
     nickname: ensureNickname()
   };
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings?id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id`, {
-    method: 'PATCH',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      'x-review-owner-key': userKey
-    },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    console.warn('리뷰 수정 실패:', await res.text().catch(() => ''));
+  const result = await edge('update-review', body);
+  if (result?.error) {
+    console.warn('리뷰 수정 실패:', result);
     alert('리뷰 수정에 실패했어요. 잠시 후 다시 시도해줘.');
     return;
   }
-  const updated = await res.json().catch(() => []);
-  if (Array.isArray(updated) && updated.length === 0) {
+  if (!result?.review?.id) {
     alert('수정할 수 있는 내 리뷰를 찾지 못했어요.');
     return;
   }
   editingReviewIds.delete(String(ratingId));
-  refreshVisibleReviews();
+  await refreshVisibleReviews();
 }
 async function deleteReview(ratingId, mealId = null) {
   if (!confirm('이 리뷰를 삭제할까요? 댓글과 좋아요도 함께 삭제돼요.')) return;
   const userKey = getInteractionUserKey();
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/ratings?id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id`, {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      'x-review-owner-key': userKey
-    }
-  });
-  if (!res.ok) {
-    console.warn('리뷰 삭제 실패:', await res.text().catch(() => ''));
+  const result = await edge('delete-review', { review_id: ratingId, user_key: userKey });
+  if (result?.error) {
+    console.warn('리뷰 삭제 실패:', result);
     alert('리뷰 삭제에 실패했어요. 잠시 후 다시 시도해줘.');
     return;
   }
-  const deleted = await res.json().catch(() => []);
-  if (Array.isArray(deleted) && deleted.length === 0) {
+  if (!result?.review?.id) {
     alert('삭제할 수 있는 내 리뷰를 찾지 못했어요.');
     return;
   }
@@ -2090,7 +2129,7 @@ async function deleteReview(ratingId, mealId = null) {
     rerenderRatingForMeal(mealId);
   }
   editingReviewIds.delete(String(ratingId));
-  refreshVisibleReviews();
+  await refreshVisibleReviews();
 }
 function reactionTokenKey(ratingId) {
   return `review_reaction_token_${ratingId}`;
@@ -2118,77 +2157,48 @@ async function sha256Hex(value) {
 async function reactionCancelHash(ratingId) {
   return sha256Hex(getReactionCancelToken(ratingId));
 }
-async function deleteMyReviewReaction(ratingId) {
-  const userKey = getInteractionUserKey();
-  const tokenHash = await reactionCancelHash(ratingId);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions?rating_id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id`, {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      'x-reaction-cancel-token-hash': tokenHash
-    }
-  });
-  if (!res.ok) {
-    console.warn('리뷰 반응 취소 실패:', await res.text().catch(() => ''));
-    return false;
-  }
-  const deleted = await res.json().catch(() => []);
-  if (Array.isArray(deleted) && deleted.length > 0) {
-    clearReactionCancelToken(ratingId);
-    return true;
-  }
-  return false;
-}
 async function reactToReview(ratingId, reaction, currentReaction = '') {
   await getUserId();
-  if (currentReaction === reaction) {
-    const deleted = await deleteMyReviewReaction(ratingId);
-    if (!deleted) alert('이전 버전에서 남긴 반응은 취소할 수 없어요. 새로 누른 반응부터 취소돼요.');
-    refreshVisibleReviews();
-    return;
-  }
-  if (currentReaction) {
-    const deleted = await deleteMyReviewReaction(ratingId);
-    if (!deleted) {
-      alert('기존 반응을 먼저 취소할 수 없어서 변경하지 못했어요. 새로 누른 반응부터 변경할 수 있어요.');
-      refreshVisibleReviews();
-      return;
-    }
-  }
-  const tokenHash = await reactionCancelHash(ratingId);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/review_reactions`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ rating_id: ratingId, user_key: getInteractionUserKey(), nickname: ensureNickname(), reaction, cancel_token_hash: tokenHash })
+  const result = await edge('react-review', {
+    rating_id: ratingId,
+    user_key: getInteractionUserKey(),
+    nickname: ensureNickname(),
+    reaction
   });
-  if (res.status === 409) {
-    alert('이미 이 리뷰에 표시했어요');
+  if (!result?.ok) {
+    console.warn('Review reaction save failed:', result);
+    alert(result?.error === 'REVIEW_NOT_FOUND' ? 'Review not found.' : 'Failed to save reaction.');
     return;
   }
-  if (!res.ok) {
-    console.warn('리뷰 반응 저장 실패:', await res.text().catch(() => ''));
-    return;
-  }
+  if (!result.selected) clearReactionCancelToken(ratingId);
+  void logAitGoal('goal_review_reaction', {
+    rating_id: String(ratingId),
+    reaction
+  });
   refreshVisibleReviews();
 }
-async function submitReviewComment(ratingId) {
-  const input = document.getElementById(`review-comment-${ratingId}`);
+async function submitReviewComment(ratingId, trigger = null) {
+  const item = trigger?.closest?.('.review-item') || null;
+  const input = item?.querySelector?.('.review-comment-input') || document.getElementById(`review-comment-${ratingId}`);
   const comment = input?.value?.trim() || '';
   if (!comment) return;
   openCommentThreads.add(String(ratingId));
   await getUserId();
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/review_comments`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ rating_id: ratingId, user_key: getInteractionUserKey(), nickname: ensureNickname(), comment })
+  const result = await edge('create-review-comment', {
+    rating_id: ratingId,
+    user_key: getInteractionUserKey(),
+    nickname: ensureNickname(),
+    comment
   });
-  if (!res.ok) {
-    console.warn('댓글 저장 실패:', await res.text().catch(() => ''));
+  if (!result?.ok) {
+    console.warn('Comment save failed:', result);
+    alert(result?.error === 'REVIEW_NOT_FOUND' ? 'Review not found.' : 'Failed to save comment.');
     return;
   }
+  void logAitGoal('goal_review_comment', {
+    rating_id: String(ratingId),
+    comment_length: comment.length
+  });
   input.value = '';
   refreshVisibleReviews();
 }
@@ -2222,10 +2232,10 @@ async function loadMyActivity() {
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div>';
   await getUserId();
   const userKey = encodeURIComponent(getInteractionUserKey());
-  const commentSelect = `id,rating_id,nickname,comment,created_at,ratings(${REVIEW_SELECT})`;
+  const commentSelect = `id,rating_id,nickname,comment,created_at,ratings:la_reviews(${REVIEW_SELECT})`;
   const [reviews, comments] = await Promise.all([
-    sb(`ratings?user_key=eq.${userKey}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`),
-    sb(`review_comments?user_key=eq.${userKey}&order=created_at.desc&limit=20&select=${commentSelect}`)
+    sb(`la_reviews?user_key=eq.${userKey}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`),
+    sb(`la_review_comments?user_key=eq.${userKey}&order=created_at.desc&limit=20&select=${commentSelect}`)
   ]);
   const enrichedReviews = await enrichReviews(Array.isArray(reviews) ? reviews : []);
   const ownComments = Array.isArray(comments) ? comments : [];
@@ -2242,7 +2252,7 @@ async function loadLatestReviews(limit = 5, targetId = 'latest-reviews-wrap', ti
   const targetEl = document.getElementById(targetId);
   if (!targetEl) return;
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡 불러오는 중...</div></div>';
-  const data = await sb(`ratings?order=created_at.desc&limit=${limit}&select=${REVIEW_SELECT}`);
+  const data = await sb(`la_reviews?order=created_at.desc&limit=${limit}&select=${REVIEW_SELECT}`);
   const enriched = await enrichReviews(data || []);
   targetEl.innerHTML = latestReviewsHtml(enriched, title);
 }
@@ -2266,13 +2276,13 @@ function openReviewSchool(s) {
 async function loadReviews(mealId, targetEl) {
   if (!targetEl) return;
   targetEl.dataset.mealId = mealId;
-  const data = await sb(`ratings?meal_id=eq.${mealId}&order=created_at.desc&limit=20&select=${REVIEW_SELECT}`);
+  const data = await sb(`la_reviews?meal_id=eq.${mealId}&order=created_at.desc&limit=20&select=${REVIEW_SELECT}`);
   renderReviews(data, targetEl, '리뷰');
 }
 async function loadSchoolReviews(schoolId, targetEl) {
   if (!targetEl || !schoolId) return;
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">학교 리뷰 불러오는 중...</div></div>';
-  const data = await sb(`ratings?school_id=eq.${schoolId}&order=created_at.desc&limit=20&select=${REVIEW_SELECT}`);
+  const data = await sb(`la_reviews?school_id=eq.${schoolId}&order=created_at.desc&limit=20&select=${REVIEW_SELECT}`);
   renderReviews(data, targetEl, '이 학교 리뷰', '아직 이 학교 리뷰가 없어요');
 }
 
@@ -2298,7 +2308,7 @@ function setRankFilter(f, el) {
 }
 async function loadFullRanking() {
   const dateStr = fmtDate(rankDate);
-  let query = `meals?meal_date=eq.${dateStr}&order=auto_score.desc&limit=30&select=id,auto_score,auto_rank,meal_type,meal_type_label,menu,school_id,schools!inner(id,name,type,atpt_code,school_code,address)`;
+  let query = `la_meals?meal_date=eq.${dateStr}&order=auto_score.desc&limit=30&select=id,auto_score,auto_rank,meal_type,meal_type_label,menu,school_id,schools:la_schools!inner(id,name,type,atpt_code,school_code,address)`;
   if (rankFilter === 'elem') query += '&schools.type=ilike.*초등*';
   else if (rankFilter === 'mid') query += '&schools.type=ilike.*중학*';
   else if (rankFilter === 'high') query += '&schools.type=ilike.*고등*';
@@ -2335,7 +2345,7 @@ async function loadBattle() {
   }
   // mySchool에 lat/lng 없으면 schools 테이블에서 가져와서 보강 (상대 변경용)
   if (!mySchool.lat || !mySchool.lng) {
-    const geo = await sb(`schools?id=eq.${mySchool.id}&select=lat,lng`);
+    const geo = await sb(`la_schools?id=eq.${mySchool.id}&select=lat,lng`);
     if (geo?.[0]?.lat && geo?.[0]?.lng) {
       mySchool.lat = geo[0].lat;
       mySchool.lng = geo[0].lng;
@@ -2344,7 +2354,7 @@ async function loadBattle() {
   }
   const today = fmtDate(fixWeekend(new Date()));
   // 1. 기존 배틀 확인
-  const existing = await sb(`battles?battle_date=eq.${today}&select=*,school_a:schools!battles_school_a_id_fkey(id,name,type,address),school_b:schools!battles_school_b_id_fkey(id,name,type,address),meal_a:meals!battles_meal_a_id_fkey(menu,auto_score),meal_b:meals!battles_meal_b_id_fkey(menu,auto_score)&or=(school_a_id.eq.${mySchool.id},school_b_id.eq.${mySchool.id})&limit=1`);
+  const existing = await sb(`la_battles?battle_date=eq.${today}&select=*,school_a:la_schools!la_battles_school_a_id_fkey(id,name,type,address),school_b:la_schools!la_battles_school_b_id_fkey(id,name,type,address),meal_a:la_meals!la_battles_meal_a_id_fkey(menu,auto_score),meal_b:la_meals!la_battles_meal_b_id_fkey(menu,auto_score)&or=(school_a_id.eq.${mySchool.id},school_b_id.eq.${mySchool.id})&limit=1`);
   if (existing && existing.length > 0) { renderBattleCard(existing[0]); return; }
   // 2. 내 학교 급식 로드
   const myMealResult = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: today });
@@ -2358,7 +2368,7 @@ async function loadBattle() {
   window.BATTLE_CANDIDATES = [];
 
   if (mySchool.lat && mySchool.lng) {
-    const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/find_battle_opponents`, {
+    const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/la_find_battle_opponents`, {
       method: 'POST',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2380,7 +2390,7 @@ async function loadBattle() {
 
   if (!oppSchool) {
     // 폴백: 같은 학교급 아무나 + 급식 캐시
-    const candidates = await sb(`schools?type=ilike.*${encodeURIComponent(myTypeKey)}*&id=neq.${mySchool.id}&limit=5&select=id,name,type,address,atpt_code,school_code`);
+    const candidates = await sb(`la_schools?type=ilike.*${encodeURIComponent(myTypeKey)}*&id=neq.${mySchool.id}&limit=5&select=id,name,type,address,atpt_code,school_code`);
     for (const cand of (candidates || [])) {
       const r = await edge('sync-meals', { atpt_code: cand.atpt_code, school_code: cand.school_code, date: today });
       if (r.meal) { oppSchool = cand; oppMeal = r.meal; break; }
@@ -2394,25 +2404,24 @@ async function loadBattle() {
   const aId = Math.min(mySchool.id, oppSchool.id);
   const bId = Math.max(mySchool.id, oppSchool.id);
   const isA = mySchool.id === aId;
-  const newBattle = await fetch(`${SUPABASE_URL}/rest/v1/battles`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-    body: JSON.stringify({
-      battle_date: today,
-      school_a_id: aId, school_b_id: bId,
-      meal_a_id: isA ? myMealResult.meal.id : oppMeal.id,
-      meal_b_id: isA ? oppMeal.id : myMealResult.meal.id,
-      score_a: isA ? myMealResult.meal.auto_score : oppMeal.auto_score,
-      score_b: isA ? oppMeal.auto_score : myMealResult.meal.auto_score,
-    })
-  }).then(r => r.json());
+  const newBattleResult = await edge('create-battle', {
+    user_key: getInteractionUserKey(),
+    battle_date: today,
+    school_a_id: aId,
+    school_b_id: bId,
+    meal_a_id: isA ? myMealResult.meal.id : oppMeal.id,
+    meal_b_id: isA ? oppMeal.id : myMealResult.meal.id,
+    score_a: isA ? myMealResult.meal.auto_score : oppMeal.auto_score,
+    score_b: isA ? oppMeal.auto_score : myMealResult.meal.auto_score,
+  });
+  const newBattle = newBattleResult?.battle || null;
   if (newBattle && !newBattle.error) {
     // 방금 생성한 배틀 다시 fetch (조인 포함)
-    const fresh = await sb(`battles?id=eq.${newBattle[0]?.id || newBattle.id}&select=*,school_a:schools!battles_school_a_id_fkey(id,name,type,address),school_b:schools!battles_school_b_id_fkey(id,name,type,address),meal_a:meals!battles_meal_a_id_fkey(menu,auto_score),meal_b:meals!battles_meal_b_id_fkey(menu,auto_score)&limit=1`);
+    const fresh = await sb(`la_battles?id=eq.${newBattle[0]?.id || newBattle.id}&select=*,school_a:la_schools!la_battles_school_a_id_fkey(id,name,type,address),school_b:la_schools!la_battles_school_b_id_fkey(id,name,type,address),meal_a:la_meals!la_battles_meal_a_id_fkey(menu,auto_score),meal_b:la_meals!la_battles_meal_b_id_fkey(menu,auto_score)&limit=1`);
     if (fresh && fresh.length > 0) renderBattleCard(fresh[0]); else renderBattleCardRaw(newBattle[0] || newBattle, isA ? {school: mySchool, meal: myMealResult.meal} : {school: oppSchool, meal: oppMeal}, isA ? {school: oppSchool, meal: oppMeal} : {school: mySchool, meal: myMealResult.meal});
   } else {
     // 이미 있으면 다시 fetch
-    const retry = await sb(`battles?battle_date=eq.${today}&select=*,school_a:schools!battles_school_a_id_fkey(id,name,type,address),school_b:schools!battles_school_b_id_fkey(id,name,type,address),meal_a:meals!battles_meal_a_id_fkey(menu,auto_score),meal_b:meals!battles_meal_b_id_fkey(menu,auto_score)&or=(school_a_id.eq.${mySchool.id},school_b_id.eq.${mySchool.id})&limit=1`);
+    const retry = await sb(`la_battles?battle_date=eq.${today}&select=*,school_a:la_schools!la_battles_school_a_id_fkey(id,name,type,address),school_b:la_schools!la_battles_school_b_id_fkey(id,name,type,address),meal_a:la_meals!la_battles_meal_a_id_fkey(menu,auto_score),meal_b:la_meals!la_battles_meal_b_id_fkey(menu,auto_score)&or=(school_a_id.eq.${mySchool.id},school_b_id.eq.${mySchool.id})&limit=1`);
     if (retry && retry.length > 0) renderBattleCard(retry[0]);
   }
 }
@@ -2519,7 +2528,7 @@ async function openBattleOppSheet(battleId, totalVotes) {
     const myTypeKey = mySchool.type?.includes('초') ? '초' : mySchool.type?.includes('중') ? '중' : '고';
     // lat/lng 없으면 schools 테이블에서 가져옴
     if (!mySchool.lat || !mySchool.lng) {
-      const geo = await sb(`schools?id=eq.${mySchool.id}&select=lat,lng`);
+      const geo = await sb(`la_schools?id=eq.${mySchool.id}&select=lat,lng`);
       if (geo?.[0]?.lat && geo?.[0]?.lng) {
         mySchool.lat = geo[0].lat;
         mySchool.lng = geo[0].lng;
@@ -2527,7 +2536,7 @@ async function openBattleOppSheet(battleId, totalVotes) {
       }
     }
     if (mySchool.lat && mySchool.lng) {
-      const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/find_battle_opponents`, {
+      const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/la_find_battle_opponents`, {
         method: 'POST',
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2567,15 +2576,8 @@ function closeBattleOppSheet() {
 async function pickBattleOpponent(oldBattleId, newOppId, newMealId, newScore) {
   closeBattleOppSheet();
   const wrap = document.getElementById('battle-content');
-  wrap.innerHTML = '<div class="loading"><div class="loading-emoji">🔄</div><div class="loading-text">상대 바꾸는 중...</div></div>';
+  wrap.innerHTML = '<div class="loading"><div class="loading-emoji">...</div><div class="loading-text">Changing opponent...</div></div>';
 
-  // 기존 배틀 삭제 (투표 없는 경우에만)
-  await fetch(`${SUPABASE_URL}/rest/v1/battles?id=eq.${oldBattleId}`, {
-    method: 'DELETE',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-  });
-
-  // 내 학교 meal 재조회 (현재 날짜)
   const today = fmtDate(fixWeekend(new Date()));
   const myMealResult = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: today });
   if (!myMealResult.meal) { loadBattle(); return; }
@@ -2584,46 +2586,45 @@ async function pickBattleOpponent(oldBattleId, newOppId, newMealId, newScore) {
   const bId = Math.max(mySchool.id, newOppId);
   const isA = mySchool.id === aId;
 
-  await fetch(`${SUPABASE_URL}/rest/v1/battles`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({
-      battle_date: today,
-      school_a_id: aId, school_b_id: bId,
-      meal_a_id: isA ? myMealResult.meal.id : newMealId,
-      meal_b_id: isA ? newMealId : myMealResult.meal.id,
-      score_a: isA ? myMealResult.meal.auto_score : newScore,
-      score_b: isA ? newScore : myMealResult.meal.auto_score,
-    })
+  const result = await edge('replace-battle-opponent', {
+    user_key: getInteractionUserKey(),
+    old_battle_id: oldBattleId,
+    battle_date: today,
+    school_a_id: aId,
+    school_b_id: bId,
+    meal_a_id: isA ? myMealResult.meal.id : newMealId,
+    meal_b_id: isA ? newMealId : myMealResult.meal.id,
+    score_a: isA ? myMealResult.meal.auto_score : newScore,
+    score_b: isA ? newScore : myMealResult.meal.auto_score,
   });
+  if (!result?.ok) {
+    console.warn('Battle opponent replace failed:', result);
+    alert(result?.error === 'BATTLE_ALREADY_VOTED' ? 'This battle already has votes.' : 'Failed to change opponent.');
+  }
 
   loadBattle();
 }
 async function voteBattle(battleId, schoolId, side) {
   const voted = localStorage.getItem(`voted_battle_${battleId}`);
   if (voted) return;
-  // 낙관적 UI 업데이트
   document.querySelectorAll('.btn-vote').forEach(b => {
     b.classList.toggle('selected', b === event.target);
     b.classList.toggle('unselected', b !== event.target);
   });
   await getUserId();
-  // DB insert
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/battle_votes`, {
-    method: 'POST',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ battle_id: battleId, voted_school_id: schoolId, user_key: getInteractionUserKey() })
+  const result = await edge('vote-battle', {
+    battle_id: battleId,
+    voted_school_id: schoolId,
+    user_key: getInteractionUserKey()
   });
-  // vote_a/vote_b 업데이트
-  const field = side === 'a' ? 'vote_a' : 'vote_b';
-  await fetch(`${SUPABASE_URL}/rest/v1/battles?id=eq.${battleId}`, {
-    method: 'PATCH',
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ [field]: (await sb(`battles?id=eq.${battleId}&select=${field}`).then(d => (d[0]?.[field] || 0))) + 1 })
-  });
-  localStorage.setItem(`voted_battle_${battleId}`, side);
-  // 다시 렌더
-  const fresh = await sb(`battles?id=eq.${battleId}&select=*,school_a:schools!battles_school_a_id_fkey(id,name,type),school_b:schools!battles_school_b_id_fkey(id,name,type),meal_a:meals!battles_meal_a_id_fkey(menu,auto_score),meal_b:meals!battles_meal_b_id_fkey(menu,auto_score)&limit=1`);
+  if (!result?.ok) {
+    console.warn('Battle vote failed:', result);
+    if (result?.error === 'ALREADY_VOTED') localStorage.setItem(`voted_battle_${battleId}`, side);
+    else alert('Failed to save vote.');
+  } else {
+    localStorage.setItem(`voted_battle_${battleId}`, side);
+  }
+  const fresh = await sb(`la_battles?id=eq.${battleId}&select=*,school_a:la_schools!la_battles_school_a_id_fkey(id,name,type),school_b:la_schools!la_battles_school_b_id_fkey(id,name,type),meal_a:la_meals!la_battles_meal_a_id_fkey(menu,auto_score),meal_b:la_meals!la_battles_meal_b_id_fkey(menu,auto_score)&limit=1`);
   if (fresh && fresh.length > 0) renderBattleCard(fresh[0]);
 }
 function shareBattle(nameA, nameB, scoreA, scoreB, pctA, pctB) {
@@ -2704,7 +2705,7 @@ function focusMySchoolOnMap() {
 async function loadMapSchools() {
   let all = [], page = 0;
   while (true) {
-    const data = await fetch(`${SUPABASE_URL}/rest/v1/schools?select=id,name,type,lat,lng,atpt_code,school_code,address&lat=not.is.null&lng=not.is.null&order=id&limit=1000&offset=${page*1000}`, {
+    const data = await fetch(`${SUPABASE_URL}/rest/v1/la_schools?select=id,name,type,lat,lng,atpt_code,school_code,address&lat=not.is.null&lng=not.is.null&order=id&limit=1000&offset=${page*1000}`, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     }).then(r => r.json());
     if (!data || data.length === 0) break;
@@ -2812,13 +2813,13 @@ function normalizeEngagementRow(row) {
   };
 }
 async function loadMonthlyEngagementRankingFallback(wrap, start, end) {
-  const reviews = await sb(`ratings?created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}&select=id,school_id,schools(id,name,type,address,atpt_code,school_code)`);
+  const reviews = await sb(`la_reviews?created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}&select=id,school_id,schools:la_schools(id,name,type,address,atpt_code,school_code)`);
   if (!reviews || !reviews.length) return [];
   const ratingIds = reviews.map(r => r.id).filter(Boolean);
   const idFilter = ratingIds.join(',');
   const [comments, reactions] = idFilter ? await Promise.all([
-    sb(`review_comments?rating_id=in.(${idFilter})&select=rating_id`),
-    sb(`review_reactions?rating_id=in.(${idFilter})&select=rating_id`)
+    sb(`la_review_comments?rating_id=in.(${idFilter})&select=rating_id`),
+    sb(`la_review_reactions?rating_id=in.(${idFilter})&select=rating_id`)
   ]) : [[], []];
   const schoolByRating = new Map(reviews.map(r => [r.id, r.school_id]));
   const stats = new Map();
@@ -2855,7 +2856,7 @@ async function loadMonthlyEngagementRanking() {
   if (!wrap) return;
   const { start, end, month } = monthlyRange();
   try {
-    const rows = await sb(`school_engagement_monthly?month=eq.${month}&order=score.desc&order=review_count.desc&limit=3&select=school_id,review_count,comment_count,reaction_count,photo_count,score,schools(id,name,type,address,atpt_code,school_code)`);
+    const rows = await sb(`la_school_engagement_monthly?month=eq.${month}&order=score.desc&order=review_count.desc&limit=3&select=school_id,review_count,comment_count,reaction_count,photo_count,score,schools:la_schools(id,name,type,address,atpt_code,school_code)`);
     const top = (rows || []).map(normalizeEngagementRow).filter(x => x.school);
     const fallbackTop = top.length ? top : await loadMonthlyEngagementRankingFallback(wrap, start, end);
     wrap.innerHTML = fallbackTop.length ? fallbackTop.map(engagementRankCard).join('') : `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">💬</div><div>이번 달 리뷰 참여가 아직 없어요</div></div>`;
@@ -2887,7 +2888,7 @@ async function loadMySchoolMenuStats(sectionId = 'monthly-menu-section', wrapId 
   }
   const { month } = monthlyRange();
   try {
-    const rows = await sb(`school_menu_stats_monthly?month=eq.${month}&school_id=eq.${mySchool.id}&order=pick_count.desc&order=avg_score.desc&limit=3&select=menu_item,pick_count,avg_score,photo_count`);
+    const rows = await sb(`la_school_menu_stats_monthly?month=eq.${month}&school_id=eq.${mySchool.id}&order=pick_count.desc&order=avg_score.desc&limit=3&select=menu_item,pick_count,avg_score,photo_count`);
     if (!rows || !rows.length) {
       section.classList.add('hide');
       wrap.innerHTML = '';
@@ -2906,9 +2907,9 @@ async function init() {
   await loadMySchool();
   // 스탯 카운트
   const [schoolCount, mealCount, ratingCount] = await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/schools?select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
-    fetch(`${SUPABASE_URL}/rest/v1/meals?meal_date=eq.${fmtDate(mealDate)}&select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
-    fetch(`${SUPABASE_URL}/rest/v1/ratings?select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
+    fetch(`${SUPABASE_URL}/rest/v1/la_schools?select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
+    fetch(`${SUPABASE_URL}/rest/v1/la_meals?meal_date=eq.${fmtDate(mealDate)}&select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
+    fetch(`${SUPABASE_URL}/rest/v1/la_reviews?select=id`, { headers: { 'apikey': SUPABASE_KEY, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => { const cr = r.headers.get('content-range'); return cr ? parseInt(cr.split('/')[1]) : 0; }),
   ]);
   document.getElementById('stat-schools').textContent = Number(schoolCount).toLocaleString();
   document.getElementById('stat-meals').textContent = mealCount > 0 ? mealCount.toLocaleString() : '-';
@@ -2917,7 +2918,7 @@ async function init() {
   loadMySchoolMenuStats();
   loadLatestReviews(5, 'latest-reviews-wrap', '최신 급식톡');
   // 오늘 랭킹 TOP5
-  const todayMeals = await sb(`meals?meal_date=eq.${fmtDate(mealDate)}&order=auto_score.desc&limit=5&select=auto_score,auto_rank,meal_type,meal_type_label,menu,schools!inner(id,name,type)`);
+  const todayMeals = await sb(`la_meals?meal_date=eq.${fmtDate(mealDate)}&order=auto_score.desc&limit=5&select=auto_score,auto_rank,meal_type,meal_type_label,menu,schools:la_schools!inner(id,name,type)`);
   if (todayMeals && todayMeals.length > 0) {
     document.getElementById('today-ranking').innerHTML = todayMeals.map((m, i) => {
       const numCls = i < 3 ? `rank-${i+1}` : '';
@@ -2940,7 +2941,7 @@ async function handleUrlParam() {
   if (!schoolId) return;
 
   // 학교 정보 조회
-  const schools = await sb(`schools?id=eq.${encodeURIComponent(schoolId)}&limit=1`);
+  const schools = await sb(`la_schools?id=eq.${encodeURIComponent(schoolId)}&limit=1`);
   if (!schools || schools.length === 0) return;
 
   const school = schools[0];

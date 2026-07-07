@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "cloudflare-api": {
+      "type": "http",
+      "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-r2-projecth": {
+      "type": "http",
+      "url": "https://mcp.cloudflare.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${CLOUDFLARE_R2_PROJECTH_MCP_TOKEN}"
+      }
+    }
+  }
+}
