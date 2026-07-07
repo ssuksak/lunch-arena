@@ -594,7 +594,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = (path, opts = {}) => {
   const headers = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', ...opts.headers };
   if (opts.prefer) headers['Prefer'] = opts.prefer;
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers }).then(r => r.json());
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, { cache: 'no-store', ...opts, headers }).then(r => r.json());
 };
 const edge = async (fn, body) => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
@@ -1889,27 +1889,27 @@ function renderReviewComments(ratingId, comments = []) {
     <div class="review-comments${isOpen ? '' : ' hide'}" id="review-comments-${ratingId}">
       ${list}
       <div class="review-comment-form">
-        <input class="review-comment-input" id="review-comment-${ratingId}" maxlength="300" placeholder="댓글 달기" oninput="updateReviewCommentSubmit(${ratingId})" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId})">
-        <button class="review-comment-submit" id="review-comment-submit-${ratingId}" onclick="submitReviewComment(${ratingId})" disabled>등록</button>
+        <input class="review-comment-input" maxlength="300" placeholder="댓글 달기" oninput="updateReviewCommentSubmit(this)" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId}, this)">
+        <button class="review-comment-submit" onclick="submitReviewComment(${ratingId}, this)" disabled>등록</button>
       </div>
     </div>`;
 }
-function toggleReviewComments(ratingId) {
+function toggleReviewComments(ratingId, trigger = null) {
   const key = String(ratingId);
-  const el = document.getElementById(`review-comments-${ratingId}`);
+  const item = trigger?.closest?.('.review-item') || null;
+  const el = item?.querySelector?.('.review-comments') || document.getElementById(`review-comments-${ratingId}`);
   const shouldOpen = !el || el.classList.contains('hide');
   if (shouldOpen) openCommentThreads.add(key);
   else openCommentThreads.delete(key);
   if (el) {
     el.classList.toggle('hide', !shouldOpen);
-    const btn = document.getElementById(`review-comment-toggle-${ratingId}`);
+    const btn = item?.querySelector?.(`#review-comment-toggle-${ratingId}`) || document.getElementById(`review-comment-toggle-${ratingId}`);
     if (btn) btn.classList.toggle('selected', shouldOpen);
-    if (shouldOpen) setTimeout(() => document.getElementById(`review-comment-${ratingId}`)?.focus(), 0);
+    if (shouldOpen) setTimeout(() => (item?.querySelector?.('.review-comment-input') || document.getElementById(`review-comment-${ratingId}`))?.focus(), 0);
   }
 }
-function updateReviewCommentSubmit(ratingId) {
-  const input = document.getElementById(`review-comment-${ratingId}`);
-  const btn = document.getElementById(`review-comment-submit-${ratingId}`);
+function updateReviewCommentSubmit(input) {
+  const btn = input?.closest?.('.review-comment-form')?.querySelector?.('.review-comment-submit');
   if (btn) btn.disabled = !input?.value?.trim();
 }
 function isMyReview(r) {
@@ -1929,16 +1929,16 @@ function reviewEditHtml(r) {
   const picked = r.selected_menu_item || '';
   const menuButtons = menus.length ? `<div class="review-edit-menu">${menus.map(item => {
     const selected = item === picked ? ' selected' : '';
-    return `<button class="${selected.trim()}" onclick="setReviewEditMenu(${r.id}, ${jsString(item)})">${escapeHtml(item)}</button>`;
+    return `<button class="${selected.trim()}" onclick="setReviewEditMenu(this, ${jsString(item)})">${escapeHtml(item)}</button>`;
   }).join('')}</div>` : '';
-  return `<div class="review-edit" id="review-edit-${r.id}" data-score="${Number(r.score || 0)}" data-menu="${escapeHtml(picked)}">
+  return `<div class="review-edit" data-score="${Number(r.score || 0)}" data-menu="${escapeHtml(picked)}">
     <div class="rating-subtitle">별점</div>
-    <div class="review-edit-stars">${[1,2,3,4,5].map(n => `<button class="review-edit-star${n <= Number(r.score || 0) ? ' filled' : ''}" onclick="setReviewEditScore(${r.id}, ${n})">★</button>`).join('')}</div>
+    <div class="review-edit-stars">${[1,2,3,4,5].map(n => `<button class="review-edit-star${n <= Number(r.score || 0) ? ' filled' : ''}" onclick="setReviewEditScore(this, ${n})">★</button>`).join('')}</div>
     ${menus.length ? `<div class="rating-subtitle">대표 메뉴</div>${menuButtons}` : ''}
-    <textarea class="review-edit-text" id="review-edit-comment-${r.id}" maxlength="100" placeholder="한줄평 (선택, 100자)">${escapeHtml(r.comment || '')}</textarea>
+    <textarea class="review-edit-text" maxlength="100" placeholder="한줄평 (선택, 100자)">${escapeHtml(r.comment || '')}</textarea>
     <div class="review-edit-buttons">
       <button onclick="cancelReviewEdit(${r.id})">취소</button>
-      <button class="primary" onclick="saveReviewEdit(${r.id})">저장</button>
+      <button class="primary" onclick="saveReviewEdit(${r.id}, this)">저장</button>
     </div>
   </div>`;
 }
@@ -1963,7 +1963,7 @@ function renderReviewItem(r) {
       <div class="review-actions">
         <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">&#128077; ${likes}</button>
         <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">&#128078; ${dislikes}</button>
-        <button class="review-action-btn${openCommentThreads.has(String(r.id)) ? ' selected' : ''}" id="review-comment-toggle-${r.id}" onclick="toggleReviewComments(${r.id})">&#128172; 댓글 ${(r.comments || []).length}</button>
+        <button class="review-action-btn${openCommentThreads.has(String(r.id)) ? ' selected' : ''}" id="review-comment-toggle-${r.id}" onclick="toggleReviewComments(${r.id}, this)">&#128172; 댓글 ${(r.comments || []).length}</button>
         ${mine ? `<button class="review-action-btn${editingReviewIds.has(String(r.id)) ? ' selected' : ''}" onclick="startReviewEdit(${r.id})">수정</button><button class="review-action-btn danger" onclick="deleteReview(${r.id}, ${r.meal_id || 'null'})">삭제</button>` : ''}
       </div>
       ${reviewEditHtml(r)}
@@ -2032,23 +2032,25 @@ async function renderReviews(data, targetEl, title, emptyText = '') {
   targetEl.innerHTML = reviewListHtml(enriched, title, emptyText);
 }
 async function refreshVisibleReviews() {
-  if (document.getElementById('latest-reviews-wrap')) loadLatestReviews(5, 'latest-reviews-wrap', '최신 급식톡');
-  if (document.getElementById('page-feed')?.classList.contains('active')) loadFeedReviews();
-  if (document.getElementById('school-set-sheet')?.classList.contains('show')) loadMyActivity();
+  const jobs = [];
+  if (document.getElementById('latest-reviews-wrap')) jobs.push(loadLatestReviews(5, 'latest-reviews-wrap', '최신 급식톡'));
+  if (document.getElementById('page-feed')?.classList.contains('active')) jobs.push(loadFeedReviews());
+  if (document.getElementById('school-set-sheet')?.classList.contains('show')) jobs.push(loadMyActivity());
   const detailRevEl = document.getElementById('detail-reviews-wrap');
-  if (detailRevEl && currentSchool?.id) loadSchoolReviews(currentSchool.id, detailRevEl);
+  if (detailRevEl && currentSchool?.id) jobs.push(loadSchoolReviews(currentSchool.id, detailRevEl));
   const msRevEl = document.getElementById('ms-reviews-wrap');
   if (msRevEl && mySchool) {
     const ratedMealId = msRevEl.dataset.mealId;
-    if (ratedMealId) loadReviews(ratedMealId, msRevEl);
+    if (ratedMealId) jobs.push(loadReviews(ratedMealId, msRevEl));
   }
   const schoolMealRevEl = document.getElementById('school-page-meal-reviews-wrap');
   if (schoolMealRevEl && mySchool) {
     const ratedMealId = schoolMealRevEl.dataset.mealId;
-    if (ratedMealId) loadReviews(ratedMealId, schoolMealRevEl);
+    if (ratedMealId) jobs.push(loadReviews(ratedMealId, schoolMealRevEl));
   }
   const schoolRevEl = document.getElementById('school-page-reviews');
-  if (schoolRevEl && mySchool?.id && document.getElementById('page-school')?.classList.contains('active')) loadSchoolReviews(mySchool.id, schoolRevEl);
+  if (schoolRevEl && mySchool?.id && document.getElementById('page-school')?.classList.contains('active')) jobs.push(loadSchoolReviews(mySchool.id, schoolRevEl));
+  await Promise.all(jobs);
 }
 function startReviewEdit(ratingId) {
   const key = String(ratingId);
@@ -2060,25 +2062,26 @@ function cancelReviewEdit(ratingId) {
   editingReviewIds.delete(String(ratingId));
   refreshVisibleReviews();
 }
-function setReviewEditScore(ratingId, score) {
-  const box = document.getElementById(`review-edit-${ratingId}`);
+function setReviewEditScore(trigger, score) {
+  const box = trigger?.closest?.('.review-edit');
   if (!box) return;
   box.dataset.score = String(score);
   box.querySelectorAll('.review-edit-star').forEach((star, idx) => {
     star.classList.toggle('filled', idx < score);
   });
 }
-function setReviewEditMenu(ratingId, menuItem) {
-  const box = document.getElementById(`review-edit-${ratingId}`);
+function setReviewEditMenu(trigger, menuItem) {
+  const box = trigger?.closest?.('.review-edit');
   if (!box) return;
   box.dataset.menu = menuItem || '';
   box.querySelectorAll('.review-edit-menu button').forEach(btn => {
     btn.classList.toggle('selected', btn.textContent === menuItem);
   });
 }
-async function saveReviewEdit(ratingId) {
-  const box = document.getElementById(`review-edit-${ratingId}`);
-  const input = document.getElementById(`review-edit-comment-${ratingId}`);
+async function saveReviewEdit(ratingId, trigger = null) {
+  const item = trigger?.closest?.('.review-item') || null;
+  const box = item?.querySelector?.('.review-edit') || null;
+  const input = box?.querySelector?.('.review-edit-text') || null;
   const score = Number(box?.dataset.score || 0);
   const selectedMenuItem = box?.dataset.menu || '';
   const comment = input?.value?.trim() || '';
@@ -2174,8 +2177,9 @@ async function reactToReview(ratingId, reaction, currentReaction = '') {
   });
   refreshVisibleReviews();
 }
-async function submitReviewComment(ratingId) {
-  const input = document.getElementById(`review-comment-${ratingId}`);
+async function submitReviewComment(ratingId, trigger = null) {
+  const item = trigger?.closest?.('.review-item') || null;
+  const input = item?.querySelector?.('.review-comment-input') || document.getElementById(`review-comment-${ratingId}`);
   const comment = input?.value?.trim() || '';
   if (!comment) return;
   openCommentThreads.add(String(ratingId));
