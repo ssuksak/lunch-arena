@@ -2093,7 +2093,7 @@ async function saveReviewEdit(ratingId) {
     comment: comment || null,
     nickname: ensureNickname()
   };
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/la_reviews?id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/la_reviews?id=eq.${ratingId}&user_key=eq.${encodeURIComponent(userKey)}&select=id,score,comment,selected_menu_item,nickname`, {
     method: 'PATCH',
     headers: {
       'apikey': SUPABASE_KEY,
@@ -2115,7 +2115,7 @@ async function saveReviewEdit(ratingId) {
     return;
   }
   editingReviewIds.delete(String(ratingId));
-  refreshVisibleReviews();
+  await refreshVisibleReviews();
 }
 async function deleteReview(ratingId, mealId = null) {
   if (!confirm('이 리뷰를 삭제할까요? 댓글과 좋아요도 함께 삭제돼요.')) return;
