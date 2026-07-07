@@ -1379,11 +1379,8 @@ async function loadMySchoolMeal() {
   }
 }
 async function loadMySchoolStats() {
-  const data = await sb(`school_stats?school_id=eq.${mySchool.id}`);
-  if (data && data.length > 0 && data[0].current_streak > 0) {
-    const el = document.getElementById('msc-streak');
-    if (el) { el.innerHTML = `🔥 ${data[0].current_streak}연승 중!`; el.style.display = 'inline-flex'; }
-  }
+  const el = document.getElementById('msc-streak');
+  if (el) el.style.display = 'none';
 }
 function schoolPageEmptyHtml() {
   return `<div class="meal-card"><div class="empty" style="padding:24px 12px"><div class="empty-emoji">🏫</div><div>내 학교를 먼저 설정해줘</div><button class="school-empty-cta" onclick="openSchoolSetSheet()">내 학교 설정하기</button></div></div>`;
@@ -2340,7 +2337,7 @@ async function loadBattle() {
   const wrap = document.getElementById('battle-content');
   wrap.innerHTML = '<div class="loading"><div class="loading-emoji">⚔️</div><div class="loading-text">배틀 준비 중...</div></div>';
   if (!mySchool) {
-    wrap.innerHTML = `<div class="empty"><div class="empty-emoji">🏫</div><div>내 학교를 설정하면<br>오늘의 배틀을 볼 수 있어요!</div><button onclick="showOnboarding()" style="margin-top:16px;padding:12px 24px;background:var(--blue);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">내 학교 설정하기</button></div>`;
+    wrap.innerHTML = `<div class="empty"><div class="empty-emoji">🏫</div><div>내 학교를 설정하면<br>오늘의 배틀을 볼 수 있어요!</div><button onclick="openSchoolSetSheet()" style="margin-top:16px;padding:12px 24px;background:var(--blue);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">내 학교 설정하기</button></div>`;
     return;
   }
   // mySchool에 lat/lng 없으면 schools 테이블에서 가져와서 보강 (상대 변경용)

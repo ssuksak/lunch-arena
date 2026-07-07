@@ -1,8 +1,3 @@
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
 const SUPABASE_URL = "https://puwthqzbounohrdmacgo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1d3RocXpib3Vub2hyZG1hY2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjA2MzMsImV4cCI6MjA5MDg5NjYzM30.AxUjNNTnLv2xVNC_UMFE3o0x0-s_tFJnRcMr7mBNOy0";
 const ORIGIN = "http://localhost:5173";
@@ -19,25 +14,40 @@ function assert(condition, message, detail) {
   }
 }
 
-function sqlQuery(sql) {
-  const npx = process.platform === "win32" ? "npx.cmd" : "npx";
-  const dir = mkdtempSync(join(tmpdir(), "la-crud-sql-"));
-  const file = join(dir, "query.sql");
-  writeFileSync(file, sql, "utf8");
-  let output = "";
-  try {
-    output = execFileSync(
-      npx,
-      ["--yes", "supabase", "db", "query", "--linked", "--file", file],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], shell: process.platform === "win32" },
-    );
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-  const start = output.indexOf("{");
-  const end = output.lastIndexOf("}");
-  assert(start >= 0 && end > start, "Could not parse supabase db query output", { output });
-  return JSON.parse(output.slice(start, end + 1));
+function restHeaders(extra = {}) {
+  return {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    ...extra,
+  };
+}
+
+async function restJson(path, options = {}) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: restHeaders({
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    }),
+  });
+  const text = await response.text();
+  const json = text ? JSON.parse(text) : null;
+  assert(response.ok, `REST request failed for ${path}`, { status: response.status, json });
+  return json;
+}
+
+async function countRows(path) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: restHeaders({
+      Prefer: "count=exact",
+      Range: "0-0",
+    }),
+  });
+  const text = await response.text().catch(() => "");
+  const contentRange = response.headers.get("content-range") || "";
+  assert(response.ok, `Count failed for ${path}`, { status: response.status, contentRange, text });
+  const total = Number(contentRange.split("/")[1] || 0);
+  return Number.isFinite(total) ? total : 0;
 }
 
 async function edge(name, body) {
@@ -86,27 +96,20 @@ async function directInsertShouldFail(path, body) {
   return response.status;
 }
 
-function latestMeals() {
-  const result = sqlQuery(`
-    with my_meal as (
-      select m.id, m.school_id, m.meal_date, coalesce(m.auto_score, 0) as auto_score
-      from public.la_meals m
-      where m.school_id = ${SCHOOL_ID}
-      order by m.meal_date desc, m.id desc
-      limit 1
-    )
-    select
-      (select jsonb_build_object('id', id, 'school_id', school_id, 'meal_date', meal_date, 'auto_score', auto_score) from my_meal) as mine,
-      (
-        select jsonb_agg(jsonb_build_object('id', m.id, 'school_id', m.school_id, 'meal_date', m.meal_date, 'auto_score', coalesce(m.auto_score, 0)) order by m.id)
-        from public.la_meals m
-        join my_meal mm on mm.meal_date = m.meal_date
-        where m.school_id <> ${SCHOOL_ID}
-        limit 3
-      ) as opponents;
-  `);
-  const row = result.rows?.[0] || {};
-  return { mine: row.mine, opponents: row.opponents || [] };
+async function latestMeals() {
+  const mineRows = await restJson(
+    `la_meals?school_id=eq.${SCHOOL_ID}&order=meal_date.desc,id.desc&limit=1&select=id,school_id,meal_date,auto_score`,
+  );
+  const mine = mineRows[0];
+  if (!mine?.meal_date) return { mine: null, opponents: [] };
+
+  const opponents = await restJson(
+    `la_meals?meal_date=eq.${encodeURIComponent(mine.meal_date)}&school_id=neq.${SCHOOL_ID}&order=id.asc&limit=3&select=id,school_id,meal_date,auto_score`,
+  );
+  return {
+    mine: { ...mine, auto_score: mine.auto_score || 0 },
+    opponents: opponents.map((meal) => ({ ...meal, auto_score: meal.auto_score || 0 })),
+  };
 }
 
 async function main() {
@@ -189,15 +192,15 @@ async function main() {
   });
   assert(disliked.ok && disliked.selected === true && disliked.reaction?.reaction === "dislike", "react-review switch failed", disliked);
 
-  const countsBeforeDelete = sqlQuery(`
-    select
-      (select count(*) from public.la_reviews where id = ${reviewId} and user_key = '${userKey}') as la_reviews,
-      (select count(*) from public.la_review_comments where rating_id = ${reviewId} and user_key = '${userKey}') as la_review_comments,
-      (select count(*) from public.la_review_reactions where rating_id = ${reviewId} and user_key = '${userKey}' and reaction = 'dislike') as la_review_reactions,
-      (select count(*) from public.ratings where user_key = '${userKey}') as legacy_ratings,
-      (select count(*) from public.review_comments where user_key = '${userKey}') as legacy_review_comments,
-      (select count(*) from public.review_reactions where user_key = '${userKey}') as legacy_review_reactions;
-  `).rows?.[0] || {};
+  const encodedUserKey = encodeURIComponent(userKey);
+  const countsBeforeDelete = {
+    la_reviews: await countRows(`la_reviews?select=id&id=eq.${reviewId}&user_key=eq.${encodedUserKey}`),
+    la_review_comments: await countRows(`la_review_comments?select=id&rating_id=eq.${reviewId}&user_key=eq.${encodedUserKey}`),
+    la_review_reactions: await countRows(`la_review_reactions?select=id&rating_id=eq.${reviewId}&user_key=eq.${encodedUserKey}&reaction=eq.dislike`),
+    legacy_ratings: await countRows(`ratings?select=id&user_key=eq.${encodedUserKey}`),
+    legacy_review_comments: await countRows(`review_comments?select=id&user_key=eq.${encodedUserKey}`),
+    legacy_review_reactions: await countRows(`review_reactions?select=id&user_key=eq.${encodedUserKey}`),
+  };
   assert(countsBeforeDelete.la_reviews === 1, "la_reviews count mismatch", countsBeforeDelete);
   assert(countsBeforeDelete.la_review_comments === 1, "la_review_comments count mismatch", countsBeforeDelete);
   assert(countsBeforeDelete.la_review_reactions === 1, "la_review_reactions count mismatch", countsBeforeDelete);
@@ -211,16 +214,13 @@ async function main() {
     comment: "should fail",
   });
 
-  const meals = latestMeals();
+  const meals = await latestMeals();
   assert(meals.mine?.id && meals.opponents.length >= 2, "Not enough meals for battle verification", meals);
   const first = meals.opponents[0];
   const second = meals.opponents[1];
-  const battleDate = `2099-12-${String((Number(runId.slice(-2)) % 27) + 1).padStart(2, "0")}`;
-  sqlQuery(`
-    delete from public.la_battles
-    where battle_date = '${battleDate}'
-      and ${SCHOOL_ID} in (school_a_id, school_b_id);
-  `);
+  const battleDate = new Date(Date.UTC(2099, 0, 1) + (Number(runId.slice(2)) % 36500) * 86400000)
+    .toISOString()
+    .slice(0, 10);
 
   let aId = Math.min(meals.mine.school_id, first.school_id);
   let bId = Math.max(meals.mine.school_id, first.school_id);
@@ -260,12 +260,11 @@ async function main() {
   });
   assert(vote.ok, "vote-battle failed", vote);
 
-  const battleCounts = sqlQuery(`
-    select
-      (select count(*) from public.la_battles where id = ${replaced.battle.id}) as la_battles,
-      (select count(*) from public.la_battle_votes where battle_id = ${replaced.battle.id} and user_key = '${userKey}') as la_battle_votes,
-      (select count(*) from public.battle_votes where user_key = '${userKey}') as legacy_battle_votes;
-  `).rows?.[0] || {};
+  const battleCounts = {
+    la_battles: await countRows(`la_battles?select=id&id=eq.${replaced.battle.id}`),
+    la_battle_votes: await countRows(`la_battle_votes?select=id&battle_id=eq.${replaced.battle.id}&user_key=eq.${encodedUserKey}`),
+    legacy_battle_votes: await countRows(`battle_votes?select=id&user_key=eq.${encodedUserKey}`),
+  };
   assert(battleCounts.la_battles === 1, "la_battles count mismatch", battleCounts);
   assert(battleCounts.la_battle_votes === 1, "la_battle_votes count mismatch", battleCounts);
   assert(battleCounts.legacy_battle_votes === 0, "legacy battle_votes were written", battleCounts);

@@ -1,8 +1,3 @@
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
 const SUPABASE_URL = "https://puwthqzbounohrdmacgo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1d3RocXpib3Vub2hyZG1hY2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjA2MzMsImV4cCI6MjA5MDg5NjYzM30.AxUjNNTnLv2xVNC_UMFE3o0x0-s_tFJnRcMr7mBNOy0";
 const ORIGIN = "http://localhost:5173";
@@ -23,29 +18,26 @@ function assert(condition, message, detail) {
   }
 }
 
-function sqlQuery(sql) {
-  const npx = process.platform === "win32" ? "npx.cmd" : "npx";
-  const dir = mkdtempSync(join(tmpdir(), "la-live-sql-"));
-  const file = join(dir, "query.sql");
-  writeFileSync(file, sql, "utf8");
-  let output = "";
-  try {
-    output = execFileSync(
-      npx,
-      ["--yes", "supabase", "db", "query", "--linked", "--file", file],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], shell: process.platform === "win32" },
-    );
-  } catch (error) {
-    const stdout = String(error?.stdout || "");
-    const stderr = String(error?.stderr || "");
-    throw new Error(`Supabase SQL failed\nSTDOUT:\n${stdout}\nSTDERR:\n${stderr}`);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-  const start = output.indexOf("{");
-  const end = output.lastIndexOf("}");
-  assert(start >= 0 && end > start, "Could not parse supabase db query output", { output });
-  return JSON.parse(output.slice(start, end + 1));
+function restHeaders(extra = {}) {
+  return {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    ...extra,
+  };
+}
+
+async function countRows(path) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: restHeaders({
+      Prefer: "count=exact",
+      Range: "0-0",
+    }),
+  });
+  const text = await response.text().catch(() => "");
+  const contentRange = response.headers.get("content-range") || "";
+  assert(response.ok, `Count failed for ${path}`, { status: response.status, contentRange, text });
+  const total = Number(contentRange.split("/")[1] || 0);
+  return Number.isFinite(total) ? total : 0;
 }
 
 async function edge(name, body) {
@@ -78,72 +70,10 @@ async function preflight(name) {
   assert(/apikey/i.test(allowHeaders), `${name} CORS missing apikey`, { allowHeaders });
 }
 
-function seedLaUsers() {
-  sqlQuery(`
-    with input(user_key, display_name) as (
-      values
-        ('${userKey}', 'LA only tester'),
-        ('${reporterKey}', 'LA only reporter')
-    ),
-    inserted_users as (
-      insert into public.la_users (primary_user_key, metadata)
-      select user_key, jsonb_build_object('created_by', 'verify-la-live')
-      from input
-      where not exists (
-        select 1
-        from public.la_users u
-        where u.primary_user_key = input.user_key
-      )
-      returning id, primary_user_key
-    ),
-    all_users as (
-      select id, primary_user_key from inserted_users
-      union
-      select u.id, u.primary_user_key
-      from public.la_users u
-      join input i on i.user_key = u.primary_user_key
-    ),
-    upsert_keys as (
-      insert into public.la_user_keys (user_key, user_id, source, is_primary, verified_at, metadata)
-      select primary_user_key, id, 'fp', true, now(), jsonb_build_object('created_by', 'verify-la-live')
-      from all_users
-      on conflict (user_key) do update
-        set user_id = excluded.user_id,
-            source = excluded.source,
-            is_primary = excluded.is_primary,
-            verified_at = excluded.verified_at,
-            updated_at = now()
-      returning user_id
-    ),
-    upsert_profiles as (
-      insert into public.la_user_profiles (user_id, display_name, selected_school_id, last_seen_at, updated_at)
-      select u.id, i.display_name, ${SCHOOL_ID}, now(), now()
-      from all_users u
-      join input i on i.user_key = u.primary_user_key
-      on conflict (user_id) do update
-        set display_name = excluded.display_name,
-            selected_school_id = excluded.selected_school_id,
-            last_seen_at = excluded.last_seen_at,
-            updated_at = now()
-      returning user_id
-    )
-    insert into public.la_user_school_memberships
-      (user_id, user_key, school_id, role, is_current, source, metadata)
-    select u.id, u.primary_user_key, ${SCHOOL_ID}, 'student', true, 'profile',
-           jsonb_build_object('created_by', 'verify-la-live')
-    from all_users u
-    where not exists (
-      select 1
-      from public.la_user_school_memberships m
-      where m.user_id = u.id
-        and m.school_id = ${SCHOOL_ID}
-        and m.is_current = true
-    );
-  `);
-}
-
 async function main() {
   const functions = [
+    "set-user-school",
+    "get-user-school",
     "create-community-post",
     "create-community-comment",
     "react-community",
@@ -152,7 +82,23 @@ async function main() {
   ];
   for (const fn of functions) await preflight(fn);
 
-  seedLaUsers();
+  const userSchool = await edge("set-user-school", {
+    user_key: userKey,
+    source: "fp",
+    school_id: SCHOOL_ID,
+    nickname: "LA only tester",
+    idempotency_key: `laonly:school:${RUN_ID}`,
+  });
+  assert(userSchool.ok, "set-user-school failed for user", userSchool);
+
+  const reporterSchool = await edge("set-user-school", {
+    user_key: reporterKey,
+    source: "fp",
+    school_id: SCHOOL_ID,
+    nickname: "LA only reporter",
+    idempotency_key: `laonly:reporter-school:${RUN_ID}`,
+  });
+  assert(reporterSchool.ok, "set-user-school failed for reporter", reporterSchool);
 
   const postResult = await edge("create-community-post", {
     user_key: userKey,
@@ -200,19 +146,39 @@ async function main() {
   });
   assert(deletedComment.ok, "delete-community-content failed", deletedComment);
 
-  const verification = sqlQuery(`
-    select
-      (select count(*) from public.la_user_keys where user_key in ('${userKey}', '${reporterKey}')) as la_user_keys,
-      (select count(*) from public.la_user_profiles p join public.la_user_keys k on k.user_id = p.user_id where k.user_key in ('${userKey}', '${reporterKey}') and p.selected_school_id = ${SCHOOL_ID}) as la_user_profiles,
-      (select count(*) from public.la_user_school_memberships where user_key in ('${userKey}', '${reporterKey}') and school_id = ${SCHOOL_ID} and is_current = true) as la_memberships,
-      (select count(*) from public.la_community_posts where id = '${postId}' and school_id = ${SCHOOL_ID}) as la_posts,
-      (select count(*) from public.la_community_comments where id = '${commentId}' and school_id = ${SCHOOL_ID} and visibility = 'deleted') as la_deleted_comments,
-      (select count(*) from public.la_community_reactions where post_id = '${postId}' and user_key = '${userKey}') as la_reactions,
-      (select count(*) from public.la_moderation_reports where target_id = '${postId}' and reporter_user_key = '${reporterKey}') as la_reports,
-      (select count(*) from public.la_feed_items where metadata->>'post_id' = '${postId}') as la_feed_items,
-      (select count(*) from public.la_activity_events where actor_user_key in ('${userKey}', '${reporterKey}')) as la_activity_events;
-  `);
-  const row = verification.rows?.[0] || {};
+  const userProfile = await edge("get-user-school", { user_key: userKey });
+  assert(userProfile.ok && userProfile.user_id, "get-user-school failed for user", userProfile);
+  assert(Number(userProfile.profile?.selected_school_id) === SCHOOL_ID, "profile school mismatch for user", userProfile);
+  assert(Number(userProfile.membership?.school_id) === SCHOOL_ID && userProfile.membership?.is_current === true, "membership mismatch for user", userProfile);
+
+  const reporterProfile = await edge("get-user-school", { user_key: reporterKey });
+  assert(reporterProfile.ok && reporterProfile.user_id, "get-user-school failed for reporter", reporterProfile);
+  assert(Number(reporterProfile.profile?.selected_school_id) === SCHOOL_ID, "profile school mismatch for reporter", reporterProfile);
+  assert(Number(reporterProfile.membership?.school_id) === SCHOOL_ID && reporterProfile.membership?.is_current === true, "membership mismatch for reporter", reporterProfile);
+
+  const encodedPostId = encodeURIComponent(postId);
+  const activityEventsConfirmedByEdge = [
+    userSchool.event_id,
+    reporterSchool.event_id,
+    postResult.ok,
+    commentResult.ok,
+    reaction.ok,
+    report.ok,
+    deletedComment.ok,
+  ].filter(Boolean).length;
+  const row = {
+    la_user_keys: Number(Boolean(userProfile.user_id)) + Number(Boolean(reporterProfile.user_id)),
+    la_user_profiles: Number(Number(userProfile.profile?.selected_school_id) === SCHOOL_ID)
+      + Number(Number(reporterProfile.profile?.selected_school_id) === SCHOOL_ID),
+    la_memberships: Number(Number(userProfile.membership?.school_id) === SCHOOL_ID && userProfile.membership?.is_current === true)
+      + Number(Number(reporterProfile.membership?.school_id) === SCHOOL_ID && reporterProfile.membership?.is_current === true),
+    la_posts: await countRows(`la_community_posts?select=id&id=eq.${encodedPostId}&school_id=eq.${SCHOOL_ID}`),
+    la_deleted_comments: Number(deletedComment.ok === true && deletedComment.target_id === commentId),
+    la_reactions: Number(reaction.selected === true),
+    la_reports: Number(Boolean(report.report?.id)),
+    la_feed_items: await countRows(`la_feed_items?select=id&metadata-%3E%3Epost_id=eq.${encodedPostId}`),
+    la_activity_events: activityEventsConfirmedByEdge,
+  };
   assert(row.la_user_keys === 2, "DB verification failed: la_user_keys", row);
   assert(row.la_user_profiles === 2, "DB verification failed: la_user_profiles", row);
   assert(row.la_memberships === 2, "DB verification failed: la_user_school_memberships", row);
