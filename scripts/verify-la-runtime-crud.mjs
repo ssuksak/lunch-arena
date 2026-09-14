@@ -104,7 +104,7 @@ async function latestMeals() {
   if (!mine?.meal_date) return { mine: null, opponents: [] };
 
   const opponents = await restJson(
-    `la_meals?meal_date=eq.${encodeURIComponent(mine.meal_date)}&school_id=neq.${SCHOOL_ID}&order=id.asc&limit=3&select=id,school_id,meal_date,auto_score`,
+    `la_meals?meal_date=eq.${encodeURIComponent(mine.meal_date)}&school_id=neq.${SCHOOL_ID}&limit=3&select=id,school_id,meal_date,auto_score`,
   );
   return {
     mine: { ...mine, auto_score: mine.auto_score || 0 },

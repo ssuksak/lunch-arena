@@ -5,6 +5,8 @@ const root = process.cwd();
 const outDir = join(root, 'dist');
 const files = [
   'index.html',
+  'community.css',
+  'community.js',
   'privacy.html',
   'icon_600.png',
   'icon.png',
