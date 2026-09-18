@@ -2,12 +2,12 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#fff8f0">
-<title>오늘급식 - 우리 학교 급식 점수는?</title>
+<link rel="icon" href="icon.png" type="image/png">
+<title>오늘급식 - 오늘 우리 학교 급식, 다들 어땠어?</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <style>
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
 
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -389,7 +389,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <div class="bottom-sheet" id="school-set-sheet">
   <div class="bs-handle"></div>
   <div class="bs-content">
-    <div style="font-size:18px;font-weight:900;margin-bottom:4px">내 학교 설정</div>
+    <div class="school-sheet-heading"><div style="font-size:18px;font-weight:900;margin-bottom:4px">내 학교 설정</div><button class="bs-close" type="button" aria-label="학교 설정 닫기" onclick="closeSchoolSetSheet()">✕</button></div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:16px">닉네임과 학교를 자유롭게 바꿀 수 있어!</div>
     <div class="nickname-box">
       <div class="nickname-row">
@@ -428,6 +428,23 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     </div>
   </div>
 </div>
+<div class="preview-exit-backdrop hide" id="preview-exit-modal" role="dialog" aria-modal="true" aria-labelledby="preview-exit-title">
+  <div class="preview-exit-card">
+    <div class="preview-exit-title" id="preview-exit-title">오늘급식을 종료할까요?</div>
+    <div class="preview-exit-copy">내일 급식도 업데이트되면 바로 확인할 수 있어요.</div>
+    <div class="preview-ad-slot preview-exit-ad">
+      <div class="preview-ad-label">AD</div>
+      <div class="preview-ad-main">
+        <strong>종료 전 가볍게 노출되는 광고 영역</strong>
+        <span>종료 버튼 위에 배치해 오터치와 방해감을 줄인 시안</span>
+      </div>
+    </div>
+    <div class="preview-exit-actions">
+      <button class="preview-exit-stay" type="button" onclick="closePreviewExitModal()">계속 볼래요</button>
+      <button class="preview-exit-leave" type="button" onclick="confirmPreviewExit()">종료하기</button>
+    </div>
+  </div>
+</div>
 <!-- ===== 배틀 상대 변경 바텀시트 ===== -->
 <div class="bottom-sheet" id="battle-opp-sheet">
   <div class="bs-handle"></div>
@@ -448,7 +465,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 
 <!-- ===== 앱바 ===== -->
 <div class="appbar">
-  <div class="appbar-logo">🍱 오늘급식</div>
+  <div class="appbar-logo"><img src="icon_600.png" alt="" width="30" height="30">오늘급식</div>
   <div class="appbar-right">
     <div id="appbar-nickname" class="appbar-nickname"></div>
     <div id="appbar-school" style="font-size:12px;font-weight:700;background:var(--blue-l);color:var(--blue);padding:6px 12px;border-radius:20px;cursor:pointer;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="openSchoolSetSheet()">내 학교 설정</div>
@@ -460,8 +477,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   <div class="container">
     <div class="home-hero">
       <div class="home-hero-emoji">🍱</div>
-      <div class="home-hero-title">오늘 급식<br><em>뭐 먹지?</em></div>
-      <div class="home-hero-sub">내 학교 급식과 친구들 반응을 바로 확인해요</div>
+      <div class="home-hero-title">오늘 급식 <em>뭐 먹지?</em></div>
+      <div class="home-hero-sub">오늘 우리 학교 급식, 다들 어땠어?</div>
     </div>
     <div class="home-search-big">
       <span class="si">🔍</span>
@@ -478,6 +495,14 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     </div>
     <div class="home-live-title"><div class="home-live-main">💬 실시간 급식톡</div><button class="home-live-more" onclick="switchTab('feed')">전체보기</button></div>
     <div id="latest-reviews-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡 불러오는 중...</div></div></div>
+    <div class="preview-ad-slot preview-home-ad" hidden>
+      <div class="preview-ad-label">AD</div>
+      <div class="preview-ad-main">
+        <strong>오늘 급식 확인했으면 잠깐 쉬어가기</strong>
+        <span>학생 흐름을 방해하지 않는 홈 하단 광고 슬롯 시안</span>
+      </div>
+      <button type="button" aria-label="광고 더보기">›</button>
+    </div>
     <div class="section-title">🔥 이번 달 리뷰 참여왕</div>
     <div id="monthly-engagement-ranking"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">참여 랭킹 준비 중...</div></div></div>
     <div id="monthly-menu-section" class="hide">
@@ -486,18 +511,6 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     </div>
     <div class="section-title">🏆 오늘의 급식왕 <span class="section-more" onclick="switchTab('ranking')">더보기</span></div>
     <div id="today-ranking"><div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">랭킹 준비 중...</div></div></div>
-  </div>
-</div>
-
-<!-- ===== 지도 ===== -->
-<div class="page" id="page-map">
-  <div class="kakao-map-wrap"><div id="kakao-map"></div></div>
-  <div class="map-hint-bar">
-    <span>🏫 학교 마커를 탭해 급식 확인</span>
-    <div style="display:flex;gap:8px;align-items:center">
-      <span id="map-school-count" style="font-size:12px">0개 학교</span>
-      <button class="map-my-btn" onclick="goMyLocation()">📍 내 위치</button>
-    </div>
   </div>
 </div>
 
@@ -554,7 +567,6 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     <div id="full-ranking"><div class="empty"><div class="empty-emoji">📊</div><div>학교를 검색하면 랭킹이 쌓여요!</div></div></div>
     <div class="section-title">🧪 실험실</div>
     <div class="lab-actions">
-      <button class="lab-action" onclick="switchTab('map')"><strong>학교 지도</strong><span>학교 위치 확인용으로 유지</span></button>
       <button class="lab-action" onclick="switchTab('battle')"><strong>급식 배틀</strong><span>재정비 전까지 보조 기능</span></button>
     </div>
   </div>
@@ -563,16 +575,16 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <!-- ===== 탭바 ===== -->
 <div class="tab-bar">
   <div class="tab-item active" onclick="switchTab('home')">
-    <span class="tab-icon">🏠</span><div class="tab-label">홈</div>
+    <i class="tab-icon" data-lucide="house" aria-hidden="true"></i><div class="tab-label">홈</div>
   </div>
   <div class="tab-item" onclick="switchTab('school')">
-    <span class="tab-icon">🏫</span><div class="tab-label">우리학교</div>
+    <i class="tab-icon" data-lucide="school" aria-hidden="true"></i><div class="tab-label">우리학교</div>
   </div>
   <div class="tab-item" onclick="switchTab('feed')">
-    <span class="tab-icon">💬</span><div class="tab-label">급식톡</div>
+    <i class="tab-icon" data-lucide="messages-square" aria-hidden="true"></i><div class="tab-label">급식톡</div>
   </div>
   <div class="tab-item" onclick="switchTab('ranking')">
-    <span class="tab-icon">🏆</span><div class="tab-label">랭킹</div>
+    <i class="tab-icon" data-lucide="trophy" aria-hidden="true"></i><div class="tab-label">랭킹</div>
   </div>
 </div>
 
@@ -680,7 +692,7 @@ async function getUserId() {
   if (window.USER) return window.USER;
   // 1순위: 토스 앱 내부 실행 시 — @apps-in-toss/web-framework의 getAnonymousKey()
   try {
-    const mod = await import('https://esm.sh/@apps-in-toss/web-framework@^2.4.5');
+    const mod = window.AITBridge;
     if (mod && typeof mod.getAnonymousKey === 'function') {
       const key = await mod.getAnonymousKey();
       if (key && typeof key === 'object' && key.type === 'HASH' && key.hash) {
@@ -781,10 +793,6 @@ let currentSchool = null;
 let userNickname = null;
 let pendingShare = null; // 공유 버튼용 데이터 캐시
 let searchTimer = null;
-let kakaoMap = null, mapSchools = [], clusterer = null;
-let mapLoaded = false;
-const KAKAO_MAP_SDK_URL = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=9b2d956d02e8bd8ad58de3641a8c8c62&libraries=services,clusterer&autoload=false';
-let kakaoMapSdkPromise = null;
 let latestReviewsVisible = false;
 const SCHOOL_CHANGE_LIMIT_PER_MONTH = 3;
 let schoolChangeAdResolver = null;
@@ -793,6 +801,11 @@ let schoolChangeAdResolver = null;
 function escapeHtml(s) {
   if (s == null) return '';
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function safeCommunityText(value) {
+  return String(value ?? '')
+    .replace(/(?:씨발|시발|병신|좆|존나|ㅅㅂ|ㅂㅅ|ㅈㄴ)/gi, '[표현 가림]')
+    .replace(/개(?:존맛|맛없(?:다)?)/g, '[표현 가림]');
 }
 function inlineJsString(s) {
   return JSON.stringify(String(s ?? '')).replace(/&/g, '\\u0026').replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/"/g, '&quot;');
@@ -824,19 +837,56 @@ function relativeMealDateLabel(d) {
 
 // ===== TABS =====
 const tabOrder = { home: 0, school: 1, feed: 2, ranking: 3 };
-function switchTab(tab) {
+const appTabs = new Set(Object.keys(tabOrder).concat('battle'));
+let activeTab = 'home';
+function tabUrl(tab) {
+  const url = new URL(location.href);
+  const next = new URLSearchParams();
+  if (tab !== 'home') next.set('screen', tab);
+  if (url.searchParams.get('adPreview') === '1') next.set('adPreview', '1');
+  url.search = next.toString() ? `?${next.toString()}` : '';
+  url.hash = '';
+  return url.pathname + url.search;
+}
+function syncTabHistory(tab, mode = 'push') {
+  if (!window.history || !appTabs.has(tab)) return;
+  const state = { laTab: tab };
+  if (mode === 'replace') {
+    history.replaceState(state, '', tabUrl(tab));
+  } else if (mode === 'push' && history.state?.laTab !== tab) {
+    history.pushState(state, '', tabUrl(tab));
+  }
+}
+function closeTransientUi() {
+  document.querySelector('.community-dialog')?.close();
+  document.getElementById('school-set-sheet')?.classList.remove('show', 'dragging');
+  document.getElementById('battle-opp-sheet')?.classList.remove('show');
+  document.getElementById('bottom-sheet')?.classList.remove('show');
+}
+function switchTab(tab, options = {}) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   const page = document.getElementById('page-' + tab);
   if (!page) return;
   page.classList.add('active');
+  activeTab = tab;
+  if (options.history !== 'silent') syncTabHistory(tab, options.history || 'push');
   const idx = tabOrder[tab];
   if (idx !== undefined) document.querySelectorAll('.tab-item')[idx]?.classList.add('active');
-  if (tab === 'map') openMapTab();
   if (tab === 'school') loadMySchoolPage();
   if (tab === 'feed') loadFeedReviews();
-  if (tab === 'ranking') { document.getElementById('rank-date').textContent = fmtDateKR(rankDate); loadFullRanking(); }
+  // 참여도 랭킹은 community.js에서 로드한다.
   if (tab === 'battle') loadBattle();
+}
+function initAppNavigation() {
+  const params = new URLSearchParams(location.search);
+  const initialTab = appTabs.has(params.get('screen')) ? params.get('screen') : 'home';
+  history.replaceState({ laTab: initialTab }, '', tabUrl(initialTab));
+  window.addEventListener('popstate', event => {
+    const tab = appTabs.has(event.state?.laTab) ? event.state.laTab : 'home';
+    closeTransientUi();
+    switchTab(tab, { history: 'silent' });
+  });
 }
 
 // ===== MY SCHOOL =====
@@ -918,7 +968,6 @@ function applyMySchool() {
       <div style="font-size:28px;margin-bottom:6px">${s.type?.includes('초')?'🌱':s.type?.includes('중')?'📘':'🎓'}</div>
       <div class="msc-name">${escapeHtml(s.name)}</div>
       <div class="msc-type">${escapeHtml(s.type||'')} · ${escapeHtml((s.address||'').split(' ').slice(0,2).join(' '))}</div>
-      <div class="msc-score-row"><div><span class="msc-score" id="msc-score">-</span><span class="msc-score-unit">점</span></div><div id="msc-rank-badge" class="msc-rank-badge" style="display:none"></div><div id="msc-meal-label" class="msc-meal-label" style="display:none"></div></div>
       <div id="msc-streak" style="display:none" class="msc-streak"></div>
     </div>`;
   const ab = document.getElementById('appbar-school');
@@ -939,8 +988,34 @@ async function openSchoolSetSheet() {
   setTimeout(() => document.getElementById('set-school-input').focus(), 300);
 }
 function closeSchoolSetSheet() {
-  document.getElementById('school-set-sheet').classList.remove('show');
+  const sheet = document.getElementById('school-set-sheet');
+  if (!sheet) return;
+  sheet.classList.remove('show','dragging');
+  sheet.style.transform = '';
 }
+(() => {
+  const sheet = document.getElementById('school-set-sheet');
+  const handle = sheet?.querySelector('.bs-handle');
+  if (!sheet || !handle) return;
+  let startY = 0;
+  let currentY = 0;
+  handle.addEventListener('touchstart', event => {
+    startY = event.touches[0].clientY;
+    currentY = 0;
+    sheet.classList.add('dragging');
+  }, { passive: true });
+  handle.addEventListener('touchmove', event => {
+    currentY = Math.max(0, event.touches[0].clientY - startY);
+    sheet.style.transform = `translateY(${currentY}px)`;
+  }, { passive: true });
+  handle.addEventListener('touchend', () => {
+    if (currentY > 72) closeSchoolSetSheet();
+    else {
+      sheet.classList.remove('dragging');
+      sheet.style.transform = '';
+    }
+  }, { passive: true });
+})();
 function monthStartString(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
 }
@@ -1175,13 +1250,13 @@ async function generateShareCard(schoolName, score, rank, menu, rankObj) {
   ctx.fillText(`#오늘급식 #${schoolName} #${rankObj.l}`, W/2, 780);
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.font = '18px Arial, sans-serif';
-  ctx.fillText('ssuksak.github.io/lunch-arena', W/2, 820);
+  ctx.fillText('토스에서 오늘급식 검색', W/2, 820);
   return canvas.toDataURL('image/png');
 }
 let tossFrameworkPromise = null;
 function loadTossFramework() {
   if (!tossFrameworkPromise) {
-    tossFrameworkPromise = import('https://esm.sh/@apps-in-toss/web-framework@^2.4.5').catch(() => null);
+    tossFrameworkPromise = Promise.resolve(window.AITBridge || null);
   }
   return tossFrameworkPromise;
 }
@@ -1202,9 +1277,9 @@ function appDeepLinkForSchool(school) {
   return school?.id ? `intoss://lunch-arena?school=${encodeURIComponent(school.id)}` : 'intoss://lunch-arena';
 }
 function webShareUrlForSchool(school) {
-  return school?.id ? `https://ssuksak.github.io/lunch-arena/?school=${school.id}` : 'https://ssuksak.github.io/lunch-arena/';
+  return appDeepLinkForSchool(school);
 }
-async function makeShareMessage(school, schoolName, score, rankObj, mealType = '') {
+async function makeShareMessage(school, schoolName, mealType = '', menu = []) {
   let shareLink = webShareUrlForSchool(school);
   try {
     const mod = await loadTossFramework();
@@ -1215,13 +1290,14 @@ async function makeShareMessage(school, schoolName, score, rankObj, mealType = '
     console.warn('토스 공유 링크 생성 실패:', e);
   }
   const mealText = mealType ? `${mealType} ` : '';
-  return `[오늘급식]\n${schoolName} 오늘 ${mealText}급식 ${score}점 · ${rankObj.r}랭크 (${rankObj.l})\n\n우리 학교 급식도 확인해봐!\n${shareLink}`;
+  const menuText = Array.isArray(menu) && menu.length ? `\n${menu.slice(0, 4).join(' · ')}` : '';
+  return `[오늘급식]\n${schoolName} 오늘 ${mealText}급식${menuText}\n\n오늘 급식, 다들 어땠어?\n${shareLink}`;
 }
 async function shareCurrentCard() {
   if (!pendingShare) return;
-  const { schoolName, score, rankObj, mealTypeLabel } = pendingShare;
+  const { schoolName, mealTypeLabel, menu } = pendingShare;
   const school = currentSchool || mySchool;
-  const message = await makeShareMessage(school, schoolName, score, rankObj, mealTypeLabel);
+  const message = await makeShareMessage(school, schoolName, mealTypeLabel, menu);
   try {
     const mod = await loadTossFramework();
     if (mod?.share) {
@@ -1233,7 +1309,7 @@ async function shareCurrentCard() {
   }
   try {
     if (navigator.share) {
-      await navigator.share({ title: `${schoolName} 오늘 ${mealTypeLabel ? mealTypeLabel + ' ' : ''}급식 ${rankObj.r}랭크!`, text: message });
+      await navigator.share({ title: `${schoolName} 오늘 ${mealTypeLabel ? mealTypeLabel + ' ' : ''}급식`, text: message });
       return;
     }
   } catch (e) {
@@ -1277,17 +1353,9 @@ function mealTypeTabsHtml(scope, meals) {
   return `<div class="meal-type-tabs">${meals.map((meal, i) => `<button class="meal-type-tab${i === 0 ? ' active' : ''}" data-meal-tab="${scope}" onclick="activateMealPanel('${scope}', ${i})">${escapeHtml(mealTypeLabel(meal))}</button>`).join('')}</div>`;
 }
 function mealCardHtml(meal, footerRight = '', opts = {}) {
-  const rank = getRank(meal.auto_score);
-  const scoreColor = meal.auto_score >= 75 ? 'var(--blue)' : meal.auto_score >= 55 ? 'var(--green)' : 'var(--yellow)';
-  const scoreBlock = opts.compact ? '' : `
-      <div class="meal-type-pill">🍽 ${escapeHtml(mealTypeLabel(meal))}</div>
-      <div class="meal-score-row">
-        <div class="meal-score-big" style="color:${scoreColor}">${meal.auto_score}<span style="font-size:16px;color:var(--text3)">점</span></div>
-        <div class="meal-rank-badge ${rank.c}">${rank.r}랭크 · ${rank.l}</div>
-      </div>`;
   return `
     <div class="meal-card">
-      ${scoreBlock}
+      <div class="meal-type-pill">${escapeHtml(mealTypeLabel(meal))}</div>
       <ul class="menu-list">${(meal.menu || []).map(m => menuItemHtml(m)).join('')}</ul>
       <div class="meal-footer"><span>🔥 ${meal.calories || '?'} kcal</span><span>${footerRight}</span></div>
     </div>`;
@@ -1307,24 +1375,13 @@ function activateMealPanel(scope, index) {
   if (!meal) return;
   document.querySelectorAll(`[data-meal-panel="${scope}"]`).forEach((el, i) => { el.style.display = i === index ? '' : 'none'; });
   document.querySelectorAll(`[data-meal-tab="${scope}"]`).forEach((el, i) => el.classList.toggle('active', i === index));
-  const rank = getRank(meal.auto_score);
-  pendingShare = { schoolName: state.schoolName, score: meal.auto_score, rankObj: rank, menu: meal.menu, mealTypeLabel: mealTypeLabel(meal) };
+  pendingShare = { schoolName: state.schoolName, menu: meal.menu, mealTypeLabel: mealTypeLabel(meal) };
   if (state.updateMySchoolScore) {
-    const scoreEl = document.getElementById('msc-score');
-    if (scoreEl) scoreEl.textContent = meal.auto_score;
-    const badgeEl = document.getElementById('msc-rank-badge');
-    if (badgeEl) { badgeEl.className = 'msc-rank-badge'; badgeEl.textContent = `${rank.r}랭크`; badgeEl.style.display = ''; }
     const mealLabelEl = document.getElementById('msc-meal-label');
     if (mealLabelEl) { mealLabelEl.textContent = `${relativeMealDateLabel(state.date || myMealDate)} ${mealTypeLabel(meal)}`; mealLabelEl.style.display = ''; }
   }
   if (state.ratingContainerId) renderRating(meal.id, document.getElementById(state.ratingContainerId), meal, scope);
   if (state.reviewsContainerId) loadReviews(meal.id, document.getElementById(state.reviewsContainerId));
-  if (!sessionStorage.getItem('effect_shown_' + meal.id)) {
-    if (rank.r === 'S' || rank.r === 'D' || rank.r === 'A') {
-      setTimeout(() => showRankEffect(rank.r, meal.auto_score), 600);
-      sessionStorage.setItem('effect_shown_' + meal.id, '1');
-    }
-  }
 }
 // ===== MY SCHOOL MEAL =====
 function myMealDateNavHtml() {
@@ -1358,8 +1415,6 @@ async function loadMySchoolMeal() {
     const meals = normalizeMealList(result);
     if (!meals.length) {
       wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>${relativeMealDateLabel(myMealDate)} 급식 정보가 없어요</div></div></div>`;
-      document.getElementById('msc-score').textContent = '-';
-      document.getElementById('msc-meal-label').style.display = 'none';
       return;
     }
     wrap.innerHTML = `${myMealDateNavHtml()}${renderMealPanels('my-school', meals, fmtDateKR(myMealDate), { compact: true })}<div id="ms-rating-wrap"></div><div id="ms-reviews-wrap"></div>`;
@@ -1373,8 +1428,6 @@ async function loadMySchoolMeal() {
     });
   } catch (e) {
     console.warn('내 학교 급식 불러오기 실패:', e);
-    document.getElementById('msc-score').textContent = '-';
-    document.getElementById('msc-meal-label').style.display = 'none';
     wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>급식 정보를 불러오지 못했어요</div><button class="btn-secondary" style="margin-top:10px" onclick="loadMySchoolMeal()">다시 시도</button></div></div>`;
   }
 }
@@ -1789,6 +1842,11 @@ async function submitRating(mealId, scope = 'default') {
     if (comment) body.comment = comment;
     if (photo) body.photo = photo;
     const result = await edge('submit-review', body);
+    if (result?.error === 'REVIEW_DAILY_LIMIT_REACHED') {
+      if (btn) updateRatingSubmitState(mealId, scope);
+      alert('리뷰는 하루에 3개까지 작성할 수 있어요. 한국시간 자정 이후 다시 작성해주세요. 댓글과 좋아요는 계속 이용할 수 있어요.');
+      return;
+    }
     if (result?.error && result._status !== 409 && result.error !== 'REVIEW_ALREADY_EXISTS') {
       const res = { status: result?._status || 500 };
       const errorText = JSON.stringify(result || {});
@@ -1879,7 +1937,7 @@ function renderReviewComments(ratingId, comments = []) {
   const list = comments.length ? comments.map(c => `
     <div class="review-comment">
       <span class="review-comment-nick">${escapeHtml(c.nickname || '익명의 급식러')}</span>
-      <span>${escapeHtml(c.comment)}</span>
+      <span>${escapeHtml(safeCommunityText(c.comment))}</span>
       <span class="review-comment-time">${timeAgo(c.created_at)}</span>
     </div>`).join('') : '<div class="review-comment" style="color:var(--text3)">아직 댓글이 없어요</div>';
   return `
@@ -1955,7 +2013,7 @@ function renderReviewItem(r) {
       </div>
       ${reviewMealHtml(reviewDisplayMeal(r), r.score)}
       ${r.selected_menu_item ? `<div class="review-picked-menu">대표 메뉴 ${escapeHtml(r.selected_menu_item)}</div>` : ''}
-      ${r.comment ? `<div class="review-text">${escapeHtml(r.comment)}</div>` : ''}
+      ${r.comment ? `<div class="review-text">${escapeHtml(safeCommunityText(r.comment))}</div>` : ''}
       ${(r.photo_display_url || r.photo_url) ? `<img class="review-photo" src="${escapeHtml(r.photo_display_url || r.photo_url)}" loading="lazy">` : ''}
       <div class="review-actions">
         <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">&#128077; ${likes}</button>
@@ -2212,11 +2270,11 @@ function myCommentsHtml(comments = []) {
           const score = r.score ? `${'⭐'.repeat(r.score)} ` : '';
           return `
             <div class="my-comment-item">
-              <div class="my-comment-main">${escapeHtml(c.comment)}</div>
+              <div class="my-comment-main">${escapeHtml(safeCommunityText(c.comment))}</div>
               <div class="my-comment-context">
                 ${escapeHtml(schoolName)} · ${score}${timeAgo(c.created_at)}에 단 댓글
                 ${meal}
-                ${r.comment ? `<div style="margin-top:4px">원 리뷰: ${escapeHtml(r.comment)}</div>` : ''}
+                ${r.comment ? `<div style="margin-top:4px">원 리뷰: ${escapeHtml(safeCommunityText(r.comment))}</div>` : ''}
               </div>
             </div>`;
         }).join('')}
@@ -2305,7 +2363,7 @@ function setRankFilter(f, el) {
 }
 async function loadFullRanking() {
   const dateStr = fmtDate(rankDate);
-  let query = `la_meals?meal_date=eq.${dateStr}&order=auto_score.desc&limit=30&select=id,auto_score,auto_rank,meal_type,meal_type_label,menu,school_id,schools:la_schools!inner(id,name,type,atpt_code,school_code,address)`;
+  let query = `la_meals?meal_date=eq.${dateStr}&order=auto_score.desc&limit=5&select=id,auto_score,auto_rank,meal_type,meal_type_label,menu,school_id,schools:la_schools!inner(id,name,type,atpt_code,school_code,address)`;
   if (rankFilter === 'elem') query += '&schools.type=ilike.*초등*';
   else if (rankFilter === 'mid') query += '&schools.type=ilike.*중학*';
   else if (rankFilter === 'high') query += '&schools.type=ilike.*고등*';
@@ -2624,71 +2682,28 @@ async function voteBattle(battleId, schoolId, side) {
   const fresh = await sb(`la_battles?id=eq.${battleId}&select=*,school_a:la_schools!la_battles_school_a_id_fkey(id,name,type),school_b:la_schools!la_battles_school_b_id_fkey(id,name,type),meal_a:la_meals!la_battles_meal_a_id_fkey(menu,auto_score),meal_b:la_meals!la_battles_meal_b_id_fkey(menu,auto_score)&limit=1`);
   if (fresh && fresh.length > 0) renderBattleCard(fresh[0]);
 }
-function shareBattle(nameA, nameB, scoreA, scoreB, pctA, pctB) {
+async function shareBattle(nameA, nameB, scoreA, scoreB, pctA, pctB) {
   const aiWinner = scoreA > scoreB ? nameA : scoreB > scoreA ? nameB : '동점';
   const opinionWinner = pctA > pctB ? nameA : pctB > pctA ? nameB : '동점';
   const reversed = aiWinner !== opinionWinner && aiWinner !== '동점';
-  const text = `⚔️ [오늘급식] 오늘의 배틀\n${nameA} ${scoreA}점 vs ${nameB} ${scoreB}점\n\n🤖 AI 판정: ${aiWinner} 승\n💬 여론: ${opinionWinner} ${pctA > pctB ? pctA : pctB}%${reversed ? '\n⚡ 여론 역전!' : ''}\n\nhttps://ssuksak.github.io/lunch-arena/`;
-  if (navigator.share) navigator.share({ title: '오늘급식 배틀 결과', text });
-  else { navigator.clipboard?.writeText(text); alert('결과가 클립보드에 복사됐어요!'); }
+  let shareLink = 'intoss://lunch-arena?screen=ranking';
+  const mod = await loadTossFramework();
+  if (mod?.getTossShareLink) {
+    try { shareLink = await mod.getTossShareLink(shareLink, 'https://ssuksak.github.io/lunch-arena/thumbnail_1932x828.png'); }
+    catch (e) { console.warn('배틀 공유 링크 생성 실패:', e); }
+  }
+  const text = `⚔️ [오늘급식] 오늘의 배틀\n${nameA} ${scoreA}점 vs ${nameB} ${scoreB}점\n\n🤖 AI 판정: ${aiWinner} 승\n💬 여론: ${opinionWinner} ${pctA > pctB ? pctA : pctB}%${reversed ? '\n⚡ 여론 역전!' : ''}\n\n${shareLink}`;
+  try {
+    if (mod?.share) { await mod.share({ message: text }); return; }
+    if (navigator.share) { await navigator.share({ title: '오늘급식 배틀 결과', text }); return; }
+  } catch (e) {
+    console.warn('배틀 공유 실패:', e);
+  }
+  await navigator.clipboard?.writeText(text);
+  alert('결과가 클립보드에 복사됐어요!');
 }
 
-// ===== MAP =====
-function isLocalMapOrigin() {
-  return location.protocol === 'file:' || ['127.0.0.1', 'localhost'].includes(location.hostname);
-}
-function loadKakaoMapSdk() {
-  if (window.kakao?.maps?.Map && window.kakao?.maps?.MarkerClusterer) return Promise.resolve();
-  if (kakaoMapSdkPromise) return kakaoMapSdkPromise;
-  kakaoMapSdkPromise = new Promise((resolve, reject) => {
-    const existing = document.querySelector('script[data-kakao-map-sdk="true"]');
-    if (existing) existing.remove();
-    const script = document.createElement('script');
-    script.src = KAKAO_MAP_SDK_URL;
-    script.async = true;
-    script.dataset.kakaoMapSdk = 'true';
-    if (isLocalMapOrigin()) script.referrerPolicy = 'no-referrer';
-    script.onload = () => {
-      if (window.kakao?.maps?.load) window.kakao.maps.load(resolve);
-      else resolve();
-    };
-    script.onerror = () => reject(new Error('Kakao map SDK load failed'));
-    document.head.appendChild(script);
-  });
-  return kakaoMapSdkPromise;
-}
-async function openMapTab() {
-  if (!mapLoaded) {
-    mapLoaded = true;
-    await initKakaoMap();
-  } else {
-    setTimeout(() => { kakaoMap?.relayout?.(); focusMySchoolOnMap(); }, 0);
-  }
-}
-async function initKakaoMap() {
-  const container = document.getElementById('kakao-map');
-  container.innerHTML = '<div class="loading" style="height:100%;display:flex;flex-direction:column;justify-content:center"><div class="loading-emoji">🗺</div><div class="loading-text">지도 불러오는 중...</div></div>';
-  try {
-    await loadKakaoMapSdk();
-  } catch (e) {
-    console.warn('카카오맵 SDK 로드 실패:', e);
-  }
-  if (!window.kakao?.maps?.Map || !window.kakao?.maps?.MarkerClusterer) {
-    container.innerHTML = '<div class="empty" style="height:100%;display:flex;flex-direction:column;justify-content:center"><div class="empty-emoji">🗺</div><div>지도를 불러오지 못했어요</div></div>';
-    return;
-  }
-  container.innerHTML = '';
-  kakaoMap = new kakao.maps.Map(container, { center: new kakao.maps.LatLng(36.5, 127.8), level: 13 });
-  clusterer = new kakao.maps.MarkerClusterer({
-    map: kakaoMap, averageCenter: true, minLevel: 5,
-    styles: [
-      { width:'36px',height:'36px',background:'rgba(34,197,94,0.9)',borderRadius:'18px',color:'#fff',textAlign:'center',lineHeight:'36px',fontSize:'13px',fontWeight:'800' },
-      { width:'42px',height:'42px',background:'rgba(59,130,246,0.9)',borderRadius:'21px',color:'#fff',textAlign:'center',lineHeight:'42px',fontSize:'14px',fontWeight:'800' },
-      { width:'50px',height:'50px',background:'rgba(124,58,237,0.9)',borderRadius:'25px',color:'#fff',textAlign:'center',lineHeight:'50px',fontSize:'15px',fontWeight:'800' },
-    ]
-  });
-  loadMapSchools();
-}
+// 지도는 외부 런타임 SDK 실행을 피하기 위해 Apps in Toss 배포본에서 제외한다.
 function focusMySchoolOnMap() {
   if (!kakaoMap || !mySchool || !mapSchools.length) return false;
   const mine = mapSchools.find(s => String(s.id) === String(mySchool.id));
@@ -2752,16 +2767,14 @@ async function openBottomSheet(school) {
     return;
   }
   if (result.meal) {
-    const m = result.meal, rank = getRank(m.auto_score);
+    const m = result.meal;
     bsc.innerHTML = `
       <div class="bs-header">
         <div class="bs-icon" style="background:${bgColor}">${emoji}</div>
         <div><div class="bs-name">${escapeHtml(school.name)}</div><div class="bs-meta">${escapeHtml(school.type||'')} · ${escapeHtml(school.address||'')}</div></div>
         <button class="bs-close" onclick="closeBottomSheet()">✕</button>
       </div>
-      <div class="bs-menu-title"><span>${fmtDateKR(fixWeekend(new Date()))} ${mealTypeLabel(m)}</span>
-        <span class="meal-rank-badge ${rank.c}" style="font-size:11px;padding:3px 8px">${rank.r} · ${m.auto_score}점</span>
-      </div>
+      <div class="bs-menu-title"><span>${fmtDateKR(fixWeekend(new Date()))} ${mealTypeLabel(m)}</span></div>
       <ul class="bs-menu-list">${(m.menu||[]).map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul>
       <div style="font-size:12px;color:var(--text3);margin-bottom:12px">🔥 ${m.calories||'?'} kcal</div>
       <button class="bs-btn" onclick="selectDetailSchool(${JSON.stringify(school).replace(/"/g,'&quot;')});closeBottomSheet();switchTab('home')">상세보기 · 평가하기</button>`;
@@ -2930,12 +2943,16 @@ async function init() {
 // ===== URL 파라미터 처리 (바이럴 루프) =====
 async function handleUrlParam() {
   const params = new URLSearchParams(location.search);
+  const screen = params.get('screen');
   let schoolId = params.get('school');
   // hash fallback: #school=123
   if (!schoolId && location.hash.startsWith('#school=')) {
     schoolId = location.hash.slice(8);
   }
-  if (!schoolId) return;
+  if (!schoolId) {
+    if (['home', 'school', 'feed', 'ranking'].includes(screen)) switchTab(screen, { history: 'replace' });
+    return;
+  }
 
   // 학교 정보 조회
   const schools = await sb(`la_schools?id=eq.${encodeURIComponent(schoolId)}&limit=1`);
@@ -2943,17 +2960,18 @@ async function handleUrlParam() {
 
   const school = schools[0];
   // 홈 탭으로 이동 후 해당 학교 상세 오픈
-  switchTab('home');
+  switchTab('home', { history: 'replace' });
   selectDetailSchool(school);
 
   // URL 파라미터 제거 (뒤로가기 시 재실행 방지)
-  const cleanUrl = location.pathname;
-  history.replaceState(null, '', cleanUrl);
+  history.replaceState({ laTab: 'home' }, '', location.pathname);
 }
 
 // Runtime initialization follows the community presentation layer below.
 </script>
-<link rel="stylesheet" href="community.css">
-<script src="community.js"></script>
+<link rel="stylesheet" href="community.css?v=2026091508">
+<script src="ait-bridge.js?v=2026091506"></script>
+<script src="lucide.min.js?v=2026091506"></script>
+<script src="community.js?v=2026091802"></script>
 </body>
 </html>

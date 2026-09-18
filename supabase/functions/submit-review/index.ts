@@ -316,13 +316,13 @@ Deno.serve(async (req: Request) => {
     if (selectedMenuItem) ratingBody.selected_menu_item = selectedMenuItem;
     if (photo?.public_url) ratingBody.photo_url = photo.public_url;
 
-    const rating = await supabase
-      .from("la_reviews")
-      .insert(ratingBody)
-      .select("id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname")
-      .single();
+    const limitedWrite = await supabase.rpc("la_submit_review_limited", { p_review: ratingBody });
+    const rating = { data: limitedWrite.data?.rating, error: limitedWrite.error };
 
     if (rating.error) {
+      if (rating.error.message === "REVIEW_DAILY_LIMIT_REACHED") {
+        return json({ error: "REVIEW_DAILY_LIMIT_REACHED", limit: 3, remaining: 0 }, 429);
+      }
       if (rating.error.code === "23505") return json({ error: "REVIEW_ALREADY_EXISTS" }, 409);
       return json({ error: "RATING_INSERT_FAILED", detail: rating.error.message }, 500);
     }
@@ -436,6 +436,9 @@ Deno.serve(async (req: Request) => {
 
     return json({
       ok: true,
+      daily_limit: 3,
+      daily_remaining: limitedWrite.data.remaining,
+      daily_reset_at: limitedWrite.data.reset_at,
       rating: rating.data,
       review_photo: reviewPhoto,
       event_id: event.data?.id || null,

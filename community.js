@@ -4,7 +4,6 @@ const communityScroll = new Map();
 const communityPending = new Set();
 let communityTab = 'home';
 let communityFilter = 'all';
-let communityScoreShown = false;
 let communityFeedRequest = 0;
 
 function communityError(el, retry) {
@@ -28,18 +27,8 @@ function communityDialog(title) {
   return dialog;
 }
 
-showRankEffect = function(rank, score) {
-  if (communityScoreShown || document.querySelector('dialog[open]')) return;
-  communityScoreShown = true;
-  const dialog = communityDialog('오늘의 급식 점수');
-  dialog.querySelector('.dialog-body').innerHTML = `<div class="score-presentation"><strong>${Number(score)}</strong><div class="score-grade">${escapeHtml(rank)}랭크</div><p>메뉴 구성으로 계산한 점수예요.<br>직접 먹어본 평가는 급식톡에 남겨주세요.</p></div><button class="rating-launch">식단 보기</button>`;
-  dialog.querySelector('.rating-launch').onclick = () => dialog.close();
-};
-
 mealCardHtml = function(meal, footerRight = '') {
-  const valid = meal.auto_score !== null && meal.auto_score !== undefined && Number.isFinite(Number(meal.auto_score));
-  const rank = valid ? getRank(Number(meal.auto_score)) : null;
-  return `<div class="meal-card"><div class="meal-score-row"><span class="meal-score-caption">${escapeHtml(mealTypeLabel(meal))} · 급식 점수</span><button class="meal-score-big" style="border:0;background:none;color:var(--blue)" ${valid ? `onclick="communityScoreShown=false;showRankEffect('${rank.r}',${Number(meal.auto_score)})" aria-label="급식 점수 자세히 보기"` : 'disabled'}>${valid ? Number(meal.auto_score) : '—'}<span style="font-size:12px">${valid ? '점' : ''}</span></button>${rank ? `<span class="meal-rank-badge">${escapeHtml(rank.r)}랭크</span>` : ''}</div><ul class="menu-list">${(Array.isArray(meal.menu)?meal.menu:[]).map(name=>`<li>${escapeHtml(name)}</li>`).join('')}</ul><div class="meal-footer"><span>${meal.calories == null ? '열량 정보 없음' : `${Number(meal.calories)} kcal`}</span><span>${escapeHtml(footerRight)}</span></div></div>`;
+  return `<div class="meal-card"><div class="meal-type-pill">${escapeHtml(mealTypeLabel(meal))}</div><ul class="menu-list">${(Array.isArray(meal.menu)?meal.menu:[]).map(name=>`<li>${escapeHtml(name)}</li>`).join('')}</ul><div class="meal-footer"><span>${meal.calories == null ? '열량 정보 없음' : `${Number(meal.calories)} kcal`}</span><span>${escapeHtml(footerRight)}</span></div></div>`;
 };
 
 const communityRenderRating = renderRating;
@@ -89,7 +78,7 @@ renderReviewItem = function(review) {
   if (review.comments?.length && !openCommentThreads.has(String(review.id))) {
     const c = review.comments[review.comments.length-1];
     const preview = document.createElement('div'); preview.className='review-preview';
-    preview.innerHTML=`<b>${escapeHtml(c.nickname||'급식러')}</b> ${escapeHtml(c.comment)}`;
+    preview.innerHTML=`<b>${escapeHtml(c.nickname||'급식러')}</b> ${escapeHtml(safeCommunityText(c.comment))}`;
     item.querySelector('.review-actions').after(preview);
   }
   return item.outerHTML;
@@ -197,6 +186,14 @@ async function communityReadAll(path) {
   throw new Error('Ranking requires server aggregation');
 }
 function communityRankingRows(rows,unit){return rows.length?rows.slice(0,5).map((row,i)=>`<div class="ranking-card"><div class="rank-num">${i+1}</div><div class="rank-info"><div class="rank-school">${escapeHtml(row.name)}</div>${row.detail?`<div class="rank-menu-preview">${escapeHtml(row.detail)}</div>`:''}</div><div class="rank-score">${Number(row.value).toLocaleString()}<small>${unit}</small></div></div>`).join(''):'<div class="ranking-error">아직 참여 기록이 없어요.</div>';}
+function communityEligibleReviews(rows){
+  const dayFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
+  const counts=new Map();
+  return [...rows].sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at))||Number(a.id)-Number(b.id)).filter(row=>{
+    const key=`${row.user_key||'unknown'}:${dayFormat.format(new Date(row.created_at))}`;
+    const used=counts.get(key)||0;counts.set(key,used+1);return used<3;
+  });
+}
 let communityRankingPromise;
 function communityLoadRankings(){
   if(communityRankingPromise)return communityRankingPromise;
@@ -207,26 +204,51 @@ async function communityLoadRankingsInner(){
   const period=`created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}`;
   const tasks=[
     ['community-menu-rank',async()=>{
-      const rows=await communityReadAll(`la_school_menu_stats_monthly?month=eq.${month}&select=school_id,menu_item,pick_count&order=school_id.asc,menu_item.asc`);
-      const totals=new Map();rows.forEach(r=>{if(r.menu_item?.trim())totals.set(r.menu_item,(totals.get(r.menu_item)||0)+Number(r.pick_count||0));});
-      return communityRankingRows([...totals].map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value||a.name.localeCompare(b.name)),'회');
+      const rawReviews=await communityReadAll(`la_reviews?${period}&selected_menu_item=not.is.null&select=id,user_key,selected_menu_item,score,created_at&order=id.asc`);
+      const reviews=communityEligibleReviews(rawReviews);
+      const totals=new Map();
+      reviews.forEach(r=>{
+        const name=String(r.selected_menu_item||'').trim();
+        if(!name)return;
+        const key=name.replace(/\s+/g,' ').toLocaleLowerCase('ko');
+        const old=totals.get(key)||{name,value:0,scoreTotal:0,scoreCount:0};
+        old.value++;
+        const score=Number(r.score);
+        if(Number.isFinite(score)&&score>0){old.scoreTotal+=score;old.scoreCount++;}
+        totals.set(key,old);
+      });
+      const rows=[...totals.values()].map(r=>({...r,detail:r.scoreCount?`학생 평점 ${(r.scoreTotal/r.scoreCount).toFixed(1)}`:'학생 평가 준비 중'}));
+      return communityRankingRows(rows.sort((a,b)=>b.value-a.value||(b.scoreTotal/Math.max(b.scoreCount,1))-(a.scoreTotal/Math.max(a.scoreCount,1))||a.name.localeCompare(b.name,'ko')),'회');
     }],
     ['community-school-rank',async()=>{
-      const rows=await sb(`la_school_engagement_monthly?month=eq.${month}&order=score.desc,school_id.asc&limit=5&select=score,review_count,comment_count,reaction_count,photo_count,schools:la_schools(name)`);
+      const rows=await sb(`la_school_engagement_monthly?month=eq.${month}&order=score.desc,school_id.asc&limit=5&select=school_id,score,review_count,comment_count,reaction_count,photo_count`);
       if(!Array.isArray(rows))throw new Error('School ranking failed');
-      return communityRankingRows(rows.map(r=>({name:r.schools?.name||'학교',value:r.score,detail:`리뷰 ${r.review_count} · 댓글 ${r.comment_count}`})),'점');
+      const ids=rows.map(r=>Number(r.school_id)).filter(Number.isFinite);
+      const schools=ids.length?await sb(`la_schools?id=in.(${ids.join(',')})&select=id,name`):[];
+      const names=new Map((Array.isArray(schools)?schools:[]).map(s=>[Number(s.id),s.name]));
+      return communityRankingRows(rows.map(r=>({name:names.get(Number(r.school_id))||'학교',value:r.score,detail:`리뷰 ${r.review_count} · 댓글 ${r.comment_count} · 반응 ${r.reaction_count}`})),'점');
     }],
     ['community-person-rank',async()=>{
-      const [reviews,comments]=await Promise.all(['la_reviews','la_review_comments'].map(table=>communityReadAll(`${table}?${period}&select=id,user_key,nickname,created_at&order=id.asc`)));
-      const totals=new Map();[...reviews,...comments].forEach(r=>{if(!r.user_key)return;const old=totals.get(r.user_key)||{name:'급식러',value:0,time:''};old.value++;if(r.created_at>old.time&&r.nickname){old.name=r.nickname;old.time=r.created_at;}totals.set(r.user_key,old);});
-      return communityRankingRows([...totals.values()].sort((a,b)=>b.value-a.value||a.name.localeCompare(b.name)),'회');
+      const [rawReviews,comments,reactions]=await Promise.all([
+        communityReadAll(`la_reviews?${period}&select=id,user_key,nickname,photo_url,created_at&order=id.asc`),
+        communityReadAll(`la_review_comments?${period}&select=id,user_key,nickname,created_at&order=id.asc`),
+        communityReadAll(`la_review_reactions?${period}&select=id,user_key,created_at&order=id.asc`)
+      ]);
+      const reviews=communityEligibleReviews(rawReviews);
+      const totals=new Map();
+      const entry=(row)=>{if(!row.user_key)return null;const old=totals.get(row.user_key)||{name:'급식러',value:0,time:'',reviews:0,comments:0,reactions:0};if(row.created_at>old.time&&row.nickname){old.name=row.nickname;old.time=row.created_at;}totals.set(row.user_key,old);return old;};
+      reviews.forEach(r=>{const old=entry(r);if(!old)return;old.reviews++;old.value+=10+(r.photo_url?5:0);});
+      comments.forEach(r=>{const old=entry(r);if(!old)return;old.comments++;old.value+=3;});
+      reactions.forEach(r=>{const old=entry(r);if(!old)return;old.reactions++;old.value+=1;});
+      const rows=[...totals.values()].map(r=>({...r,detail:`리뷰 ${r.reviews} · 댓글 ${r.comments} · 반응 ${r.reactions}`}));
+      return communityRankingRows(rows.sort((a,b)=>b.value-a.value||a.name.localeCompare(b.name)),'점');
     }]
   ];
   await Promise.all(tasks.map(async([id,load])=>{const el=document.getElementById(id);try{el.innerHTML=await load();}catch(e){communityError(el,communityLoadRankings);}}));
 }
 
 const communitySwitchTab=switchTab;
-switchTab=function(tab){communityScroll.set(communityTab,window.scrollY);communityTab=tab;communitySwitchTab(tab);if(tab==='ranking')communityLoadRankings();requestAnimationFrame(()=>window.scrollTo(0,communityScroll.get(tab)||0));};
+switchTab=function(tab,options={}){communityScroll.set(communityTab,window.scrollY);communityTab=tab;communitySwitchTab(tab,options);if(tab==='ranking')communityLoadRankings();requestAnimationFrame(()=>window.scrollTo(0,communityScroll.get(tab)||0));};
 const communityApplySchool=applyMySchool;
 applyMySchool=function(){document.body.classList.add('has-school');communityApplySchool();};
 
@@ -237,9 +259,42 @@ const divider=document.createElement('div');divider.className='community-divider
 document.querySelector('.home-live-title').before(divider);
 communityFilterBar(homeFeed);communityFilterBar(document.getElementById('feed-reviews-wrap'));
 const rankingContainer=document.querySelector('#page-ranking .container');
-const legacy=document.createElement('details');legacy.className='legacy-ranking';legacy.innerHTML='<summary>자동 급식 점수 순위 · 지도 · 배틀</summary>';
-while(rankingContainer.firstChild)legacy.append(rankingContainer.firstChild);
-rankingContainer.innerHTML=`<div class="section-title">이달의 TOP 5</div><section class="ranking-block"><h2>식단 랭킹 · 대표 메뉴</h2><p class="ranking-note">같은 이름의 메뉴 선택 횟수</p><div id="community-menu-rank"></div></section><section class="ranking-block"><h2>학교 참여도</h2><p class="ranking-note">리뷰×10 · 댓글×3 · 반응×1 · 사진×5</p><div id="community-school-rank"></div></section><section class="ranking-block"><h2>개인 참여도</h2><p class="ranking-note">이달에 작성한 리뷰와 댓글 · 이용 식별자 기준</p><div id="community-person-rank"></div></section>`;
-rankingContainer.append(legacy);
+rankingContainer.replaceChildren();
+const monthlyRanking=document.createElement('section');
+monthlyRanking.className='monthly-ranking';
+monthlyRanking.innerHTML=`<div class="section-title">이달의 참여 랭킹</div><p class="ranking-note">이번 달 급식톡 활동을 기준으로 집계해요.</p><section class="ranking-block"><h2>인기 대표 메뉴 TOP 5</h2><p class="ranking-note">리뷰에서 대표 메뉴로 선택된 횟수</p><div id="community-menu-rank"></div></section><section class="ranking-block"><h2>학교 참여도 TOP 5</h2><p class="ranking-note">리뷰×10 · 댓글×3 · 반응×1 · 사진×5</p><div id="community-school-rank"></div></section><section class="ranking-block"><h2>개인 참여도 TOP 5</h2><p class="ranking-note">리뷰×10 · 댓글×3 · 반응×1 · 사진×5 · 리뷰는 하루 3건까지 반영</p><div id="community-person-rank"></div></section>`;
+rankingContainer.append(monthlyRanking);
 document.querySelectorAll('.tab-item').forEach(el=>{el.setAttribute('role','button');el.tabIndex=0;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}};});
+initAppNavigation();
+function isAdPreviewMode(){return new URLSearchParams(location.search).get('adPreview')==='1';}
+let previewExitConfirmed=false;
+function openPreviewExitModal(){
+  if(!isAdPreviewMode()||previewExitConfirmed)return;
+  document.getElementById('preview-exit-modal')?.classList.remove('hide');
+}
+window.closePreviewExitModal=function(){
+  document.getElementById('preview-exit-modal')?.classList.add('hide');
+  if(history.state?.adExitGuard!==true)history.pushState({laTab:activeTab||'home',adExitGuard:true},'',tabUrl(activeTab||'home'));
+};
+window.confirmPreviewExit=function(){
+  previewExitConfirmed=true;
+  document.getElementById('preview-exit-modal')?.classList.add('hide');
+  history.back();
+};
+if(isAdPreviewMode()){
+  document.body.classList.add('ad-preview-mode');
+  document.querySelectorAll('.preview-ad-slot[hidden]').forEach(el=>el.hidden=false);
+  history.pushState({laTab:activeTab||'home',adExitGuard:true},'',tabUrl(activeTab||'home'));
+  window.addEventListener('popstate',event=>{
+    if(previewExitConfirmed)return;
+    if(activeTab==='home'&&event.state?.adExitGuard!==true){
+      openPreviewExitModal();
+      history.pushState({laTab:'home',adExitGuard:true},'',tabUrl('home'));
+    }
+  });
+}
 loadMySchool().then(async()=>{await Promise.all([loadLatestReviews(),handleUrlParam()]);}).catch(e=>{console.error('Initialization failed',e);communityError(homeFeed,()=>location.reload());});
+lucide.createIcons();
+document.querySelectorAll('.section-title,.home-live-main').forEach(heading=>{
+  heading.textContent=heading.textContent.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,'');
+});
