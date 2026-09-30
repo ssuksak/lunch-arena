@@ -4,13 +4,14 @@
   "description": "오늘급식 - 오늘 우리 학교 급식, 다들 어땠어?",
   "private": true,
   "scripts": {
-    "dev": "ait dev",
-    "build": "ait build",
+    "dev": "npm run build:static && http-server dist -p 5173 -c-1",
+    "build": "npm run build:static && ait build",
     "build:static": "node scripts/build-static.mjs",
+    "test:sdk3": "node scripts/verify-sdk3-migration.mjs",
     "start": "npx http-server -p 5173 -c-1"
   },
   "dependencies": {
-    "@apps-in-toss/web-framework": "2.4.7"
+    "@apps-in-toss/web-framework": "3.6.0"
   },
   "devDependencies": {
     "esbuild": "0.25.5",

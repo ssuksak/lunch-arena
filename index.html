@@ -609,6 +609,10 @@ const sb = (path, opts = {}) => {
   return fetch(`${SUPABASE_URL}/rest/v1/${path}`, { cache: 'no-store', ...opts, headers }).then(r => r.json());
 };
 const edge = async (fn, body) => {
+  if (requiresTossIdentity() && body && Object.prototype.hasOwnProperty.call(body, 'user_key')) {
+    const user = await getUserId();
+    if (user.source !== 'toss' || body.user_key !== user.id) throw identityUnavailable();
+  }
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
@@ -681,35 +685,62 @@ function getFallbackUserKey() {
 }
 
 function getInteractionUserKey() {
-  return window.USER?.id || getFallbackUserKey();
+  if (requiresTossIdentity()) {
+    if (window.USER?.source !== 'toss') throw identityUnavailable();
+    return window.USER.id;
+  }
+  return window.USER?.id || 'fp_' + getFallbackUserKey();
 }
 
 // ===== USER IDENTITY (Toss hash key 우선, 랜덤 client id fallback) =====
 // 토스 미니앱에서는 getAnonymousKey()로 기기간 동일한 사용자 식별 가능
 // 일반 브라우저는 localStorage 랜덤 client id 사용
 window.USER = null; // {id, source}
-async function getUserId() {
-  if (window.USER) return window.USER;
-  // 1순위: 토스 앱 내부 실행 시 — @apps-in-toss/web-framework의 getAnonymousKey()
+let userIdentityRequest = null;
+function requiresTossIdentity() {
+  if (/(^|\.)tossmini\.com$/i.test(location.hostname) || window.ReactNativeWebView) return true;
   try {
-    const mod = window.AITBridge;
-    if (mod && typeof mod.getAnonymousKey === 'function') {
-      const key = await mod.getAnonymousKey();
-      if (key && typeof key === 'object' && key.type === 'HASH' && key.hash) {
-        window.USER = { id: 'toss_' + key.hash, source: 'toss' };
-        return window.USER;
-      }
-      if (key && typeof key === 'string') {
-        window.USER = { id: 'toss_' + key, source: 'toss' };
-        return window.USER;
-      }
+    const environment = window.AITBridge?.getOperationalEnvironment?.();
+    return environment === 'toss' || environment === 'sandbox';
+  } catch (e) { return false; }
+}
+function identityUnavailable() {
+  const error = new Error('사용자 정보를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.');
+  error.code = 'IDENTITY_UNAVAILABLE';
+  return error;
+}
+function requestAnonymousKey() {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(identityUnavailable()), 5000);
+    Promise.resolve().then(() => window.AITBridge.getAnonymousKey()).then(resolve, reject)
+      .finally(() => clearTimeout(timer));
+  });
+}
+async function getUserId() {
+  if (window.USER && (!requiresTossIdentity() || window.USER.source === 'toss')) return window.USER;
+  if (userIdentityRequest) return userIdentityRequest;
+  window.USER = null;
+  userIdentityRequest = (async () => {
+    const attempts = requiresTossIdentity() ? 2 : 1;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      try {
+        const key = await requestAnonymousKey();
+        if (key?.type === 'HASH' && typeof key.hash === 'string' && /^[A-Za-z0-9_-]{8,128}$/.test(key.hash)) {
+          window.USER = { id: 'toss_' + key.hash, source: 'toss' };
+          return window.USER;
+        }
+      } catch (e) { /* Retry transient bridge failures without changing the user's identity. */ }
+      if (attempt + 1 < attempts) await new Promise(resolve => setTimeout(resolve, 250));
     }
-  } catch (e) {
-    // 토스앱 밖이거나 SDK 로드 실패 → localStorage client id로 폴백
+    if (requiresTossIdentity()) throw identityUnavailable();
+    window.USER = { id: 'fp_' + getFallbackUserKey(), source: 'fp' };
+    return window.USER;
+  })();
+  try {
+    return await userIdentityRequest;
+  } finally {
+    userIdentityRequest = null;
   }
-  // 2순위: 브라우저 랜덤 client id
-  window.USER = { id: 'fp_' + getFallbackUserKey(), source: 'fp' };
-  return window.USER;
 }
 
 // ===== NICKNAME =====
@@ -895,11 +926,13 @@ async function loadMySchool() {
   await getUserId(); // window.USER 준비
   ensureNickname();
   applyNickname();
+  let canRestoreProfile = false;
 
   // 1순위: Supabase에서 user_key로 조회
   try {
     const state = await edge('get-user-school', { user_key: window.USER.id });
     if (state?.ok) {
+      canRestoreProfile = !state.profile && !state.membership;
       if (state.profile?.display_name) {
         userNickname = normalizeNickname(state.profile.display_name) || userNickname;
         localStorage.setItem('arena_nickname', userNickname);
@@ -928,13 +961,13 @@ async function loadMySchool() {
       mySchool = JSON.parse(raw);
       applyMySchool();
       // 기존 localStorage 값을 Supabase에도 마이그레이션
-      saveMySchoolToDb();
+      if (canRestoreProfile) saveMySchoolToDb();
       return;
     } catch (e) {}
   }
 
   // 학교가 없어도 닉네임은 서버에 기억해둔다.
-  saveNicknameToDb();
+  if (canRestoreProfile) saveNicknameToDb();
 }
 
 // LA membership/profile에 현재 mySchool 저장 (upsert)
@@ -2970,8 +3003,8 @@ async function handleUrlParam() {
 // Runtime initialization follows the community presentation layer below.
 </script>
 <link rel="stylesheet" href="community.css?v=2026091803">
-<script src="ait-bridge.js?v=2026091506"></script>
+<script src="ait-bridge.js?v=2026093001"></script>
 <script src="lucide.min.js?v=2026091506"></script>
-<script src="community.js?v=2026091803"></script>
+<script src="community.js?v=2026093001"></script>
 </body>
 </html>

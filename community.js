@@ -293,7 +293,24 @@ if(isAdPreviewMode()){
     }
   });
 }
-loadMySchool().then(async()=>{await Promise.all([loadLatestReviews(),handleUrlParam()]);}).catch(e=>{console.error('Initialization failed',e);communityError(homeFeed,()=>location.reload());});
+async function initializeCommunity() {
+  try {
+    await loadMySchool();
+    await Promise.all([loadLatestReviews(), handleUrlParam()]);
+  } catch (error) {
+    communityError(homeFeed, () => {
+      const retry = homeFeed.querySelector('button');
+      if (retry) retry.disabled = true;
+      initializeCommunity();
+    });
+    if (error.code === 'IDENTITY_UNAVAILABLE') {
+      homeFeed.querySelector('.ranking-error').textContent = error.message;
+    } else {
+      console.error('Initialization failed', error);
+    }
+  }
+}
+initializeCommunity();
 lucide.createIcons();
 document.querySelectorAll('.section-title,.home-live-main').forEach(heading=>{
   heading.textContent=heading.textContent.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,'');
