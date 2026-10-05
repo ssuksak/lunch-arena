@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#fff8f0">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="icon.png" type="image/png">
-<title>오늘급식 - 오늘 우리 학교 급식, 다들 어땠어?</title>
+<title>오늘급식 - 오늘 우리 학교 급식, 다들 어땠어요?</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <style>
 
@@ -366,8 +366,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <div class="notice-modal-backdrop hide" id="release-notice-modal" onclick="if(event.target===this)closeReleaseNotice()">
   <div class="notice-modal-card">
     <div class="notice-modal-badge">업데이트 안내</div>
-    <div class="notice-modal-title">오늘급식 오류 수정 안내</div>
-    <div class="notice-modal-copy">학교 변경 등의 에러를 수정하였습니다.</div>
+    <div class="notice-modal-title">불편했던 문제를 고쳤어요</div>
+    <div class="notice-modal-copy">학교를 바꿀 때 생기던 문제를 고쳤어요.</div>
     <div class="notice-modal-date">2026. 6. 24.</div>
     <button class="notice-modal-confirm" onclick="closeReleaseNotice()">확인</button>
   </div>
@@ -376,8 +376,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <div class="bottom-sheet" id="school-set-sheet">
   <div class="bs-handle"></div>
   <div class="bs-content">
-    <div class="school-sheet-heading"><div style="font-size:18px;font-weight:900;margin-bottom:4px">내 학교 설정</div><button class="bs-close" type="button" aria-label="학교 설정 닫기" onclick="closeSchoolSetSheet()">✕</button></div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">닉네임과 학교를 자유롭게 바꿀 수 있어!</div>
+    <div class="school-sheet-heading"><div style="font-size:18px;font-weight:900;margin-bottom:4px">내 정보</div><button class="bs-close" type="button" aria-label="학교 설정 닫기" onclick="closeSchoolSetSheet()">✕</button></div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">닉네임과 우리 학교를 바꿀 수 있어요</div>
     <div class="nickname-box">
       <div class="nickname-row">
         <div class="nickname-title">내 닉네임</div>
@@ -391,12 +391,12 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     </div>
     <div style="position:relative;margin-bottom:8px">
       <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px">🔍</span>
-      <input type="text" style="width:100%;padding:14px 14px 14px 42px;background:var(--bg);border:1.5px solid var(--border);border-radius:14px;font-size:15px;font-family:inherit;color:var(--text)" id="set-school-input" placeholder="학교 이름이나 지역 검색" autocomplete="off" oninput="onSetSchoolSearch(this.value)">
+      <input type="text" style="width:100%;padding:14px 14px 14px 42px;background:var(--bg);border:1.5px solid var(--border);border-radius:14px;font-size:15px;font-family:inherit;color:var(--text)" id="set-school-input" placeholder="학교 이름이나 지역으로 검색" autocomplete="off" oninput="onSetSchoolSearch(this.value)">
     </div>
     <div id="set-school-results"></div>
     <div class="my-activity">
-      <div class="my-activity-title">내가 쓴 리뷰</div>
-      <div id="my-activity-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div></div>
+      <div class="my-activity-title">내가 쓴 급식톡</div>
+      <div id="my-activity-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동을 불러오고 있어요</div></div></div>
     </div>
   </div>
 </div>
@@ -404,21 +404,21 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 
 <div class="ad-modal-backdrop hide" id="school-change-ad-modal">
   <div class="ad-modal-card">
-    <div class="ad-modal-title">학교 변경 횟수를 모두 썼어요</div>
-    <div class="ad-modal-copy" id="school-change-ad-copy">이번 달 학교 변경은 3회까지 바로 가능해요. 광고를 확인하면 한 번 더 변경할 수 있어요.</div>
+    <div class="ad-modal-title">이번 달 학교 변경 횟수를 다 썼어요</div>
+    <div class="ad-modal-copy" id="school-change-ad-copy">학교는 한 달에 3번까지 바꿀 수 있어요. 광고를 보면 한 번 더 바꿀 수 있어요.</div>
     <div class="ad-preview">
-      <div>광고 영역<br><span style="font-size:11px;color:var(--text3);font-weight:700">확인 후 학교 변경 계속하기</span></div>
+      <div>광고 영역<br><span style="font-size:11px;color:var(--text3);font-weight:700">광고를 보고 학교 바꾸기</span></div>
     </div>
     <div class="ad-modal-actions">
       <button class="ad-cancel" onclick="cancelSchoolChangeAd()">취소</button>
-      <button class="ad-confirm" onclick="confirmSchoolChangeAd()">광고 확인 완료</button>
+      <button class="ad-confirm" onclick="confirmSchoolChangeAd()">광고 다 봤어요</button>
     </div>
   </div>
 </div>
 <div class="preview-exit-backdrop hide" id="preview-exit-modal" role="dialog" aria-modal="true" aria-labelledby="preview-exit-title">
   <div class="preview-exit-card">
-    <div class="preview-exit-title" id="preview-exit-title">오늘급식을 종료할까요?</div>
-    <div class="preview-exit-copy">내일 급식도 업데이트되면 바로 확인할 수 있어요.</div>
+    <div class="preview-exit-title" id="preview-exit-title">오늘급식을 닫을까요?</div>
+    <div class="preview-exit-copy">내일 급식이 올라오면 다시 확인해 보세요.</div>
     <div class="preview-ad-slot preview-exit-ad">
       <div class="preview-ad-label">AD</div>
       <div class="preview-ad-main">
@@ -427,8 +427,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
       </div>
     </div>
     <div class="preview-exit-actions">
-      <button class="preview-exit-stay" type="button" onclick="closePreviewExitModal()">계속 볼래요</button>
-      <button class="preview-exit-leave" type="button" onclick="confirmPreviewExit()">종료하기</button>
+      <button class="preview-exit-stay" type="button" onclick="closePreviewExitModal()">더 볼게요</button>
+      <button class="preview-exit-leave" type="button" onclick="confirmPreviewExit()">닫기</button>
     </div>
   </div>
 </div>
@@ -455,41 +455,45 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   <div class="appbar-logo"><img src="icon_600.png" alt="" width="30" height="30">오늘급식</div>
   <div class="appbar-right">
     <div id="appbar-nickname" class="appbar-nickname"></div>
-    <div id="appbar-school" style="font-size:12px;font-weight:700;background:var(--blue-l);color:var(--blue);padding:6px 12px;border-radius:20px;cursor:pointer;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="openSchoolSetSheet()">내 학교 설정</div>
+    <div id="appbar-school" style="font-size:12px;font-weight:700;background:var(--blue-l);color:var(--blue);padding:6px 12px;border-radius:20px;cursor:pointer;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="openSchoolSetSheet()">우리 학교 등록</div>
   </div>
 </div>
 
 <!-- ===== 홈 ===== -->
 <div class="page active" id="page-home">
   <div class="container">
+    <section class="t-card t-intro">
     <div class="home-hero">
       <div class="home-hero-emoji">🍱</div>
-      <div class="home-hero-title">오늘 급식 <em>뭐 먹지?</em></div>
-      <div class="home-hero-sub">오늘 우리 학교 급식, 다들 어땠어?</div>
+      <div class="home-hero-title">오늘 급식 <em>뭐 나올까요?</em></div>
+      <div class="home-hero-sub">우리 학교 급식을 확인하고 급식톡을 남겨 보세요</div>
     </div>
     <div class="home-search-big">
       <span class="si">🔍</span>
       <input type="text" id="home-search" placeholder="학교 이름이나 지역으로 검색" autocomplete="off" oninput="onHomeSearch(this.value)">
       <div class="search-results" id="home-results"></div>
     </div>
+    </section>
     <div class="home-stat-line">전국 <span id="stat-schools">-</span>개 학교 · 오늘 급식 <span id="stat-meals">-</span>개 · 리뷰 <span id="stat-ratings">-</span>개</div>
     <div id="school-detail-wrap"></div>
+    <section class="t-card t-today" id="home-today">
     <div id="my-school-card" class="hide"></div>
     <div id="my-school-meal" class="hide"></div>
+    </section>
     <div class="quick-actions">
       <button class="quick-action" onclick="switchTab('school')"><strong>우리학교</strong><span>내 학교 급식과 최근 리뷰</span></button>
       <button class="quick-action" onclick="switchTab('ranking')"><strong>이번 달 참여왕</strong><span>리뷰 많은 학교 TOP 3</span></button>
     </div>
+    <section class="t-card t-menu-rank">
+    <div class="home-live-title"><div class="home-live-main">인기 대표 메뉴</div><button class="home-live-more" onclick="switchTab('ranking')">전체보기</button></div>
+    <p class="ranking-note">이번 달 급식톡에서 대표 메뉴로 많이 뽑혔어요</p>
+    <div id="home-menu-rank"><div class="loading"><div class="loading-emoji">🍽️</div><div class="loading-text">인기 메뉴를 불러오고 있어요</div></div></div>
+    </section>
+    <div class="ad-slot" data-ad-slot="home" hidden></div>
+    <section class="t-card t-feed">
     <div class="home-live-title"><div class="home-live-main">💬 실시간 급식톡</div><button class="home-live-more" onclick="switchTab('feed')">전체보기</button></div>
-    <div id="latest-reviews-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡 불러오는 중...</div></div></div>
-    <div class="preview-ad-slot preview-home-ad" hidden>
-      <div class="preview-ad-label">AD</div>
-      <div class="preview-ad-main">
-        <strong>오늘 급식 확인했으면 잠깐 쉬어가기</strong>
-        <span>학생 흐름을 방해하지 않는 홈 하단 광고 슬롯 시안</span>
-      </div>
-      <button type="button" aria-label="광고 더보기">›</button>
-    </div>
+    <div id="latest-reviews-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡을 불러오고 있어요</div></div></div>
+    </section>
     <div class="section-title">🔥 이번 달 리뷰 참여왕</div>
     <div id="monthly-engagement-ranking"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">참여 랭킹 준비 중...</div></div></div>
     <div id="monthly-menu-section" class="hide">
@@ -516,24 +520,32 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <!-- ===== 우리학교 ===== -->
 <div class="page" id="page-school">
   <div class="container">
-    <div class="section-title" style="margin-top:16px">🏫 우리학교</div>
+    <section class="t-card">
+    <div class="section-title t-eyebrow">🏫 우리학교</div>
     <div id="school-page-card"></div>
     <div id="school-page-meal"></div>
-    <div id="school-page-menu-section" class="hide">
+    </section>
+    <div id="school-page-menu-section" class="t-card hide">
       <div class="section-title">🍽️ 이번 달 대표메뉴</div>
       <div id="school-page-menu-stats"></div>
     </div>
+    <section class="t-card">
     <div class="section-title">💬 우리학교 급식톡</div>
     <div id="school-page-reviews"><div class="empty" style="padding:20px 8px"><div class="empty-emoji">💬</div><div>우리학교 리뷰를 불러올게요</div></div></div>
+    </section>
   </div>
 </div>
 
 <!-- ===== 급식톡 ===== -->
 <div class="page" id="page-feed">
   <div class="container">
-    <div class="section-title" style="margin-top:16px">💬 실시간 급식톡</div>
-    <div class="feed-sub">전국 학교의 최신 리뷰를 모아봤어요</div>
-    <div id="feed-reviews-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡 불러오는 중...</div></div></div>
+    <header class="t-page-head">
+    <div class="section-title">💬 실시간 급식톡</div>
+    <div class="feed-sub">전국 학교의 최신 급식톡을 모았어요</div>
+    </header>
+    <section class="t-card">
+    <div id="feed-reviews-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡을 불러오고 있어요</div></div></div>
+    </section>
   </div>
 </div>
 <!-- ===== 랭킹 ===== -->
@@ -563,9 +575,6 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <div class="tab-bar">
   <div class="tab-item active" onclick="switchTab('home')">
     <i class="tab-icon" data-lucide="house" aria-hidden="true"></i><div class="tab-label">홈</div>
-  </div>
-  <div class="tab-item" onclick="switchTab('school')">
-    <i class="tab-icon" data-lucide="school" aria-hidden="true"></i><div class="tab-label">우리학교</div>
   </div>
   <div class="tab-item" onclick="switchTab('feed')">
     <i class="tab-icon" data-lucide="messages-square" aria-hidden="true"></i><div class="tab-label">급식톡</div>
@@ -727,7 +736,7 @@ function applyNickname() {
 }
 function setNickname(value) {
   const next = normalizeNickname(value);
-  if (next.length < 2) return { ok: false, message: '닉네임은 2글자 이상으로 입력해줘' };
+  if (next.length < 2) return { ok: false, message: '닉네임은 2글자 이상으로 정해 주세요' };
   userNickname = next;
   localStorage.setItem('arena_nickname', userNickname);
   applyNickname();
@@ -759,10 +768,10 @@ async function saveNicknameFromInput() {
     if (help) { help.textContent = result.message; help.style.color = 'var(--red)'; }
     return;
   }
-  if (help) { help.textContent = '저장 중...'; help.style.color = 'var(--text3)'; }
+  if (help) { help.textContent = '저장하고 있어요'; help.style.color = 'var(--text3)'; }
   const saved = await saveNicknameToDb();
   if (help) {
-    help.textContent = saved.ok ? '닉네임 저장 완료!' : '기기에 먼저 저장했어요. 네트워크가 괜찮을 때 다시 저장할게요.';
+    help.textContent = saved.ok ? '닉네임을 바꿨어요' : '이 기기에 먼저 저장했어요. 인터넷이 연결되면 다시 저장할게요.';
     help.style.color = saved.ok ? 'var(--green)' : 'var(--text3)';
   }
 }
@@ -823,8 +832,9 @@ function relativeMealDateLabel(d) {
 }
 
 // ===== TABS =====
-const tabOrder = { home: 0, school: 1, feed: 2, ranking: 3 };
-const appTabs = new Set(Object.keys(tabOrder).concat('battle'));
+const tabOrder = { home: 0, feed: 1, ranking: 2 };
+// 우리학교 탭은 홈으로 통합됨. 예전 ?screen=school 링크는 홈으로 보낸다.
+const appTabs = new Set(Object.keys(tabOrder).concat('battle', 'school'));
 let activeTab = 'home';
 function tabUrl(tab) {
   const url = new URL(location.href);
@@ -851,6 +861,7 @@ function closeTransientUi() {
   document.getElementById('bottom-sheet')?.classList.remove('show');
 }
 function switchTab(tab, options = {}) {
+  if (tab === 'school') tab = 'home';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
   const page = document.getElementById('page-' + tab);
@@ -1014,7 +1025,7 @@ async function getMonthlySchoolChangeCount() {
 function showSchoolChangeAd(count) {
   const modal = document.getElementById('school-change-ad-modal');
   const copy = document.getElementById('school-change-ad-copy');
-  if (copy) copy.textContent = `이번 달 학교 변경 ${count}회를 사용했어요. 광고를 확인하면 추가 변경을 계속할 수 있어요.`;
+  if (copy) copy.textContent = `이번 달에 학교를 ${count}번 바꿨어요. 광고를 보면 한 번 더 바꿀 수 있어요.`;
   modal?.classList.remove('hide');
   return new Promise(resolve => { schoolChangeAdResolver = resolve; });
 }
@@ -1063,9 +1074,9 @@ async function selectMySchool(s) {
   } catch (e) {
     console.warn('학교 변경 실패:', e);
     if (String(e.body || e.message || '').includes('MONTHLY_SCHOOL_CHANGE_LIMIT')) {
-      alert('이번 달 학교 변경 3회를 모두 사용했어요. 광고 확인 후 다시 변경해줘.');
+      alert('이번 달 학교 변경 3번을 다 썼어요. 광고를 보고 다시 바꿔 주세요.');
     } else {
-      alert('학교 변경에 실패했어요. 잠시 후 다시 시도해줘.');
+      alert('학교를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.');
     }
   }
 }
@@ -1111,7 +1122,7 @@ async function onSetSchoolSearch(q) {
   if (!q || q.length < 2) { box.innerHTML = ''; return; }
   setSchoolTimer = setTimeout(async () => {
     const data = await searchSchools(q, 10);
-    if (!data || data.length === 0) { box.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3);font-size:14px">검색 결과 없음</div>'; }
+    if (!data || data.length === 0) { box.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3);font-size:14px">검색 결과가 없어요</div>'; }
     else { box.innerHTML = data.map(s => schoolItemHtml(s, `selectMySchool(${JSON.stringify(s).replace(/"/g,'&quot;')})`)).join(''); }
   }, 250);
 }
@@ -1278,7 +1289,7 @@ async function makeShareMessage(school, schoolName, mealType = '', menu = []) {
   }
   const mealText = mealType ? `${mealType} ` : '';
   const menuText = Array.isArray(menu) && menu.length ? `\n${menu.slice(0, 4).join(' · ')}` : '';
-  return `[오늘급식]\n${schoolName} 오늘 ${mealText}급식${menuText}\n\n오늘 급식, 다들 어땠어?\n${shareLink}`;
+  return `[오늘급식]\n${schoolName} 오늘 ${mealText}급식${menuText}\n\n오늘 급식, 다들 어땠어요?\n${shareLink}`;
 }
 async function shareCurrentCard() {
   if (!pendingShare) return;
@@ -1304,7 +1315,7 @@ async function shareCurrentCard() {
   }
   try {
     await navigator.clipboard.writeText(message);
-    alert('공유 문구가 복사됐어요! 단톡에 붙여넣기 해봐 😊');
+    alert('공유 문구를 복사했어요. 단톡방에 붙여 넣어 보세요.');
   } catch {
     alert(`공유할 내용:\n${message}`);
   }
@@ -1349,7 +1360,7 @@ function mealCardHtml(meal, footerRight = '', opts = {}) {
 }
 function renderMealPanels(scope, meals, footerRight = '', opts = {}) {
   return `${mealTypeTabsHtml(scope, meals)}${meals.map((meal, i) => `<div data-meal-panel="${scope}" style="${i === 0 ? '' : 'display:none'}">${mealCardHtml(meal, footerRight, opts)}</div>`).join('')}
-    <button class="btn-share" onclick="shareCurrentCard()">📤 카드 공유하기 · 단톡에 보내기</button>`;
+    <button class="btn-share" onclick="shareCurrentCard()">친구에게 공유하기</button>`;
 }
 function setMealPanelState(scope, state) {
   mealPanelState[scope] = state;
@@ -1374,7 +1385,7 @@ function activateMealPanel(scope, index) {
 function myMealDateNavHtml() {
   return `<div class="date-nav" style="margin:2px 0 12px">
     <button class="date-btn" onclick="changeMyMealDate(-1)">&lt;</button>
-    <div class="date-text" id="my-meal-date">${relativeMealDateLabel(myMealDate)} · ${fmtDateKR(myMealDate)}</div>
+    <div class="date-text" id="my-meal-date">${relativeMealDateLabel(myMealDate) === fmtDateKR(myMealDate) ? fmtDateKR(myMealDate) : `${relativeMealDateLabel(myMealDate)} · ${fmtDateKR(myMealDate)}`}</div>
     <button class="date-btn" onclick="changeMyMealDate(1)">&gt;</button>
   </div>`;
 }
@@ -1395,13 +1406,13 @@ async function loadMySchoolMeal() {
   const wrap = document.getElementById('my-school-meal');
   wrap.classList.remove('hide');
   wrap.classList.add('my-school-meal-compact');
-  wrap.innerHTML = `${myMealDateNavHtml()}<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">급식 불러오는 중...</div></div>`;
+  wrap.innerHTML = `${myMealDateNavHtml()}<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">급식을 불러오고 있어요</div></div>`;
   try {
     const targetDate = fmtDate(myMealDate);
     const result = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: targetDate });
     const meals = normalizeMealList(result);
     if (!meals.length) {
-      wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>${relativeMealDateLabel(myMealDate)} 급식 정보가 없어요</div></div></div>`;
+      wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">🍽️</div><div>급식이 없는 날이에요</div><div class="empty-sub">쉬는 날이거나 아직 식단이 올라오지 않았을 수 있어요</div></div></div>`;
       return;
     }
     wrap.innerHTML = `${myMealDateNavHtml()}${renderMealPanels('my-school', meals, fmtDateKR(myMealDate), { compact: true })}<div id="ms-rating-wrap"></div><div id="ms-reviews-wrap"></div>`;
@@ -1415,7 +1426,7 @@ async function loadMySchoolMeal() {
     });
   } catch (e) {
     console.warn('내 학교 급식 불러오기 실패:', e);
-    wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>급식 정보를 불러오지 못했어요</div><button class="btn-secondary" style="margin-top:10px" onclick="loadMySchoolMeal()">다시 시도</button></div></div>`;
+    wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">🍽️</div><div>급식을 불러오지 못했어요</div><button class="btn-secondary" style="margin-top:10px" onclick="loadMySchoolMeal()">다시 불러오기</button></div></div>`;
   }
 }
 async function loadMySchoolStats() {
@@ -1423,7 +1434,7 @@ async function loadMySchoolStats() {
   if (el) el.style.display = 'none';
 }
 function schoolPageEmptyHtml() {
-  return `<div class="meal-card"><div class="empty" style="padding:24px 12px"><div class="empty-emoji">🏫</div><div>내 학교를 먼저 설정해줘</div><button class="school-empty-cta" onclick="openSchoolSetSheet()">내 학교 설정하기</button></div></div>`;
+  return `<div class="meal-card"><div class="empty" style="padding:24px 12px"><div class="empty-emoji">🏫</div><div>우리 학교를 등록하면 급식을 바로 볼 수 있어요</div><button class="school-empty-cta" onclick="openSchoolSetSheet()">우리 학교 등록하기</button></div></div>`;
 }
 function renderSchoolPageCard() {
   const el = document.getElementById('school-page-card');
@@ -1443,13 +1454,13 @@ async function loadMySchoolPageMeal() {
   const wrap = document.getElementById('school-page-meal');
   if (!wrap) return;
   if (!mySchool?.id) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = `${myMealDateNavHtml()}<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">우리학교 급식 불러오는 중...</div></div>`;
+  wrap.innerHTML = `${myMealDateNavHtml()}<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">우리학교 급식을 불러오고 있어요</div></div>`;
   try {
     const targetDate = fmtDate(myMealDate);
     const result = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: targetDate });
     const meals = normalizeMealList(result);
     if (!meals.length) {
-      wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>${relativeMealDateLabel(myMealDate)} 급식 정보가 없어요</div></div></div>`;
+      wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">🍽️</div><div>급식이 없는 날이에요</div><div class="empty-sub">쉬는 날이거나 아직 식단이 올라오지 않았을 수 있어요</div></div></div>`;
       return;
     }
     wrap.innerHTML = `${myMealDateNavHtml()}${renderMealPanels('my-school-page', meals, fmtDateKR(myMealDate))}<div id="school-page-rating-wrap"></div><div id="school-page-meal-reviews-wrap"></div>`;
@@ -1463,7 +1474,7 @@ async function loadMySchoolPageMeal() {
     });
   } catch (e) {
     console.warn('우리학교 페이지 급식 불러오기 실패:', e);
-    wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">😢</div><div>급식 정보를 불러오지 못했어요</div><button class="btn-secondary" style="margin-top:10px" onclick="loadMySchoolPageMeal()">다시 시도</button></div></div>`;
+    wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">🍽️</div><div>급식을 불러오지 못했어요</div><button class="btn-secondary" style="margin-top:10px" onclick="loadMySchoolPageMeal()">다시 불러오기</button></div></div>`;
   }
 }
 async function loadMySchoolPage() {
@@ -1488,7 +1499,7 @@ function onHomeSearch(q) {
   if (!q || q.length < 2) { box.classList.remove('show'); return; }
   homeSearchTimer = setTimeout(async () => {
     const data = await searchSchools(q, 15);
-    if (!data || data.length === 0) { box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3)">검색 결과 없음</div>'; }
+    if (!data || data.length === 0) { box.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3)">검색 결과가 없어요</div>'; }
     else { box.innerHTML = data.map(s => schoolItemHtml(s, `selectDetailSchool(${JSON.stringify(s).replace(/"/g,'&quot;')})`)).join(''); }
     box.classList.add('show');
   }, 250);
@@ -1525,7 +1536,7 @@ function renderSchoolDetail() {
         <div class="date-text" id="detail-date">${fmtDateKR(mealDate)}</div>
         <button class="date-btn" onclick="changeDetailDate(1)">&gt;</button>
       </div>
-      <div id="detail-meal-content"><div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">급식 불러오는 중...</div></div></div>
+      <div id="detail-meal-content"><div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">급식을 불러오고 있어요</div></div></div>
     </div>
     <div id="detail-rating-wrap"></div>
     <div id="detail-reviews-wrap"></div>
@@ -1547,13 +1558,13 @@ function changeDetailDate(delta) {
 async function loadDetailMeal() {
   const mc = document.getElementById('detail-meal-content');
   if (!mc) return;
-  mc.innerHTML = '<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">급식 불러오는 중...</div></div>';
+  mc.innerHTML = '<div class="loading"><div class="loading-emoji">🍳</div><div class="loading-text">급식을 불러오고 있어요</div></div>';
   try {
     const s = currentSchool;
     const result = await edge('sync-meals', { atpt_code: s.atpt_code, school_code: s.school_code, date: fmtDate(mealDate) });
     const meals = normalizeMealList(result);
     if (!meals.length) {
-      mc.innerHTML = `<div class="empty"><div class="empty-emoji">😢</div><div>이 날은 급식 정보가 없어요</div></div>`;
+      mc.innerHTML = `<div class="empty"><div class="empty-emoji">🍽️</div><div>급식이 없는 날이에요</div><div class="empty-sub">쉬는 날이거나 아직 식단이 올라오지 않았을 수 있어요</div></div>`;
       document.getElementById('detail-rating-wrap').innerHTML = '';
       return;
     }
@@ -1568,7 +1579,7 @@ async function loadDetailMeal() {
   } catch (e) {
     console.warn('상세 급식 불러오기 실패:', e);
     document.getElementById('detail-rating-wrap').innerHTML = '';
-    mc.innerHTML = `<div class="empty"><div class="empty-emoji">😢</div><div>급식 정보를 불러오지 못했어요</div><button class="btn-secondary" style="margin-top:10px" onclick="loadDetailMeal()">다시 시도</button></div>`;
+    mc.innerHTML = `<div class="empty"><div class="empty-emoji">🍽️</div><div>급식을 불러오지 못했어요</div><button class="btn-secondary" style="margin-top:10px" onclick="loadDetailMeal()">다시 불러오기</button></div>`;
   }
 }
 // ===== MEAL HELPERS =====
@@ -1623,9 +1634,9 @@ function canWriteReviewForSchool(schoolId) {
 function reviewWriteBlockedHtml(schoolId) {
   return `<div class="rating-section" style="text-align:center">
     <div style="font-size:32px;margin-bottom:8px">🔒</div>
-    <div style="font-size:15px;font-weight:800">내 학교 사용자만 리뷰를 쓸 수 있어요</div>
-    <div style="font-size:12px;color:var(--text3);margin-top:6px;line-height:1.45">이 학교를 내 학교로 등록한 뒤 리뷰를 남길 수 있어요.</div>
-    <button class="btn-rate" style="margin-top:14px" onclick="openSchoolSetSheet()">내 학교 설정하기</button>
+    <div style="font-size:15px;font-weight:800">우리 학교만 급식톡을 남길 수 있어요</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:6px;line-height:1.45">이 학교를 우리 학교로 등록하면 급식톡을 남길 수 있어요.</div>
+    <button class="btn-rate" style="margin-top:14px" onclick="openSchoolSetSheet()">우리 학교 등록하기</button>
   </div>`;
 }
 function resetRatingState(mealId, meal = null, scope = 'default') {
@@ -1651,17 +1662,17 @@ function renderRating(mealId, targetEl, meal = null, scope = 'default') {
   targetEl.innerHTML = alreadyRated ? `
     <div class="rating-section" style="text-align:center">
       <div style="font-size:32px;margin-bottom:8px">✅</div>
-      <div style="font-size:14px;font-weight:700;color:var(--green)">오늘 평가 완료!</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:4px">${alreadyRated}점 등록</div>
+      <div style="font-size:14px;font-weight:700;color:var(--green)">급식톡을 남겼어요</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px">별점 ${alreadyRated}점</div>
     </div>` :
   `<div class="rating-section" id="rating-box-${domKey}">
-    <div class="rating-title">오늘 급식 어땠어?</div>
-    <div class="rating-subtitle">총별점</div>
+    <div class="rating-title">오늘 급식 어땠어요?</div>
+    <div class="rating-subtitle">별점</div>
     <div class="stars" id="stars-${domKey}">
-      ${[1,2,3,4,5].map(i => `<button type="button" class="star star-empty" onclick="setRating(${i},${mealId},${scopeArg})" aria-label="${i}점"><span class="star-icon">⭐</span></button>`).join('')}
+      ${[1,2,3,4,5].map(i => `<button type="button" class="star star-empty" onclick="setRating(${i},${mealId},${scopeArg})" aria-label="${i}점"><span class="star-icon">&#9733;</span></button>`).join('')}
     </div>
     ${ratingMenuPickerHtml(mealId, scope)}
-    <textarea class="comment-input" id="comment-${domKey}" placeholder="한줄평 (선택, 100자)"></textarea>
+    <textarea class="comment-input" id="comment-${domKey}" placeholder="한 줄로 남겨 주세요 (선택, 100자)"></textarea>
     <div class="photo-upload">
       <label class="photo-label" for="photo-input" onclick="currentRatingMealId=${mealId};currentRatingScope=${scopeArg}">
         📷 사진 첨부 (선택)
@@ -1671,7 +1682,7 @@ function renderRating(mealId, targetEl, meal = null, scope = 'default') {
         <button class="photo-remove" onclick="removePhoto(${mealId},${scopeArg})">✕</button>
       </div>
     </div>
-    <button class="btn-rate" id="btn-rate-${domKey}" onclick="submitRating(${mealId},${scopeArg})" disabled>별점을 선택해주세요</button>
+    <button class="btn-rate" id="btn-rate-${domKey}" onclick="submitRating(${mealId},${scopeArg})" disabled>별점을 골라 주세요</button>
   </div>`;
   updateRatingSubmitState(mealId, scope);
 }
@@ -1680,7 +1691,7 @@ function ratingMenuPickerHtml(mealId, scope = 'default') {
   if (!menus.length) return '';
   const domKey = ratingDomKey(scope, mealId);
   const scopeArg = inlineJsString(scope);
-  return `<div class="rating-subtitle">가장 기억나는 메뉴 하나 골라줘</div><div class="rating-menu-picks" id="menu-picks-${domKey}">${menus.map((item, idx) => `<button type="button" class="rating-menu-pick" onclick="selectReviewMenu(${mealId}, ${idx}, ${scopeArg})">${escapeHtml(item)}</button>`).join('')}</div>`;
+  return `<div class="rating-subtitle">가장 기억에 남는 메뉴를 하나 골라 주세요</div><div class="rating-menu-picks" id="menu-picks-${domKey}">${menus.map((item, idx) => `<button type="button" class="rating-menu-pick" onclick="selectReviewMenu(${mealId}, ${idx}, ${scopeArg})">${escapeHtml(item)}</button>`).join('')}</div>`;
 }
 function selectReviewMenu(mealId, idx, scope = 'default') {
   const state = getRatingState(mealId, scope);
@@ -1697,13 +1708,13 @@ function updateRatingSubmitState(mealId, scope = 'default') {
   const needsMenu = state.menus.length > 0;
   if (!state.score) {
     btn.disabled = true;
-    btn.textContent = '별점을 선택해주세요';
+    btn.textContent = '별점을 골라 주세요';
   } else if (needsMenu && !state.selectedMenuItem) {
     btn.disabled = true;
-    btn.textContent = '대표 메뉴를 골라주세요';
+    btn.textContent = '대표 메뉴를 골라 주세요';
   } else {
     btn.disabled = false;
-    btn.textContent = `${state.score}점으로 평가하기`;
+    btn.textContent = `별점 ${state.score}점으로 남기기`;
   }
 }
 function setRating(n, mealId, scope = 'default') {
@@ -1807,7 +1818,7 @@ async function submitRating(mealId, scope = 'default') {
   const domKey = ratingDomKey(scope, mealId);
   const comment = (document.getElementById(`comment-${domKey}`) || {}).value?.trim() || '';
   if (!canWriteReviewForSchool(state.schoolId)) {
-    alert('내 학교로 등록한 학교의 급식만 리뷰를 작성할 수 있어요.');
+    alert('우리 학교로 등록한 학교의 급식에만 급식톡을 남길 수 있어요.');
     return;
   }
   if (!state.score || (state.menus.length > 0 && !state.selectedMenuItem)) {
@@ -1815,7 +1826,7 @@ async function submitRating(mealId, scope = 'default') {
     return;
   }
   const btn = document.getElementById(`btn-rate-${domKey}`);
-  if (btn) { btn.disabled = true; btn.textContent = '등록 중...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '남기고 있어요'; }
 
   try {
     await getUserId();
@@ -1831,7 +1842,7 @@ async function submitRating(mealId, scope = 'default') {
     const result = await edge('submit-review', body);
     if (result?.error === 'REVIEW_DAILY_LIMIT_REACHED') {
       if (btn) updateRatingSubmitState(mealId, scope);
-      alert('리뷰는 하루에 3개까지 작성할 수 있어요. 한국시간 자정 이후 다시 작성해주세요. 좋아요와 싫어요는 계속 이용할 수 있어요.');
+      alert('급식톡은 하루에 3개까지 남길 수 있어요. 밤 12시가 지나면 다시 남겨 주세요. 좋아요와 싫어요는 계속 이용할 수 있어요.');
       return;
     }
     if (result?.error && result._status !== 409 && result.error !== 'REVIEW_ALREADY_EXISTS') {
@@ -1839,7 +1850,7 @@ async function submitRating(mealId, scope = 'default') {
       const errorText = JSON.stringify(result || {});
       console.warn('리뷰 저장 실패:', res.status, errorText);
       if (btn) updateRatingSubmitState(mealId, scope);
-      alert('평가 저장에 실패했어요. 잠시 후 다시 시도해줘.');
+      alert('급식톡을 남기지 못했어요. 잠시 후 다시 시도해 주세요.');
       return;
     }
 
@@ -1862,7 +1873,7 @@ async function submitRating(mealId, scope = 'default') {
   } catch (e) {
     console.warn('평가 저장 중 오류:', e);
     if (btn) updateRatingSubmitState(mealId, scope);
-    alert('평가 저장 중 문제가 생겼어요. 네트워크 상태를 확인하고 다시 시도해줘.');
+    alert('급식톡을 남기지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.');
   }
 }
 // ===== REVIEWS =====
@@ -1885,7 +1896,8 @@ function mealPreviewText(menu) {
 }
 function reviewStarsHtml(score) {
   const n = Math.max(0, Math.min(5, Number(score) || 0));
-  return Array.from({ length: n }, () => '<span aria-hidden="true">&#11088;</span>').join('');
+  if (!n) return '';
+  return Array.from({ length: 5 }, (_, i) => `<span class="rs-star${i < n ? ' on' : ''}" aria-hidden="true">&#9733;</span>`).join('');
 }
 function reviewDisplayMeal(review) {
   if (!review) return null;
@@ -1941,38 +1953,55 @@ function reviewEditHtml(r) {
     <div class="rating-subtitle">별점</div>
     <div class="review-edit-stars">${[1,2,3,4,5].map(n => `<button class="review-edit-star${n <= Number(r.score || 0) ? ' filled' : ''}" onclick="setReviewEditScore(this, ${n})">★</button>`).join('')}</div>
     ${menus.length ? `<div class="rating-subtitle">대표 메뉴</div>${menuButtons}` : ''}
-    <textarea class="review-edit-text" maxlength="100" placeholder="한줄평 (선택, 100자)">${escapeHtml(r.comment || '')}</textarea>
+    <textarea class="review-edit-text" maxlength="100" placeholder="한 줄로 남겨 주세요 (선택, 100자)">${escapeHtml(r.comment || '')}</textarea>
     <div class="review-edit-buttons">
       <button onclick="cancelReviewEdit(${r.id})">취소</button>
       <button class="primary" onclick="saveReviewEdit(${r.id}, this)">저장</button>
     </div>
   </div>`;
 }
+const REVIEW_ICON_ATTRS = 'class="review-icon" viewBox="0 0 24 24" aria-hidden="true"';
+const REVIEW_ICONS = {
+  like: `<svg ${REVIEW_ICON_ATTRS}><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>`,
+  dislike: `<svg ${REVIEW_ICON_ATTRS}><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg>`
+};
+function reviewMetaText(meal, pickedMenu) {
+  const type = meal ? (meal.meal_type_label || meal.meal_type || mealTypeLabel(meal)) : '';
+  const when = meal ? [mealDateLabel(meal.meal_date), type].filter(Boolean).join(' ') : '';
+  return [when, pickedMenu ? `대표 메뉴 ${pickedMenu}` : ''].filter(Boolean).join(' · ') || '식단 정보 없음';
+}
 function renderReviewItem(r) {
   const likes = r.reaction_counts?.like || 0;
   const dislikes = r.reaction_counts?.dislike || 0;
   const myReaction = r.my_reaction || '';
   const mine = isMyReview(r);
+  const meal = reviewDisplayMeal(r);
+  const title = String(r.selected_menu_item || '').replace(/[*@#]+/g, '').trim() || reviewMetaText(meal, '');
+  const counts = [likes ? `<span>${REVIEW_ICONS.like}${likes}</span>` : '', dislikes ? `<span>${REVIEW_ICONS.dislike}${dislikes}</span>` : ''].join('');
+  // 급식톡 카드: 메뉴·점수가 제목, 한마디는 인용문. 공감 등 버튼은 카드를 누르면 펼쳐진다.
   return `
-    <div class="review-item" id="review-item-${r.id}">
-      <div class="review-top-row">
-        <div class="review-identity">
-          ${reviewSchoolHtml(r.schools)}
-          <span class="review-nick">${reviewNickname(r)}</span>
-        </div>
-        <span class="review-time">${timeAgo(r.created_at)}</span>
+    <div class="review-item rv-card${editingReviewIds.has(String(r.id)) ? ' open' : ''}" id="review-item-${r.id}" onclick="toggleReviewCard(event, this)">
+      <div class="rv-top">
+        <span class="rv-menu">${escapeHtml(title)}</span>
+        ${r.score ? `<span class="rv-score" aria-label="${Number(r.score)}점">★ ${Number(r.score).toFixed(1)}</span>` : ''}
       </div>
-      ${reviewMealHtml(reviewDisplayMeal(r), r.score)}
-      ${r.selected_menu_item ? `<div class="review-picked-menu">대표 메뉴 ${escapeHtml(r.selected_menu_item)}</div>` : ''}
-      ${r.comment ? `<div class="review-text">${escapeHtml(safeCommunityText(r.comment))}</div>` : ''}
+      ${r.comment ? `<div class="review-text rv-quote">${escapeHtml(safeCommunityText(r.comment))}</div>` : ''}
       ${(r.photo_display_url || r.photo_url) ? `<img class="review-photo" src="${escapeHtml(r.photo_display_url || r.photo_url)}" loading="lazy">` : ''}
+      <div class="rv-foot">
+        <span class="rv-by"><span class="review-nick">${reviewNickname(r)}</span><span class="review-dot" aria-hidden="true">·</span>${reviewSchoolHtml(r.schools)}<span class="review-dot" aria-hidden="true">·</span><span class="review-time">${timeAgo(r.created_at)}</span></span>
+        <span class="rv-counts">${counts}</span>
+      </div>
       <div class="review-actions">
-        <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">&#128077; ${likes}</button>
-        <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">&#128078; ${dislikes}</button>
+        <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">${REVIEW_ICONS.like}<span>${likes || '공감'}</span></button>
+        <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">${REVIEW_ICONS.dislike}<span>${dislikes || '별로'}</span></button>
         ${mine ? `<button class="review-action-btn${editingReviewIds.has(String(r.id)) ? ' selected' : ''}" onclick="startReviewEdit(${r.id})">수정</button><button class="review-action-btn danger" onclick="deleteReview(${r.id}, ${r.meal_id || 'null'})">삭제</button>` : ''}
       </div>
       ${reviewEditHtml(r)}
     </div>`;
+}
+function toggleReviewCard(event, card) {
+  if (event.target.closest('button, a, input, textarea, .review-school, .review-edit')) return;
+  card.classList.toggle('open');
 }
 function reviewListHtml(data, title, emptyText = '') {
   if (!data || data.length === 0) {
@@ -2029,7 +2058,7 @@ async function renderReviews(data, targetEl, title, emptyText = '') {
 }
 async function refreshVisibleReviews() {
   const jobs = [];
-  if (document.getElementById('latest-reviews-wrap')) jobs.push(loadLatestReviews(5, 'latest-reviews-wrap', '최신 급식톡'));
+  if (document.getElementById('latest-reviews-wrap')) jobs.push(loadLatestReviews(3, 'latest-reviews-wrap', '최신 급식톡'));
   if (document.getElementById('page-feed')?.classList.contains('active')) jobs.push(loadFeedReviews());
   if (document.getElementById('school-set-sheet')?.classList.contains('show')) jobs.push(loadMyActivity());
   const detailRevEl = document.getElementById('detail-reviews-wrap');
@@ -2082,7 +2111,7 @@ async function saveReviewEdit(ratingId, trigger = null) {
   const selectedMenuItem = box?.dataset.menu || '';
   const comment = input?.value?.trim() || '';
   if (!score || score < 1 || score > 5) {
-    alert('별점을 선택해줘.');
+    alert('별점을 골라 주세요.');
     return;
   }
   const userKey = getInteractionUserKey();
@@ -2097,27 +2126,27 @@ async function saveReviewEdit(ratingId, trigger = null) {
   const result = await edge('update-review', body);
   if (result?.error) {
     console.warn('리뷰 수정 실패:', result);
-    alert('리뷰 수정에 실패했어요. 잠시 후 다시 시도해줘.');
+    alert('급식톡을 고치지 못했어요. 잠시 후 다시 시도해 주세요.');
     return;
   }
   if (!result?.review?.id) {
-    alert('수정할 수 있는 내 리뷰를 찾지 못했어요.');
+    alert('고칠 수 있는 내 급식톡을 찾지 못했어요.');
     return;
   }
   editingReviewIds.delete(String(ratingId));
   await refreshVisibleReviews();
 }
 async function deleteReview(ratingId, mealId = null) {
-  if (!confirm('이 리뷰를 삭제할까요? 좋아요와 싫어요도 함께 삭제돼요.')) return;
+  if (!confirm('이 급식톡을 삭제할까요? 좋아요와 싫어요도 함께 삭제돼요.')) return;
   const userKey = getInteractionUserKey();
   const result = await edge('delete-review', { review_id: ratingId, user_key: userKey });
   if (result?.error) {
     console.warn('리뷰 삭제 실패:', result);
-    alert('리뷰 삭제에 실패했어요. 잠시 후 다시 시도해줘.');
+    alert('급식톡을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.');
     return;
   }
   if (!result?.review?.id) {
-    alert('삭제할 수 있는 내 리뷰를 찾지 못했어요.');
+    alert('삭제할 수 있는 내 급식톡을 찾지 못했어요.');
     return;
   }
   if (mealId) {
@@ -2176,24 +2205,24 @@ async function reactToReview(ratingId, reaction, currentReaction = '') {
 async function loadMyActivity() {
   const targetEl = document.getElementById('my-activity-wrap');
   if (!targetEl) return;
-  targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div>';
+  targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동을 불러오고 있어요</div></div>';
   await getUserId();
   const userKey = encodeURIComponent(getInteractionUserKey());
   const reviews = await sb(`la_reviews?user_key=eq.${userKey}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`);
   const enrichedReviews = await enrichReviews(Array.isArray(reviews) ? reviews : []);
   if (!enrichedReviews.length) {
-    targetEl.innerHTML = '<div class="empty" style="padding:18px 8px"><div class="empty-emoji">💬</div><div>아직 내가 쓴 리뷰가 없어요</div></div>';
+    targetEl.innerHTML = '<div class="empty" style="padding:18px 8px"><div class="empty-emoji">💬</div><div>아직 내가 쓴 급식톡가 없어요</div></div>';
     return;
   }
-  targetEl.innerHTML = reviewListHtml(enrichedReviews, '내 리뷰');
+  targetEl.innerHTML = reviewListHtml(enrichedReviews, '내 급식톡');
 }
-function latestReviewsHtml(data, title = '최신 리뷰') {
-  return reviewListHtml(data, title, '아직 등록된 리뷰가 없어요');
+function latestReviewsHtml(data, title = '최신 급식톡') {
+  return reviewListHtml(data, title, '아직 급식톡이 없어요');
 }
-async function loadLatestReviews(limit = 5, targetId = 'latest-reviews-wrap', title = '최신 리뷰') {
+async function loadLatestReviews(limit = 5, targetId = 'latest-reviews-wrap', title = '최신 급식톡') {
   const targetEl = document.getElementById(targetId);
   if (!targetEl) return;
-  targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡 불러오는 중...</div></div>';
+  targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡을 불러오고 있어요</div></div>';
   const data = await sb(`la_reviews?order=created_at.desc&limit=${limit}&select=${REVIEW_SELECT}`);
   const enriched = await enrichReviews(data || []);
   targetEl.innerHTML = latestReviewsHtml(enriched, title);
@@ -2219,13 +2248,13 @@ async function loadReviews(mealId, targetEl) {
   if (!targetEl) return;
   targetEl.dataset.mealId = mealId;
   const data = await sb(`la_reviews?meal_id=eq.${mealId}&order=created_at.desc&limit=20&select=${REVIEW_SELECT}`);
-  renderReviews(data, targetEl, '리뷰');
+  renderReviews(data, targetEl, '급식톡');
 }
 async function loadSchoolReviews(schoolId, targetEl) {
   if (!targetEl || !schoolId) return;
-  targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">학교 리뷰 불러오는 중...</div></div>';
+  targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡을 불러오고 있어요</div></div>';
   const data = await sb(`la_reviews?school_id=eq.${schoolId}&order=created_at.desc&limit=20&select=${REVIEW_SELECT}`);
-  renderReviews(data, targetEl, '이 학교 리뷰', '아직 이 학교 리뷰가 없어요');
+  renderReviews(data, targetEl, '이 학교 급식톡', '아직 이 학교 급식톡이 없어요');
 }
 
 // ===== RANKING =====
@@ -2282,7 +2311,7 @@ async function loadBattle() {
   const wrap = document.getElementById('battle-content');
   wrap.innerHTML = '<div class="loading"><div class="loading-emoji">⚔️</div><div class="loading-text">배틀 준비 중...</div></div>';
   if (!mySchool) {
-    wrap.innerHTML = `<div class="empty"><div class="empty-emoji">🏫</div><div>내 학교를 설정하면<br>오늘의 배틀을 볼 수 있어요!</div><button onclick="openSchoolSetSheet()" style="margin-top:16px;padding:12px 24px;background:var(--blue);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">내 학교 설정하기</button></div>`;
+    wrap.innerHTML = `<div class="empty"><div class="empty-emoji">🏫</div><div>내 학교를 설정하면<br>오늘의 배틀을 볼 수 있어요!</div><button onclick="openSchoolSetSheet()" style="margin-top:16px;padding:12px 24px;background:var(--blue);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">우리 학교 등록하기</button></div>`;
     return;
   }
   // mySchool에 lat/lng 없으면 schools 테이블에서 가져와서 보강 (상대 변경용)
@@ -2635,7 +2664,7 @@ async function openBottomSheet(school) {
       <div><div class="bs-name">${escapeHtml(school.name)}</div><div class="bs-meta">${escapeHtml(school.type||'')} · ${escapeHtml(school.address||'')}</div></div>
       <button class="bs-close" onclick="closeBottomSheet()">✕</button>
     </div>
-    <div style="text-align:center;padding:12px;color:var(--text3)"><div style="font-size:24px">🍳</div><div style="font-size:13px">급식 불러오는 중...</div></div>`;
+    <div style="text-align:center;padding:12px;color:var(--text3)"><div style="font-size:24px">🍳</div><div style="font-size:13px">급식을 불러오고 있어요</div></div>`;
   bs.classList.add('show');
   const today = fmtDate(fixWeekend(new Date()));
   let result = {};
@@ -2802,7 +2831,7 @@ async function init() {
   document.getElementById('stat-ratings').textContent = ratingCount > 0 ? ratingCount.toLocaleString() : '0';
   loadMonthlyEngagementRanking();
   loadMySchoolMenuStats();
-  loadLatestReviews(5, 'latest-reviews-wrap', '최신 급식톡');
+  loadLatestReviews(3, 'latest-reviews-wrap', '최신 급식톡');
   // 오늘 랭킹 TOP5
   const todayMeals = await sb(`la_meals?meal_date=eq.${fmtDate(mealDate)}&order=auto_score.desc&limit=5&select=auto_score,auto_rank,meal_type,meal_type_label,menu,schools:la_schools!inner(id,name,type)`);
   if (todayMeals && todayMeals.length > 0) {
