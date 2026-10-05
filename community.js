@@ -67,7 +67,7 @@ function mealMenuRow(label, names) {
 }
 function mealMenuHtml(menu) {
   const g = trayGroups(menu);
-  const main = g.main.length ? `<div class="meal-main"><small>오늘의 메인</small><b>${escapeHtml(g.main[0])}</b></div>` : '';
+  const main = g.main.length ? `<div class="meal-main"><small>메인</small><b>${escapeHtml(g.main[0])}</b></div>` : '';
   const rows = mealMenuRow('밥·국', [...g.rice, ...g.soup]) + mealMenuRow('반찬', g.side) + mealMenuRow('김치', g.kimchi) + mealMenuRow('후식', g.dessert);
   return main || rows ? `${main}<div class="meal-rows">${rows}</div>` : '<div class="empty" style="padding:20px">메뉴 정보가 없어요</div>';
 }
@@ -84,14 +84,14 @@ renderRating = function(mealId, target, meal = null, scope = 'default') {
   }
   target.replaceChildren();
   const button = document.createElement('button');
-  button.className = 'rating-launch'; button.textContent = `${mealTypeLabel(meal || {})} 급식톡 남기기`;
+  button.className = 'rating-launch'; button.textContent = '급식톡 쓰기';
   button.onclick = () => {
     const dialog = communityDialog('오늘 급식 어땠어요?');
     const body = dialog.querySelector('.dialog-body');
     communityRenderRating(mealId, body, meal, scope);
     const subtitle = body.querySelector('.rating-subtitle');
-    if (subtitle) subtitle.textContent = '별점 · 필수';
-    body.querySelectorAll('.rating-subtitle').forEach(el => { if (el.textContent.includes('메뉴')) el.textContent = '대표 메뉴 · 필수'; });
+    if (subtitle) subtitle.textContent = '별점';
+    body.querySelectorAll('.rating-subtitle').forEach(el => { if (el.textContent.includes('메뉴')) el.textContent = '제일 기억나는 메뉴'; });
   };
   target.append(button);
 };
@@ -251,7 +251,16 @@ async function communityReadAll(path) {
   }
   throw new Error('Ranking requires server aggregation');
 }
-function communityRankingRows(rows,unit,limit=5){return rows.length?rows.slice(0,limit).map((row,i)=>`<div class="ranking-card"><div class="rank-num${i===0?' rank-1':''}">${i+1}</div><div class="rank-info"><div class="rank-school">${escapeHtml(row.name)}</div>${row.detail?`<div class="rank-menu-preview">${escapeHtml(row.detail)}</div>`:''}</div><div class="rank-score">${Number(row.value).toLocaleString()}<small>${unit}</small></div></div>`).join(''):'<div class="ranking-error">아직 참여 기록이 없어요</div>';}
+// 랭킹 줄: 값을 막대 길이로 보여준다. 동점은 같은 순위, 1위(공동 포함)만 오렌지 막대.
+function communityRankingRows(rows,unit,limit=5){
+  if(!rows.length)return '<div class="ranking-error">아직 참여 기록이 없어요</div>';
+  const top=rows.slice(0,limit),max=Math.max(...top.map(r=>Number(r.value)||0),1);
+  return top.map(row=>{
+    const value=Number(row.value)||0,rank=1+top.filter(r=>(Number(r.value)||0)>value).length;
+    const star=String(row.detail||'').startsWith('★')?`<small>${escapeHtml(row.detail)}</small>`:'';
+    return `<div class="ranking-card rk${rank===1?' rk-top':''}"><span class="rank-num">${rank}</span><span class="rk-name"><b>${escapeHtml(row.name)}</b>${star}</span><span class="rank-score">${value.toLocaleString()}<small>${unit}</small></span><span class="rk-track" aria-hidden="true"><i style="width:${Math.max(4,Math.round(value/max*100))}%"></i></span></div>`;
+  }).join('');
+}
 function communityEligibleReviews(rows){
   const dayFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'});
   const counts=new Map();
@@ -276,8 +285,8 @@ async function communityMenuRankHtml(limit=5){
     if(Number.isFinite(score)&&score>0){old.scoreTotal+=score;old.scoreCount++;}
     totals.set(key,old);
   });
-  const rows=[...totals.values()].map(r=>({...r,detail:r.scoreCount?`학생 평점 ${(r.scoreTotal/r.scoreCount).toFixed(1)}`:'아직 별점이 없어요'}));
-  return communityRankingRows(rows.sort((a,b)=>b.value-a.value||(b.scoreTotal/Math.max(b.scoreCount,1))-(a.scoreTotal/Math.max(a.scoreCount,1))||a.name.localeCompare(b.name,'ko')),'회',limit);
+  const rows=[...totals.values()].map(r=>({...r,detail:r.scoreCount?`★ ${(r.scoreTotal/r.scoreCount).toFixed(1)}`:'아직 별점이 없어요'}));
+  return communityRankingRows(rows.sort((a,b)=>b.value-a.value||(b.scoreTotal/Math.max(b.scoreCount,1))-(a.scoreTotal/Math.max(a.scoreCount,1))||a.name.localeCompare(b.name,'ko')),'표',limit);
 }
 async function communityLoadHomeMenuRank(){
   const el=document.getElementById('home-menu-rank');if(!el)return;
@@ -333,9 +342,21 @@ const rankingContainer=document.querySelector('#page-ranking .container');
 rankingContainer.replaceChildren();
 const monthlyRanking=document.createElement('section');
 monthlyRanking.className='monthly-ranking';
-monthlyRanking.innerHTML=`<header class="ranking-intro"><div class="section-title">이달의 참여 랭킹</div><p class="ranking-note">이번 달 급식톡 활동을 기준으로 집계해요.</p></header><section class="ranking-block"><div class="ranking-block-heading"><h2>인기 대표 메뉴</h2><span>TOP 5</span></div><p class="ranking-note">급식톡에서 대표 메뉴로 뽑힌 횟수</p><div id="community-menu-rank"></div></section><section class="ranking-block"><div class="ranking-block-heading"><h2>학교 참여도</h2><span>TOP 5</span></div><p class="ranking-note">급식톡 10점 · 반응 1점 · 사진 5점</p><div id="community-school-rank"></div></section><section class="ranking-block"><div class="ranking-block-heading"><h2>개인 참여도</h2><span>TOP 5</span></div><p class="ranking-note">급식톡 10점 · 반응 1점 · 사진 5점 · 급식톡은 하루 3개까지 반영</p><div id="community-person-rank"></div></section>`;
-monthlyRanking.querySelector('.ranking-block').insertAdjacentHTML('afterend','<div class="ad-slot" data-ad-slot="ranking" hidden></div>');
+// 랭킹 세 개를 옆으로 넘기는 카드로 보여준다. 위 칩을 눌러도 넘어가고, 넘기면 칩이 따라 바뀐다.
+monthlyRanking.innerHTML=`<header class="ranking-intro"><div class="section-title" data-month-label="랭킹">랭킹</div></header><div class="rank-chips" role="tablist"><button type="button" role="tab" aria-selected="true" data-rank-chip="0">학교</button><button type="button" role="tab" aria-selected="false" data-rank-chip="1">급식러</button><button type="button" role="tab" aria-selected="false" data-rank-chip="2">인기 메뉴</button></div><div class="rank-rail"><section class="ranking-block"><div class="ranking-block-heading"><h2>급식톡 많은 학교</h2><span>TOP 5</span></div><div id="community-school-rank"></div></section><section class="ranking-block"><div class="ranking-block-heading"><h2>급식톡 많이 쓴 급식러</h2><span>TOP 5</span></div><div id="community-person-rank"></div></section><section class="ranking-block"><div class="ranking-block-heading"><h2>인기 메뉴</h2><span>TOP 5</span></div><div id="community-menu-rank"></div></section></div>`;
+monthlyRanking.querySelector('.rank-rail').insertAdjacentHTML('afterend','<div class="ad-slot" data-ad-slot="ranking" hidden></div>');
+{
+  const rail=monthlyRanking.querySelector('.rank-rail'),chipEls=[...monthlyRanking.querySelectorAll('[data-rank-chip]')],cards=[...rail.children];
+  const select=k=>chipEls.forEach((b,j)=>b.setAttribute('aria-selected',String(j===k)));
+  chipEls.forEach((b,k)=>b.onclick=()=>{rail.scrollTo({left:cards[k].offsetLeft-rail.offsetLeft-12,behavior:'smooth'});select(k);});
+  // 다른 화면에서 특정 랭킹 카드로 바로 열 때 쓴다 (예: 홈 인기 메뉴의 전체보기).
+  window.showRankCard=key=>{const k=cards.findIndex(s=>s.querySelector(`#community-${key}-rank`));if(k<0)return;requestAnimationFrame(()=>{rail.scrollLeft=cards[k].offsetLeft-rail.offsetLeft-12;select(k);});};
+  rail.addEventListener('scroll',()=>{const w=cards[0].offsetWidth+12;select(Math.min(cards.length-1,Math.round(rail.scrollLeft/w)));},{passive:true});
+}
 rankingContainer.append(monthlyRanking);
+// "10월 인기 메뉴", "10월 랭킹"처럼 이번 달(한국 시간)을 제목 앞에 붙인다.
+const communityMonth=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long'}).format(new Date());
+document.querySelectorAll('[data-month-label]').forEach(el=>{el.textContent=`${communityMonth} ${el.dataset.monthLabel}`;});
 document.querySelectorAll('.tab-item').forEach(el=>{el.setAttribute('role','button');el.tabIndex=0;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}};});
 initAppNavigation();
 document.body.dataset.tab=activeTab||'home';

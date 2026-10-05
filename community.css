@@ -54,7 +54,6 @@ body.ad-preview-mode .preview-home-ad[hidden]{display:flex!important}
 .home-live-more{background:var(--primary-soft);color:var(--primary-ink)}
 .nickname-random{background:var(--fill);color:var(--text2)}
 .tab-item{color:var(--grey-500)}.tab-item.active{color:var(--primary-ink)}
-.rank-1{color:var(--brand-text)}.rank-2,.rank-3{color:var(--text)}
 .review-stars{gap:0;font-size:15px;color:var(--grey-200)}.review-stars .rs-star.on{color:var(--brand)}
 .star,.star.filled{background:transparent}.star .star-icon,.star.star-empty .star-icon{color:var(--grey-200);opacity:1;filter:none;font-size:30px}.star.filled .star-icon{color:var(--brand);filter:none}
 .sd-icon{background:var(--fill)!important}
@@ -107,8 +106,6 @@ body.ad-preview-mode .preview-home-ad[hidden]{display:flex!important}
 .monthly-ranking{padding:0 0 4px!important}
 .ranking-block-heading{margin-bottom:4px!important}
 .ranking-block-heading span{border-radius:6px!important}
-.ranking-card{border-bottom:1px solid var(--grey-100)!important;padding:14px 0!important}
-.ranking-card:last-child{border-bottom:0!important;padding-bottom:0!important}
 /* 하단 탭 */
 .tab-bar{background:var(--surface)!important;border-top:0!important;border-radius:20px 20px 0 0;box-shadow:0 -6px 20px rgba(0,0,0,.05)}
 /* 바텀시트·다이얼로그 */
@@ -169,23 +166,6 @@ body[data-tab]:not([data-tab="home"]) .appbar{display:none}
 .t-intro .home-hero-title em{color:var(--brand-text)!important;-webkit-text-fill-color:var(--brand-text)!important}
 .t-intro .home-search-big input{background:var(--surface)}
 .community-filters button[aria-pressed=true]{border-color:var(--brand)}
-.ranking-card:first-child{background:var(--brand-soft);border-radius:14px;margin:0 -12px 4px;padding:14px 12px!important;border-bottom:0!important}
-.ranking-card:first-child .rank-num{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;background:var(--brand);color:#fff!important;font-size:15px}
-.ranking-card:first-child .rank-score{color:var(--brand-text)}
-/* ===== 랭킹 글자 균형: 이름(15/600)이 주인공, 순위·점수는 한 단계 낮게 ===== */
-.ranking-card{gap:12px}
-.rank-num{width:24px;font-size:16px!important;font-weight:600!important;color:var(--text3)}
-.rank-school{font-size:15px;font-weight:600}
-.rank-menu-preview{font-size:13px;color:var(--text3)}
-.rank-score{font-size:15px!important;font-weight:600!important;color:var(--text2)}
-.rank-score small{margin-left:1px;font-size:13px;font-weight:500;color:var(--text3)}
-.ranking-card:first-child .rank-num{width:24px;height:24px;border-radius:8px;font-size:13px!important;font-weight:700!important}
-.ranking-card:first-child .rank-score,.ranking-card:first-child .rank-score small{color:var(--brand-ink)}
-/* 1위 박스를 제목·구분선과 같은 열에 맞추고, 모든 줄을 같은 안쪽 여백으로 들여 숫자 열도 한 줄로 */
-.ranking-card,.ranking-card:first-child{margin:0!important;padding:14px 12px!important}
-.ranking-card:first-child{margin-bottom:4px!important}
-/* 1위는 면으로 이미 강조되므로 배지 대신 숫자만 진한 오렌지 */
-.ranking-card:first-child .rank-num{width:24px;height:auto;background:none;border-radius:0;color:var(--brand-ink)!important;font-size:16px!important;font-weight:700!important}
 /* ===== 급식톡 탭: 메뉴 중심 카드. 버튼은 카드를 누르면 펼쳐진다 ===== */
 .rv-card{padding:16px 0!important;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .rv-top{display:flex;align-items:center;gap:8px}
@@ -223,3 +203,62 @@ body[data-tab]:not([data-tab="home"]) .appbar{display:none}
 #feed-reviews-wrap .ad-slot{margin:6px 0}
 .ad-slot-preview{display:flex;align-items:center;justify-content:center;gap:8px;height:96px;border:2px dashed var(--brand);border-radius:20px;background:var(--surface);font-size:13px;color:var(--text3)}
 .ad-slot-preview span{padding:2px 6px;border-radius:4px;background:var(--fill);font-size:11px;font-weight:600;color:var(--text3)}
+/* ===== 랭킹 탭: 옆으로 넘기는 랭킹 카드 + 칩 ===== */
+.rank-chips{display:flex;gap:6px;margin:12px 8px 0}
+.rank-chips button{border:0;border-radius:999px;padding:8px 14px;background:var(--surface);font:inherit;font-size:14px;font-weight:600;color:var(--text3);cursor:pointer}
+.rank-chips button[aria-selected=true]{background:var(--text);color:#fff}
+.rank-rail{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;margin:12px -12px 0;padding:0 12px 4px;scroll-snap-type:x mandatory;scroll-padding-left:12px;scrollbar-width:none;overscroll-behavior-x:contain}
+.rank-rail::-webkit-scrollbar{display:none}
+.rank-rail .ranking-block{flex:0 0 88%;margin:0!important;scroll-snap-align:start}
+.monthly-ranking .ad-slot{margin-top:var(--gap)}
+/* ===== 랭킹 탭 여백·글자: 가로 카드로 남는 세로 공간을 가독성에 쓴다 (홈 인기 메뉴 카드는 그대로) ===== */
+#page-ranking .ranking-intro{padding:28px 8px 0!important}
+#page-ranking .ranking-intro .section-title{font-size:24px!important}
+#page-ranking .rank-chips{margin:18px 8px 0}
+#page-ranking .rank-chips button{padding:9px 16px;font-size:15px}
+#page-ranking .rank-rail{margin-top:16px}
+#page-ranking .ranking-block{padding:26px 22px 22px!important}
+#page-ranking .ranking-block-heading{margin-bottom:16px!important}
+#page-ranking .ranking-block-heading h2{font-size:20px!important}
+#page-ranking .ad-slot{margin-top:16px}
+/* 랭킹 탭 여백 재조정: 광고 배너가 스크롤 없이 첫 화면에 들어오도록 (글자 크기는 유지) */
+#page-ranking .ranking-intro{padding-top:20px!important}
+#page-ranking .rank-chips{margin-top:14px}
+#page-ranking .rank-rail{margin-top:12px}
+#page-ranking .ranking-block{padding:22px 20px 18px!important}
+#page-ranking .ranking-block-heading{margin-bottom:12px!important}
+#page-ranking .ad-slot{margin-top:12px}
+/* ===== 랭킹 줄: 막대 그래프형 (랭킹 탭·홈 인기 메뉴 공통) =====
+   이름 · 값 한 줄 + 아래 막대. 동점은 같은 순위, 1위(공동 포함)만 오렌지. */
+.ranking-card.rk{display:grid!important;grid-template-columns:22px minmax(0,1fr) auto;column-gap:12px;align-items:center;margin:0!important;padding:11px 0!important;border:0!important;background:none!important;border-radius:0!important}
+.rk .rank-num{width:auto!important;height:auto!important;font-size:15px!important;font-weight:700!important;color:var(--grey-500)!important;text-align:center;background:none!important}
+.rk .rk-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;color:var(--text)}
+.rk .rk-name b{font-weight:600}
+.rk .rk-name small{margin-left:6px;font-size:12px;font-weight:500;color:var(--grey-500)}
+.rk .rank-score{font-size:15px!important;font-weight:700!important;color:var(--text)!important;white-space:nowrap}
+.rk .rank-score small{margin-left:1px;font-size:13px;font-weight:500;color:var(--grey-500)}
+.rk .rk-track{grid-column:2/4;height:8px;margin-top:7px;border-radius:99px;background:var(--grey-100);overflow:hidden}
+.rk .rk-track i{display:block;height:100%;border-radius:99px;background:var(--grey-300)}
+.rk-top .rank-num,.rk-top .rank-score{color:var(--brand-ink)!important}
+.rk-top .rk-track i{background:var(--brand)}
+#page-ranking .ranking-card.rk{padding:13px 0!important}
+#page-ranking .rk .rk-name,#page-ranking .rk .rank-score{font-size:16px!important}
+/* 랭킹 줄 사이 연한 구분선 (마지막 줄 제외) */
+.ranking-card.rk{border-bottom:1px solid var(--grey-100)!important}
+.ranking-card.rk:last-child{border-bottom:0!important}
+#page-ranking .ranking-card.rk{padding:14px 0!important}
+/* ===== 오렌지 줄이기: 핵심 버튼·별점·메인 칸·1위 표시만 오렌지 ===== */
+.home-live-more{background:var(--fill)!important;color:var(--text2)!important}
+.tab-item.active{color:var(--text)!important}
+.community-filters button[aria-pressed=true]{border-color:var(--text)!important}
+#appbar-school::after{border-color:var(--grey-400)!important}
+.rail-card{background:var(--surface)!important;border:1px solid var(--border)!important}
+.rail-menu{color:var(--text2)!important}
+.t-intro{background:var(--surface)!important}
+.t-intro .home-search-big input{background:var(--fill)!important}
+/* 홈 인기 메뉴는 막대 없는 짧은 목록, 막대는 랭킹 탭에서만 */
+#home-menu-rank .rk-track{display:none}
+#home-menu-rank .ranking-card.rk{padding:12px 0!important}
+#home-menu-rank .rk-top .rank-score{color:var(--text)!important}
+/* 1위(공동 포함) 이름 앞 왕관 */
+.rk-top .rk-name b::before{content:"";display:inline-block;width:15px;height:15px;margin:0 5px -2px 0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff8c32'%3E%3Cpath d='M3 7.5l4.5 4L12 4l4.5 7.5L21 7.5 19 18H5L3 7.5z'/%3E%3Crect x='5' y='19.2' width='14' height='2' rx='1'/%3E%3C/svg%3E") center/contain no-repeat}

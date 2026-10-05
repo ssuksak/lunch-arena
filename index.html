@@ -377,11 +377,10 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   <div class="bs-handle"></div>
   <div class="bs-content">
     <div class="school-sheet-heading"><div style="font-size:18px;font-weight:900;margin-bottom:4px">내 정보</div><button class="bs-close" type="button" aria-label="학교 설정 닫기" onclick="closeSchoolSetSheet()">✕</button></div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:16px">닉네임과 우리 학교를 바꿀 수 있어요</div>
     <div class="nickname-box">
       <div class="nickname-row">
-        <div class="nickname-title">내 닉네임</div>
-        <button class="nickname-random" onclick="randomizeNickname()">랜덤</button>
+        <div class="nickname-title">닉네임</div>
+        <button class="nickname-random" onclick="randomizeNickname()">다시 뽑기</button>
       </div>
       <div class="nickname-edit">
         <input class="nickname-input" id="nickname-input" maxlength="12" placeholder="닉네임" autocomplete="off" onkeydown="if(event.key==='Enter')saveNicknameFromInput()">
@@ -395,7 +394,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     </div>
     <div id="set-school-results"></div>
     <div class="my-activity">
-      <div class="my-activity-title">내가 쓴 급식톡</div>
+      <div class="my-activity-title">내가 쓴 글</div>
       <div id="my-activity-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동을 불러오고 있어요</div></div></div>
     </div>
   </div>
@@ -465,8 +464,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     <section class="t-card t-intro">
     <div class="home-hero">
       <div class="home-hero-emoji">🍱</div>
-      <div class="home-hero-title">오늘 급식 <em>뭐 나올까요?</em></div>
-      <div class="home-hero-sub">우리 학교 급식을 확인하고 급식톡을 남겨 보세요</div>
+      <div class="home-hero-title">우리 학교 찾기</div>
     </div>
     <div class="home-search-big">
       <span class="si">🔍</span>
@@ -485,13 +483,12 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
       <button class="quick-action" onclick="switchTab('ranking')"><strong>이번 달 참여왕</strong><span>리뷰 많은 학교 TOP 3</span></button>
     </div>
     <section class="t-card t-menu-rank">
-    <div class="home-live-title"><div class="home-live-main">인기 대표 메뉴</div><button class="home-live-more" onclick="switchTab('ranking')">전체보기</button></div>
-    <p class="ranking-note">이번 달 급식톡에서 대표 메뉴로 많이 뽑혔어요</p>
+    <div class="home-live-title"><div class="home-live-main" data-month-label="인기 메뉴">인기 메뉴</div><button class="home-live-more" onclick="switchTab('ranking'); showRankCard('menu')">전체보기</button></div>
     <div id="home-menu-rank"><div class="loading"><div class="loading-emoji">🍽️</div><div class="loading-text">인기 메뉴를 불러오고 있어요</div></div></div>
     </section>
     <div class="ad-slot" data-ad-slot="home" hidden></div>
     <section class="t-card t-feed">
-    <div class="home-live-title"><div class="home-live-main">💬 실시간 급식톡</div><button class="home-live-more" onclick="switchTab('feed')">전체보기</button></div>
+    <div class="home-live-title"><div class="home-live-main">새 급식톡</div><button class="home-live-more" onclick="switchTab('feed')">전체보기</button></div>
     <div id="latest-reviews-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡을 불러오고 있어요</div></div></div>
     </section>
     <div class="section-title">🔥 이번 달 리뷰 참여왕</div>
@@ -540,8 +537,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 <div class="page" id="page-feed">
   <div class="container">
     <header class="t-page-head">
-    <div class="section-title">💬 실시간 급식톡</div>
-    <div class="feed-sub">전국 학교의 최신 급식톡을 모았어요</div>
+    <div class="section-title">급식톡</div>
     </header>
     <section class="t-card">
     <div id="feed-reviews-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">급식톡을 불러오고 있어요</div></div></div>
@@ -1360,7 +1356,7 @@ function mealCardHtml(meal, footerRight = '', opts = {}) {
 }
 function renderMealPanels(scope, meals, footerRight = '', opts = {}) {
   return `${mealTypeTabsHtml(scope, meals)}${meals.map((meal, i) => `<div data-meal-panel="${scope}" style="${i === 0 ? '' : 'display:none'}">${mealCardHtml(meal, footerRight, opts)}</div>`).join('')}
-    <button class="btn-share" onclick="shareCurrentCard()">친구에게 공유하기</button>`;
+    <button class="btn-share" onclick="shareCurrentCard()">공유</button>`;
 }
 function setMealPanelState(scope, state) {
   mealPanelState[scope] = state;
@@ -1412,7 +1408,7 @@ async function loadMySchoolMeal() {
     const result = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: targetDate });
     const meals = normalizeMealList(result);
     if (!meals.length) {
-      wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">🍽️</div><div>급식이 없는 날이에요</div><div class="empty-sub">쉬는 날이거나 아직 식단이 올라오지 않았을 수 있어요</div></div></div>`;
+      wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">🍽️</div><div>오늘은 급식이 없어요</div></div></div>`;
       return;
     }
     wrap.innerHTML = `${myMealDateNavHtml()}${renderMealPanels('my-school', meals, fmtDateKR(myMealDate), { compact: true })}<div id="ms-rating-wrap"></div><div id="ms-reviews-wrap"></div>`;
@@ -1460,7 +1456,7 @@ async function loadMySchoolPageMeal() {
     const result = await edge('sync-meals', { atpt_code: mySchool.atpt_code, school_code: mySchool.school_code, date: targetDate });
     const meals = normalizeMealList(result);
     if (!meals.length) {
-      wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">🍽️</div><div>급식이 없는 날이에요</div><div class="empty-sub">쉬는 날이거나 아직 식단이 올라오지 않았을 수 있어요</div></div></div>`;
+      wrap.innerHTML = `${myMealDateNavHtml()}<div class="meal-card"><div class="empty" style="padding:20px"><div class="empty-emoji">🍽️</div><div>오늘은 급식이 없어요</div></div></div>`;
       return;
     }
     wrap.innerHTML = `${myMealDateNavHtml()}${renderMealPanels('my-school-page', meals, fmtDateKR(myMealDate))}<div id="school-page-rating-wrap"></div><div id="school-page-meal-reviews-wrap"></div>`;
@@ -1564,7 +1560,7 @@ async function loadDetailMeal() {
     const result = await edge('sync-meals', { atpt_code: s.atpt_code, school_code: s.school_code, date: fmtDate(mealDate) });
     const meals = normalizeMealList(result);
     if (!meals.length) {
-      mc.innerHTML = `<div class="empty"><div class="empty-emoji">🍽️</div><div>급식이 없는 날이에요</div><div class="empty-sub">쉬는 날이거나 아직 식단이 올라오지 않았을 수 있어요</div></div>`;
+      mc.innerHTML = `<div class="empty"><div class="empty-emoji">🍽️</div><div>오늘은 급식이 없어요</div></div>`;
       document.getElementById('detail-rating-wrap').innerHTML = '';
       return;
     }
@@ -1672,7 +1668,7 @@ function renderRating(mealId, targetEl, meal = null, scope = 'default') {
       ${[1,2,3,4,5].map(i => `<button type="button" class="star star-empty" onclick="setRating(${i},${mealId},${scopeArg})" aria-label="${i}점"><span class="star-icon">&#9733;</span></button>`).join('')}
     </div>
     ${ratingMenuPickerHtml(mealId, scope)}
-    <textarea class="comment-input" id="comment-${domKey}" placeholder="한 줄로 남겨 주세요 (선택, 100자)"></textarea>
+    <textarea class="comment-input" id="comment-${domKey}" placeholder="한마디 (선택)"></textarea>
     <div class="photo-upload">
       <label class="photo-label" for="photo-input" onclick="currentRatingMealId=${mealId};currentRatingScope=${scopeArg}">
         📷 사진 첨부 (선택)
@@ -1691,7 +1687,7 @@ function ratingMenuPickerHtml(mealId, scope = 'default') {
   if (!menus.length) return '';
   const domKey = ratingDomKey(scope, mealId);
   const scopeArg = inlineJsString(scope);
-  return `<div class="rating-subtitle">가장 기억에 남는 메뉴를 하나 골라 주세요</div><div class="rating-menu-picks" id="menu-picks-${domKey}">${menus.map((item, idx) => `<button type="button" class="rating-menu-pick" onclick="selectReviewMenu(${mealId}, ${idx}, ${scopeArg})">${escapeHtml(item)}</button>`).join('')}</div>`;
+  return `<div class="rating-subtitle">제일 기억나는 메뉴</div><div class="rating-menu-picks" id="menu-picks-${domKey}">${menus.map((item, idx) => `<button type="button" class="rating-menu-pick" onclick="selectReviewMenu(${mealId}, ${idx}, ${scopeArg})">${escapeHtml(item)}</button>`).join('')}</div>`;
 }
 function selectReviewMenu(mealId, idx, scope = 'default') {
   const state = getRatingState(mealId, scope);
@@ -1714,7 +1710,7 @@ function updateRatingSubmitState(mealId, scope = 'default') {
     btn.textContent = '대표 메뉴를 골라 주세요';
   } else {
     btn.disabled = false;
-    btn.textContent = `별점 ${state.score}점으로 남기기`;
+    btn.textContent = '올리기';
   }
 }
 function setRating(n, mealId, scope = 'default') {
@@ -1850,7 +1846,7 @@ async function submitRating(mealId, scope = 'default') {
       const errorText = JSON.stringify(result || {});
       console.warn('리뷰 저장 실패:', res.status, errorText);
       if (btn) updateRatingSubmitState(mealId, scope);
-      alert('급식톡을 남기지 못했어요. 잠시 후 다시 시도해 주세요.');
+      alert('올리지 못했어요. 다시 시도해 주세요.');
       return;
     }
 
@@ -1873,7 +1869,7 @@ async function submitRating(mealId, scope = 'default') {
   } catch (e) {
     console.warn('평가 저장 중 오류:', e);
     if (btn) updateRatingSubmitState(mealId, scope);
-    alert('급식톡을 남기지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.');
+    alert('올리지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.');
   }
 }
 // ===== REVIEWS =====
@@ -1953,7 +1949,7 @@ function reviewEditHtml(r) {
     <div class="rating-subtitle">별점</div>
     <div class="review-edit-stars">${[1,2,3,4,5].map(n => `<button class="review-edit-star${n <= Number(r.score || 0) ? ' filled' : ''}" onclick="setReviewEditScore(this, ${n})">★</button>`).join('')}</div>
     ${menus.length ? `<div class="rating-subtitle">대표 메뉴</div>${menuButtons}` : ''}
-    <textarea class="review-edit-text" maxlength="100" placeholder="한 줄로 남겨 주세요 (선택, 100자)">${escapeHtml(r.comment || '')}</textarea>
+    <textarea class="review-edit-text" maxlength="100" placeholder="한마디 (선택)">${escapeHtml(r.comment || '')}</textarea>
     <div class="review-edit-buttons">
       <button onclick="cancelReviewEdit(${r.id})">취소</button>
       <button class="primary" onclick="saveReviewEdit(${r.id}, this)">저장</button>
@@ -2211,7 +2207,7 @@ async function loadMyActivity() {
   const reviews = await sb(`la_reviews?user_key=eq.${userKey}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`);
   const enrichedReviews = await enrichReviews(Array.isArray(reviews) ? reviews : []);
   if (!enrichedReviews.length) {
-    targetEl.innerHTML = '<div class="empty" style="padding:18px 8px"><div class="empty-emoji">💬</div><div>아직 내가 쓴 급식톡가 없어요</div></div>';
+    targetEl.innerHTML = '<div class="empty" style="padding:18px 8px"><div class="empty-emoji">💬</div><div>아직 쓴 글이 없어요</div></div>';
     return;
   }
   targetEl.innerHTML = reviewListHtml(enrichedReviews, '내 급식톡');
