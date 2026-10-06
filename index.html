@@ -197,15 +197,6 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .review-edit-buttons{display:flex;gap:8px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap}
 .review-edit-buttons button{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 11px;font-size:12px;font-weight:900;font-family:inherit;cursor:pointer;color:var(--text2)}
 .review-edit-buttons .primary{background:var(--blue);border-color:var(--blue);color:#fff}
-.review-comments{margin-top:10px;background:var(--bg);border-radius:12px;padding:8px 10px}
-.review-comment{padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;color:var(--text2);line-height:1.4;overflow-wrap:anywhere}
-.review-comment:last-child{border-bottom:none}
-.review-comment-nick{font-weight:900;color:var(--text);margin-right:5px}
-.review-comment-time{font-size:10px;color:var(--text3);margin-left:4px}
-.review-comment-form{display:flex;gap:6px;margin-top:8px}
-.review-comment-input{flex:1;min-width:0;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 9px;font-size:12px;font-family:inherit;color:var(--text)}
-.review-comment-input:focus{outline:none;border-color:var(--blue)}
-.review-comment-submit{border:none;background:var(--blue);color:white;border-radius:9px;padding:0 10px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer}.review-comment-submit:disabled{background:var(--text4);cursor:not-allowed}
 /* 지도 */
 .kakao-map-wrap{position:relative;width:100%;height:calc(100vh - 56px - 80px)}
 #kakao-map{width:100%;height:100%;filter:saturate(0.45) brightness(1.1) contrast(0.9) sepia(0.15)}
@@ -243,10 +234,6 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
 .nickname-help{font-size:12px;color:var(--text3);margin-top:8px;min-height:16px}
 .my-activity{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
 .my-activity-title{font-size:14px;font-weight:900;margin-bottom:8px}
-.my-comment-list{display:flex;flex-direction:column;gap:8px}
-.my-comment-item{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px}
-.my-comment-main{font-size:13px;color:var(--text);line-height:1.45}
-.my-comment-context{font-size:12px;color:var(--text3);margin-top:6px;line-height:1.4}
 
 /* 배틀 */
 .battle-header{text-align:center;padding:20px 0 12px}
@@ -408,7 +395,7 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
     </div>
     <div id="set-school-results"></div>
     <div class="my-activity">
-      <div class="my-activity-title">내가 쓴 리뷰/댓글</div>
+      <div class="my-activity-title">내가 쓴 리뷰</div>
       <div id="my-activity-wrap"><div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div></div>
     </div>
   </div>
@@ -1844,7 +1831,7 @@ async function submitRating(mealId, scope = 'default') {
     const result = await edge('submit-review', body);
     if (result?.error === 'REVIEW_DAILY_LIMIT_REACHED') {
       if (btn) updateRatingSubmitState(mealId, scope);
-      alert('리뷰는 하루에 3개까지 작성할 수 있어요. 한국시간 자정 이후 다시 작성해주세요. 댓글과 좋아요는 계속 이용할 수 있어요.');
+      alert('리뷰는 하루에 3개까지 작성할 수 있어요. 한국시간 자정 이후 다시 작성해주세요. 좋아요와 싫어요는 계속 이용할 수 있어요.');
       return;
     }
     if (result?.error && result._status !== 409 && result.error !== 'REVIEW_ALREADY_EXISTS') {
@@ -1879,7 +1866,6 @@ async function submitRating(mealId, scope = 'default') {
   }
 }
 // ===== REVIEWS =====
-const openCommentThreads = new Set();
 const editingReviewIds = new Set();
 function reviewSchoolHtml(s) {
   if (!s) return '<span class="review-school">학교 정보 없음</span>';
@@ -1932,41 +1918,6 @@ function reviewMealHtml(meal, score = 0) {
   </div>`;
 }
 const REVIEW_SELECT = 'id,meal_id,school_id,score,comment,selected_menu_item,photo_url,created_at,user_key,nickname,meal_date_snapshot,meal_type_snapshot,meal_menu_snapshot,schools:la_schools(id,name,type,address,atpt_code,school_code),meals:la_meals(id,meal_date,meal_type,meal_type_label,menu)';
-function renderReviewComments(ratingId, comments = []) {
-  const isOpen = openCommentThreads.has(String(ratingId));
-  const list = comments.length ? comments.map(c => `
-    <div class="review-comment">
-      <span class="review-comment-nick">${escapeHtml(c.nickname || '익명의 급식러')}</span>
-      <span>${escapeHtml(safeCommunityText(c.comment))}</span>
-      <span class="review-comment-time">${timeAgo(c.created_at)}</span>
-    </div>`).join('') : '<div class="review-comment" style="color:var(--text3)">아직 댓글이 없어요</div>';
-  return `
-    <div class="review-comments${isOpen ? '' : ' hide'}" id="review-comments-${ratingId}">
-      ${list}
-      <div class="review-comment-form">
-        <input class="review-comment-input" maxlength="300" placeholder="댓글 달기" oninput="updateReviewCommentSubmit(this)" onkeydown="if(event.key==='Enter')submitReviewComment(${ratingId}, this)">
-        <button class="review-comment-submit" onclick="submitReviewComment(${ratingId}, this)" disabled>등록</button>
-      </div>
-    </div>`;
-}
-function toggleReviewComments(ratingId, trigger = null) {
-  const key = String(ratingId);
-  const item = trigger?.closest?.('.review-item') || null;
-  const el = item?.querySelector?.('.review-comments') || document.getElementById(`review-comments-${ratingId}`);
-  const shouldOpen = !el || el.classList.contains('hide');
-  if (shouldOpen) openCommentThreads.add(key);
-  else openCommentThreads.delete(key);
-  if (el) {
-    el.classList.toggle('hide', !shouldOpen);
-    const btn = item?.querySelector?.(`#review-comment-toggle-${ratingId}`) || document.getElementById(`review-comment-toggle-${ratingId}`);
-    if (btn) btn.classList.toggle('selected', shouldOpen);
-    if (shouldOpen) setTimeout(() => (item?.querySelector?.('.review-comment-input') || document.getElementById(`review-comment-${ratingId}`))?.focus(), 0);
-  }
-}
-function updateReviewCommentSubmit(input) {
-  const btn = input?.closest?.('.review-comment-form')?.querySelector?.('.review-comment-submit');
-  if (btn) btn.disabled = !input?.value?.trim();
-}
 function isMyReview(r) {
   return !!(r?.user_key && r.user_key === getInteractionUserKey());
 }
@@ -2018,11 +1969,9 @@ function renderReviewItem(r) {
       <div class="review-actions">
         <button class="review-action-btn${myReaction === 'like' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'like', '${myReaction}')">&#128077; ${likes}</button>
         <button class="review-action-btn${myReaction === 'dislike' ? ' selected' : ''}" onclick="reactToReview(${r.id}, 'dislike', '${myReaction}')">&#128078; ${dislikes}</button>
-        <button class="review-action-btn${openCommentThreads.has(String(r.id)) ? ' selected' : ''}" id="review-comment-toggle-${r.id}" onclick="toggleReviewComments(${r.id}, this)">&#128172; 댓글 ${(r.comments || []).length}</button>
         ${mine ? `<button class="review-action-btn${editingReviewIds.has(String(r.id)) ? ' selected' : ''}" onclick="startReviewEdit(${r.id})">수정</button><button class="review-action-btn danger" onclick="deleteReview(${r.id}, ${r.meal_id || 'null'})">삭제</button>` : ''}
       </div>
       ${reviewEditHtml(r)}
-      ${renderReviewComments(r.id, r.comments || [])}
     </div>`;
 }
 function reviewListHtml(data, title, emptyText = '') {
@@ -2042,9 +1991,8 @@ async function enrichReviews(data) {
   if (ids.length === 0) return data;
   const idFilter = ids.join(',');
   const myUserKey = getInteractionUserKey();
-  const [reactions, comments, users, photoUrls] = await Promise.all([
+  const [reactions, users, photoUrls] = await Promise.all([
     sb(`la_review_reactions?rating_id=in.(${idFilter})&select=rating_id,reaction,user_key`),
-    sb(`la_review_comments?rating_id=in.(${idFilter})&order=created_at.asc&select=id,rating_id,nickname,comment,created_at`),
     (() => {
       const userKeys = [...new Set(data.map(r => r.user_key).filter(Boolean))];
       return Promise.resolve([]);
@@ -2062,12 +2010,6 @@ async function enrichReviews(data) {
     if (rr.user_key === myUserKey) bucket.mine = rr.reaction;
     reactionByRating.set(rr.rating_id, bucket);
   }
-  const commentsByRating = new Map();
-  for (const c of (comments || [])) {
-    const list = commentsByRating.get(c.rating_id) || [];
-    list.push(c);
-    commentsByRating.set(c.rating_id, list);
-  }
   return data.map(r => {
     const reaction = reactionByRating.get(r.id) || { counts: { like: 0, dislike: 0 }, mine: '' };
     return {
@@ -2076,8 +2018,7 @@ async function enrichReviews(data) {
       photo_display_url: photoUrls?.photos?.[String(r.id)]?.url || null,
       review_photo: photoUrls?.photos?.[String(r.id)] || null,
       reaction_counts: reaction.counts,
-      my_reaction: reaction.mine,
-      comments: commentsByRating.get(r.id) || []
+      my_reaction: reaction.mine
     };
   });
 }
@@ -2167,7 +2108,7 @@ async function saveReviewEdit(ratingId, trigger = null) {
   await refreshVisibleReviews();
 }
 async function deleteReview(ratingId, mealId = null) {
-  if (!confirm('이 리뷰를 삭제할까요? 댓글과 좋아요도 함께 삭제돼요.')) return;
+  if (!confirm('이 리뷰를 삭제할까요? 좋아요와 싫어요도 함께 삭제돼요.')) return;
   const userKey = getInteractionUserKey();
   const result = await edge('delete-review', { review_id: ratingId, user_key: userKey });
   if (result?.error) {
@@ -2232,73 +2173,19 @@ async function reactToReview(ratingId, reaction, currentReaction = '') {
   });
   refreshVisibleReviews();
 }
-async function submitReviewComment(ratingId, trigger = null) {
-  const item = trigger?.closest?.('.review-item') || null;
-  const input = item?.querySelector?.('.review-comment-input') || document.getElementById(`review-comment-${ratingId}`);
-  const comment = input?.value?.trim() || '';
-  if (!comment) return;
-  openCommentThreads.add(String(ratingId));
-  await getUserId();
-  const result = await edge('create-review-comment', {
-    rating_id: ratingId,
-    user_key: getInteractionUserKey(),
-    nickname: ensureNickname(),
-    comment
-  });
-  if (!result?.ok) {
-    console.warn('Comment save failed:', result);
-    alert(result?.error === 'REVIEW_NOT_FOUND' ? 'Review not found.' : 'Failed to save comment.');
-    return;
-  }
-  void logAitGoal('goal_review_comment', {
-    rating_id: String(ratingId),
-    comment_length: comment.length
-  });
-  input.value = '';
-  refreshVisibleReviews();
-}
-function myCommentsHtml(comments = []) {
-  if (!comments.length) return '';
-  return `
-    <div class="rating-section">
-      <div class="rating-title">내 댓글 ${comments.length}개</div>
-      <div class="my-comment-list">
-        ${comments.map(c => {
-          const r = c.ratings || {};
-          const meal = reviewMealHtml(reviewDisplayMeal(r), r.score || 0);
-          const schoolName = r.schools?.name || '학교 정보 없음';
-          const score = r.score ? `${'⭐'.repeat(r.score)} ` : '';
-          return `
-            <div class="my-comment-item">
-              <div class="my-comment-main">${escapeHtml(safeCommunityText(c.comment))}</div>
-              <div class="my-comment-context">
-                ${escapeHtml(schoolName)} · ${score}${timeAgo(c.created_at)}에 단 댓글
-                ${meal}
-                ${r.comment ? `<div style="margin-top:4px">원 리뷰: ${escapeHtml(safeCommunityText(r.comment))}</div>` : ''}
-              </div>
-            </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-}
 async function loadMyActivity() {
   const targetEl = document.getElementById('my-activity-wrap');
   if (!targetEl) return;
   targetEl.innerHTML = '<div class="loading"><div class="loading-emoji">💬</div><div class="loading-text">내 활동 불러오는 중...</div></div>';
   await getUserId();
   const userKey = encodeURIComponent(getInteractionUserKey());
-  const commentSelect = `id,rating_id,nickname,comment,created_at,ratings:la_reviews(${REVIEW_SELECT})`;
-  const [reviews, comments] = await Promise.all([
-    sb(`la_reviews?user_key=eq.${userKey}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`),
-    sb(`la_review_comments?user_key=eq.${userKey}&order=created_at.desc&limit=20&select=${commentSelect}`)
-  ]);
+  const reviews = await sb(`la_reviews?user_key=eq.${userKey}&order=created_at.desc&limit=10&select=${REVIEW_SELECT}`);
   const enrichedReviews = await enrichReviews(Array.isArray(reviews) ? reviews : []);
-  const ownComments = Array.isArray(comments) ? comments : [];
-  if (!enrichedReviews.length && !ownComments.length) {
-    targetEl.innerHTML = '<div class="empty" style="padding:18px 8px"><div class="empty-emoji">💬</div><div>아직 내가 쓴 리뷰나 댓글이 없어요</div></div>';
+  if (!enrichedReviews.length) {
+    targetEl.innerHTML = '<div class="empty" style="padding:18px 8px"><div class="empty-emoji">💬</div><div>아직 내가 쓴 리뷰가 없어요</div></div>';
     return;
   }
-  targetEl.innerHTML = `${reviewListHtml(enrichedReviews, '내 리뷰')}${myCommentsHtml(ownComments)}`;
+  targetEl.innerHTML = reviewListHtml(enrichedReviews, '내 리뷰');
 }
 function latestReviewsHtml(data, title = '최신 리뷰') {
   return reviewListHtml(data, title, '아직 등록된 리뷰가 없어요');
@@ -2807,7 +2694,7 @@ function engagementRankCard(item, index) {
     <div class="rank-num ${numCls}">${index + 1}</div>
     <div class="rank-info">
       <div class="rank-school">${escapeHtml(item.school?.name || '?')}</div>
-      <div class="rank-menu-preview">리뷰 ${item.reviewCount} · 댓글 ${item.commentCount} · 반응 ${item.reactionCount}</div>
+      <div class="rank-menu-preview">리뷰 ${item.reviewCount} · 반응 ${item.reactionCount}</div>
     </div>
     <div class="rank-score">${score}</div>
   </div>`;
@@ -2816,10 +2703,9 @@ function normalizeEngagementRow(row) {
   return {
     school: row.schools || null,
     reviewCount: row.review_count || 0,
-    commentCount: row.comment_count || 0,
     reactionCount: row.reaction_count || 0,
     photoCount: row.photo_count || 0,
-    score: row.score || 0
+    score: Number(row.score || 0) - 3 * Number(row.comment_count || 0)
   };
 }
 async function loadMonthlyEngagementRankingFallback(wrap, start, end) {
@@ -2827,16 +2713,13 @@ async function loadMonthlyEngagementRankingFallback(wrap, start, end) {
   if (!reviews || !reviews.length) return [];
   const ratingIds = reviews.map(r => r.id).filter(Boolean);
   const idFilter = ratingIds.join(',');
-  const [comments, reactions] = idFilter ? await Promise.all([
-    sb(`la_review_comments?rating_id=in.(${idFilter})&select=rating_id`),
-    sb(`la_review_reactions?rating_id=in.(${idFilter})&select=rating_id`)
-  ]) : [[], []];
+  const reactions = idFilter ? await sb(`la_review_reactions?rating_id=in.(${idFilter})&select=rating_id`) : [];
   const schoolByRating = new Map(reviews.map(r => [r.id, r.school_id]));
   const stats = new Map();
   function bucket(schoolId) {
     if (!stats.has(schoolId)) {
       const review = reviews.find(r => r.school_id === schoolId);
-      stats.set(schoolId, { school: review?.schools || null, reviewCount: 0, commentCount: 0, reactionCount: 0, score: 0 });
+      stats.set(schoolId, { school: review?.schools || null, reviewCount: 0, reactionCount: 0, score: 0 });
     }
     return stats.get(schoolId);
   }
@@ -2845,13 +2728,6 @@ async function loadMonthlyEngagementRankingFallback(wrap, start, end) {
     b.reviewCount += 1;
     b.score += 10;
   }
-  for (const c of (comments || [])) {
-    const schoolId = schoolByRating.get(c.rating_id);
-    if (!schoolId) continue;
-    const b = bucket(schoolId);
-    b.commentCount += 1;
-    b.score += 3;
-  }
   for (const rr of (reactions || [])) {
     const schoolId = schoolByRating.get(rr.rating_id);
     if (!schoolId) continue;
@@ -2859,15 +2735,15 @@ async function loadMonthlyEngagementRankingFallback(wrap, start, end) {
     b.reactionCount += 1;
     b.score += 1;
   }
-  return [...stats.values()].filter(x => x.school).sort((a, b) => b.score - a.score || b.reviewCount - a.reviewCount || b.commentCount - a.commentCount).slice(0, 3);
+  return [...stats.values()].filter(x => x.school).sort((a, b) => b.score - a.score || b.reviewCount - a.reviewCount).slice(0, 3);
 }
 async function loadMonthlyEngagementRanking() {
   const wrap = document.getElementById('monthly-engagement-ranking');
   if (!wrap) return;
   const { start, end, month } = monthlyRange();
   try {
-    const rows = await sb(`la_school_engagement_monthly?month=eq.${month}&order=score.desc&order=review_count.desc&limit=3&select=school_id,review_count,comment_count,reaction_count,photo_count,score,schools:la_schools(id,name,type,address,atpt_code,school_code)`);
-    const top = (rows || []).map(normalizeEngagementRow).filter(x => x.school);
+    const rows = await sb(`la_school_engagement_monthly?month=eq.${month}&order=school_id.asc&select=school_id,review_count,comment_count,reaction_count,photo_count,score,schools:la_schools(id,name,type,address,atpt_code,school_code)`);
+    const top = (rows || []).map(normalizeEngagementRow).filter(x => x.school).sort((a, b) => b.score - a.score || b.reviewCount - a.reviewCount).slice(0, 3);
     const fallbackTop = top.length ? top : await loadMonthlyEngagementRankingFallback(wrap, start, end);
     wrap.innerHTML = fallbackTop.length ? fallbackTop.map(engagementRankCard).join('') : `<div class="empty" style="padding:24px 12px"><div class="empty-emoji">💬</div><div>이번 달 리뷰 참여가 아직 없어요</div></div>`;
   } catch (e) {
