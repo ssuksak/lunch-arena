@@ -14,6 +14,17 @@
       "headers": {
         "Authorization": "Bearer ${CLOUDFLARE_R2_PROJECTH_MCP_TOKEN}"
       }
+    },
+    "apps-in-toss-docs": {
+      "type": "http",
+      "url": "https://developers-apps-in-toss.toss.im/~gitbook/mcp"
+    },
+    "apps-in-toss-console": {
+      "type": "http",
+      "url": "https://mcp.toss.im/adapters/apps-in-toss-console/mcp",
+      "oauth": {
+        "clientId": "mcp-gateway"
+      }
     }
   }
 }
