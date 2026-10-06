@@ -1979,7 +1979,7 @@ function renderReviewItem(r) {
     <div class="review-item rv-card${editingReviewIds.has(String(r.id)) ? ' open' : ''}" id="review-item-${r.id}" onclick="toggleReviewCard(event, this)">
       <div class="rv-top">
         <span class="rv-menu">${escapeHtml(title)}</span>
-        ${r.score ? `<span class="rv-score" aria-label="${Number(r.score)}점">★ ${Number(r.score).toFixed(1)}</span>` : ''}
+        ${r.score ? `<span class="rv-score" aria-label="${Number(r.score)}점"><i aria-hidden="true">★</i>${Number(r.score).toFixed(1)}</span>` : ''}
       </div>
       ${r.comment ? `<div class="review-text rv-quote">${escapeHtml(safeCommunityText(r.comment))}</div>` : ''}
       ${(r.photo_display_url || r.photo_url) ? `<img class="review-photo" src="${escapeHtml(r.photo_display_url || r.photo_url)}" loading="lazy">` : ''}
