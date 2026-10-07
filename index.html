@@ -1404,13 +1404,42 @@ function selectMyMealDate(value) {
 function openMyMealDatePicker() {
   const dialog = communityDialog('급식 날짜 선택');
   const minimum = myMealDateMinimum();
-  dialog.querySelector('.dialog-body').innerHTML = `<form class="meal-date-form"><label for="meal-date-input">날짜</label><input type="date" id="meal-date-input" min="${minimum}" value="${fmtDate(myMealDate)}" required aria-describedby="meal-date-help"><p id="meal-date-help">${minimum.replaceAll('-', '.')}부터 선택할 수 있어요.</p><button type="submit" class="rating-launch">선택한 날짜 보기</button></form>`;
-  const form = dialog.querySelector('form');
-  form.onsubmit = event => {
-    event.preventDefault();
-    const input = form.querySelector('input');
-    if (input.reportValidity() && selectMyMealDate(input.value)) dialog.close();
-  };
+  let selected = fmtDate(myMealDate) < minimum ? minimum : fmtDate(myMealDate);
+  const [year, month] = selected.split('-').map(Number);
+  let shownMonth = new Date(year, month - 1, 1, 12);
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const body = dialog.querySelector('.dialog-body');
+  function renderCalendar() {
+    const year = shownMonth.getFullYear(), month = shownMonth.getMonth();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const dayCount = new Date(year, month + 1, 0).getDate();
+    const days = Array.from({ length: 42 }, (_, index) => {
+      const day = index - firstWeekday + 1;
+      if (day < 1 || day > dayCount) return '<span class="calendar-blank" aria-hidden="true"></span>';
+      const value = fmtDate(new Date(year, month, day));
+      return `<button type="button" class="calendar-day${value === today ? ' today' : ''}" data-date="${value}" aria-label="${year}년 ${month + 1}월 ${day}일" aria-pressed="${value === selected}"${value === today ? ' aria-current="date"' : ''}${value < minimum ? ' disabled' : ''}>${day}</button>`;
+    }).join('');
+    body.innerHTML = `<div class="meal-calendar"><div class="calendar-heading"><button type="button" class="date-btn calendar-nav" data-delta="-1" aria-label="이전 달"${fmtDate(shownMonth).slice(0, 7) <= minimum.slice(0, 7) ? ' disabled' : ''}>‹</button><strong aria-live="polite">${year}년 ${month + 1}월</strong><button type="button" class="date-btn calendar-nav" data-delta="1" aria-label="다음 달">›</button></div><div class="calendar-weekdays" aria-hidden="true">${['일','월','화','수','목','금','토'].map(day => `<span>${day}</span>`).join('')}</div><div class="calendar-days" role="group" aria-label="날짜 선택">${days}</div><p class="calendar-help">${minimum.replaceAll('-', '.')}부터 선택할 수 있어요.</p><button type="button" class="rating-launch calendar-confirm">${selected.replaceAll('-', '.')} 급식 보기</button></div>`;
+  }
+  body.addEventListener('click', event => {
+    const day = event.target.closest('.calendar-day');
+    if (day && !day.disabled) {
+      selected = day.dataset.date;
+      renderCalendar();
+      body.querySelector(`[data-date="${selected}"]`)?.focus({ preventScroll: true });
+      return;
+    }
+    const nav = event.target.closest('.calendar-nav');
+    if (nav && !nav.disabled) {
+      const delta = Number(nav.dataset.delta);
+      shownMonth = new Date(shownMonth.getFullYear(), shownMonth.getMonth() + delta, 1, 12);
+      renderCalendar();
+      body.querySelector(`[data-delta="${delta}"]`)?.focus({ preventScroll: true });
+      return;
+    }
+    if (event.target.closest('.calendar-confirm') && selectMyMealDate(selected)) dialog.close();
+  });
+  renderCalendar();
 }
 function changeMyMealDate(delta) {
   const next = new Date(myMealDate);

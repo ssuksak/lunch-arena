@@ -59,9 +59,11 @@ No master merge, remote push, GitHub Pages deployment or live release was perfor
 
 ## Home date picker
 
-- Tapping the home meal date opens an accessible date input sheet.
+- Tapping the home meal date opens a monthly calendar sheet with weekday headings, selectable days and previous/next month buttons.
 - Earliest selectable date is the first of the previous month in Asia/Seoul (2026-10-07 -> 2026-09-01).
 - No new upper bound was added. Explicit weekend selection is preserved; arrow navigation keeps its weekday shortcut and respects the lower bound.
-- Native input validity and application validation both reject older dates.
+- Calendar month navigation and application validation both prevent selection before the previous month.
 - Verified selected date in the sync-meals request, disabled previous arrow at the minimum, year rollover in Korea time and weekend selection. Browser tests and build passed.
 - Local ux-review update only; the previous Toss test version has not been replaced.
+
+- Calendar UI revision: selected day is highlighted, today is outlined, weekends can be selected directly, and the chosen date is applied via the bottom confirmation button. Mobile click tests and build passed.
