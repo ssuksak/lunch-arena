@@ -181,6 +181,7 @@ loadLatestReviews = async function(limit=3,targetId='latest-reviews-wrap',title=
     const enriched=await enrichReviews(data);
     if(target.dataset.request===request){
       target.querySelector('.ad-slot')?._ad?.destroy?.();
+      target.querySelectorAll('.ad-slot').forEach(communityUnmountAd);
       target.innerHTML=targetId==='latest-reviews-wrap'?communityRailHtml(enriched):latestReviewsHtml(enriched,title);
       if(targetId==='feed-reviews-wrap')communityInsertFeedAd(target);
     }
@@ -202,32 +203,58 @@ function communityRailHtml(reviews){
 // 콘솔에서 발급한 광고 그룹 ID를 넣으면 광고가 붙는다. 비어 있으면 자리를 숨긴다.
 // 개발 중에는 테스트 ID('ait-ad-test-banner-id')를 쓰고, 실서비스에는 실제 ID만 넣는다.
 // ?adSlots=1 로 열면 광고 대신 자리 표시가 보인다(위치 확인용).
-const AD_GROUP_IDS={home:'',feed:'',ranking:''};
+const AD_GROUP_IDS={
+  home:'ait.v2.live.e3151000aef04e90',
+  feed:'ait.v2.live.e3151000aef04e90',
+  ranking:'ait.v2.live.e3151000aef04e90'
+};
 const AD_FEED_AFTER=5;
+const communityAdSlots=new Set();
 let communityAdsReady=null;
 function communityAdsInit(){
   if(!communityAdsReady)communityAdsReady=new Promise(resolve=>{
     const ads=window.AITBridge?.TossAds;
     if(!ads?.initialize?.isSupported?.())return resolve(false);
-    ads.initialize({callbacks:{onInitialized:()=>resolve(true),onInitializationFailed:()=>resolve(false)}});
-  });
+    try{ads.initialize({callbacks:{onInitialized:()=>resolve(true),onInitializationFailed:()=>resolve(false)}});}
+    catch{resolve(false);}
+  }).then(ok=>{if(!ok)communityAdsReady=null;return ok;});
   return communityAdsReady;
 }
+function communityUnmountAd(el){
+  el._adGeneration=null;
+  try{el._ad?.destroy();}catch(error){console.warn('Banner cleanup failed',error);}
+  el._ad=null;
+  el.hidden=true;
+  delete el.dataset.mounted;
+  communityAdSlots.delete(el);
+}
 function communityMountAd(el){
-  if(!el||el.dataset.mounted)return;
-  el.dataset.mounted='1';
+  if(!el||el.dataset.mounted||!el.closest('.page')?.classList.contains('active'))return;
   if(AD_SLOTS_PREVIEW){
+    el.dataset.mounted='1';
     el.innerHTML='<div class="ad-slot-preview"><span>광고</span>배너 광고 자리</div>';el.hidden=false;return;
   }
   const id=AD_GROUP_IDS[el.dataset.adSlot],ads=window.AITBridge?.TossAds;
   if(!id||!ads?.attachBanner?.isSupported?.())return;
+  const generation=Symbol('banner');el._adGeneration=generation;
+  el.dataset.mounted='1';communityAdSlots.add(el);
   communityAdsInit().then(ok=>{
-    if(!ok||!el.isConnected)return;
+    if(el._adGeneration!==generation)return;
+    if(!ok||!el.isConnected||!el.closest('.page')?.classList.contains('active'))return communityUnmountAd(el);
     el.hidden=false;
     const hide=()=>{el.hidden=true;};
-    el._ad=ads.attachBanner(id,el,{theme:'light',tone:'blackAndWhite',variant:'card',callbacks:{onAdFailedToRender:hide,onNoFill:hide}});
+    try{el._ad=ads.attachBanner(id,el,{theme:'light',tone:'blackAndWhite',variant:'card',callbacks:{onAdRendered:()=>{el.hidden=false;},onAdFailedToRender:hide,onNoFill:hide}});}
+    catch(error){console.warn('Banner attachment failed',error);communityUnmountAd(el);}
   });
 }
+function communitySyncAds(){
+  for(const el of communityAdSlots){
+    if(!el.isConnected||!el.closest('.page')?.classList.contains('active'))communityUnmountAd(el);
+  }
+  document.querySelectorAll('.page.active .ad-slot').forEach(communityMountAd);
+}
+window.addEventListener('pagehide',()=>{for(const el of communityAdSlots)communityUnmountAd(el);});
+window.addEventListener('pageshow',communitySyncAds);
 function communityInsertFeedAd(target){
   const items=target.querySelectorAll('.review-item');
   if(!items.length)return;
@@ -328,7 +355,7 @@ async function communityLoadRankingsInner(){
 }
 
 const communitySwitchTab=switchTab;
-switchTab=function(tab,options={}){communityScroll.set(communityTab,window.scrollY);communityTab=tab;communitySwitchTab(tab,options);document.body.dataset.tab=activeTab;if(tab==='ranking')communityLoadRankings();requestAnimationFrame(()=>window.scrollTo(0,communityScroll.get(tab)||0));};
+switchTab=function(tab,options={}){communityScroll.set(communityTab,window.scrollY);communityTab=tab;communitySwitchTab(tab,options);document.body.dataset.tab=activeTab;communitySyncAds();if(tab==='ranking')communityLoadRankings();requestAnimationFrame(()=>window.scrollTo(0,communityScroll.get(tab)||0));};
 const communityApplySchool=applyMySchool;
 applyMySchool=function(){document.body.classList.add('has-school');communityApplySchool();};
 

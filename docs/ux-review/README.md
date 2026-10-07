@@ -24,7 +24,22 @@
 - Test actual school setup, review write/edit/delete and reaction endpoints with a controlled test user.
 - Check bottom safe area and native navigation on a Toss device.
 - Register the new logo in the Toss console before publishing the changed logo.
-- Advertisement IDs remain empty; ?adSlots=1 shows placeholders only.
+- Banner group `ait.v2.live.e3151000aef04e90` (콘텐츠 연관 광고, BANNER / ENABLED / no restriction) is connected to home, feed and ranking. Normal web browsers hide native ad slots; ?adSlots=1 remains a placeholder layout preview.
 - Tie handling keeps the developer's shared first-place behavior.
 
-No master merge, remote push, GitHub Pages deployment or Toss upload was performed for this UI branch.
+No master merge, remote push, GitHub Pages deployment or live release was performed. A Toss test bundle was uploaded for real-device UI and banner verification.
+
+
+## Real banner integration — 2026-10-07
+
+- Official API: https://developers-apps-in-toss.toss.im/documentation/sdk/domains-api/ads/tossads.md
+- App IDs: workspace 24563, mini app 29165.
+- Test deployment: 01a1144d-99d7-7c82-960c-a653451deee6 / 20261007-20 / SDK 3.6.0.
+- AIT upload returned HTTP 200; console compilation requested.
+- Home slot: between popular menus and the meal-talk section.
+- Feed slot: after the fifth review, or after the final review when fewer exist.
+- Ranking slot: below the ranking card rail.
+- Only active-page native banners are mounted. Tab changes, feed rerenders and pagehide destroy obsolete instances.
+- Initialization, rendering and no-fill failures hide the slot. Unsupported environments hide it too.
+- SDK contract tests passed for all three group bindings, one initialization, lifecycle cleanup and failure paths. SDK calls and backend requests were mocked; no real ad impressions occurred in automation.
+- Actual Toss-device ad delivery is still pending. Keep using the test bundle until device checks are complete.
