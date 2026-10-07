@@ -1,0 +1,21 @@
+{
+  "result": "PASS",
+  "screens": [
+    "home-mobile.png",
+    "feed-mobile.png",
+    "ranking-mobile.png"
+  ],
+  "checks": [
+    "home meal layout",
+    "3 navigation tabs",
+    "feed expand and reactions",
+    "ranking chips",
+    "320px no page overflow",
+    "advertisement slot preview",
+    "school deep link maps to home",
+    "no reply controls or requests",
+    "no uncaught JavaScript errors"
+  ],
+  "backend": "All Supabase requests mocked; no production writes",
+  "requests": 35
+}
