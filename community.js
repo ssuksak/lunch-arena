@@ -199,7 +199,7 @@ function communityRailHtml(reviews){
 }
 // ===== 배너 광고 (앱인토스 TossAds) =====
 // 콘솔에서 발급한 광고 그룹 ID를 넣으면 광고가 붙는다. 비어 있으면 자리를 숨긴다.
-// 개발 중에는 테스트 ID('ait-ad-test-banner-id')를 쓰고, 실서비스에는 실제 ID만 넣는다.
+// 출시 번들에는 콘솔에서 발급한 활성 광고 그룹 ID만 사용한다.
 // ?adSlots=1 로 열면 광고 대신 자리 표시가 보인다(위치 확인용).
 const AD_GROUP_IDS={
   home:'ait.v2.live.e3151000aef04e90',
