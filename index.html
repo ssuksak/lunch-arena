@@ -1378,25 +1378,53 @@ function activateMealPanel(scope, index) {
   if (state.reviewsContainerId) loadReviews(meal.id, document.getElementById(state.reviewsContainerId));
 }
 // ===== MY SCHOOL MEAL =====
+function myMealDateMinimum(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit' }).formatToParts(now);
+  const year = Number(parts.find(p => p.type === 'year').value);
+  const month = Number(parts.find(p => p.type === 'month').value);
+  return fmtDate(new Date(year, month - 2, 1));
+}
 function myMealDateNavHtml() {
   return `<div class="date-nav" style="margin:2px 0 12px">
-    <button class="date-btn" onclick="changeMyMealDate(-1)">&lt;</button>
-    <div class="date-text" id="my-meal-date">${relativeMealDateLabel(myMealDate) === fmtDateKR(myMealDate) ? fmtDateKR(myMealDate) : `${relativeMealDateLabel(myMealDate)} · ${fmtDateKR(myMealDate)}`}</div>
-    <button class="date-btn" onclick="changeMyMealDate(1)">&gt;</button>
+    <button class="date-btn" aria-label="이전 급식 날짜" onclick="changeMyMealDate(-1)"${fmtDate(myMealDate) <= myMealDateMinimum() ? ' disabled' : ''}>&lt;</button>
+    <button type="button" class="date-text date-picker-trigger" id="my-meal-date" onclick="openMyMealDatePicker()" aria-label="급식 날짜 선택">${relativeMealDateLabel(myMealDate) === fmtDateKR(myMealDate) ? fmtDateKR(myMealDate) : `${relativeMealDateLabel(myMealDate)} · ${fmtDateKR(myMealDate)}`} <span aria-hidden="true">▾</span></button>
+    <button class="date-btn" aria-label="다음 급식 날짜" onclick="changeMyMealDate(1)">&gt;</button>
   </div>`;
 }
-function changeMyMealDate(delta) {
-  myMealDate.setDate(myMealDate.getDate() + delta);
-  const dow = myMealDate.getDay();
-  if (delta > 0) {
-    if (dow === 6) myMealDate.setDate(myMealDate.getDate() + 2);
-    else if (dow === 0) myMealDate.setDate(myMealDate.getDate() + 1);
-  } else {
-    if (dow === 0) myMealDate.setDate(myMealDate.getDate() - 2);
-    else if (dow === 6) myMealDate.setDate(myMealDate.getDate() - 1);
-  }
+function selectMyMealDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value < myMealDateMinimum()) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const chosen = new Date(year, month - 1, day, 12);
+  if (fmtDate(chosen) !== value) return false;
+  myMealDate = chosen;
   loadMySchoolMeal();
   if (document.getElementById('page-school')?.classList.contains('active')) loadMySchoolPageMeal();
+  return true;
+}
+function openMyMealDatePicker() {
+  const dialog = communityDialog('급식 날짜 선택');
+  const minimum = myMealDateMinimum();
+  dialog.querySelector('.dialog-body').innerHTML = `<form class="meal-date-form"><label for="meal-date-input">날짜</label><input type="date" id="meal-date-input" min="${minimum}" value="${fmtDate(myMealDate)}" required aria-describedby="meal-date-help"><p id="meal-date-help">${minimum.replaceAll('-', '.')}부터 선택할 수 있어요.</p><button type="submit" class="rating-launch">선택한 날짜 보기</button></form>`;
+  const form = dialog.querySelector('form');
+  form.onsubmit = event => {
+    event.preventDefault();
+    const input = form.querySelector('input');
+    if (input.reportValidity() && selectMyMealDate(input.value)) dialog.close();
+  };
+}
+function changeMyMealDate(delta) {
+  const next = new Date(myMealDate);
+  next.setDate(next.getDate() + delta);
+  const dow = next.getDay();
+  if (delta > 0) {
+    if (dow === 6) next.setDate(next.getDate() + 2);
+    else if (dow === 0) next.setDate(next.getDate() + 1);
+  } else {
+    if (dow === 0) next.setDate(next.getDate() - 2);
+    else if (dow === 6) next.setDate(next.getDate() - 1);
+  }
+  const value = fmtDate(next);
+  selectMyMealDate(value < myMealDateMinimum() ? myMealDateMinimum() : value);
 }
 async function loadMySchoolMeal() {
   const wrap = document.getElementById('my-school-meal');

@@ -56,3 +56,12 @@ No master merge, remote push, GitHub Pages deployment or live release was perfor
 - Clicking any home meal-talk card opens the feed tab. It does not call openReviewSchool.
 - Mobile browser click test and SDK 3.6.0 bundle build passed.
 - This follow-up is in the local ux-review branch and preview; the previously uploaded Toss test version is unchanged.
+
+## Home date picker
+
+- Tapping the home meal date opens an accessible date input sheet.
+- Earliest selectable date is the first of the previous month in Asia/Seoul (2026-10-07 -> 2026-09-01).
+- No new upper bound was added. Explicit weekend selection is preserved; arrow navigation keeps its weekday shortcut and respects the lower bound.
+- Native input validity and application validation both reject older dates.
+- Verified selected date in the sync-meals request, disabled previous arrow at the minimum, year rollover in Korea time and weekend selection. Browser tests and build passed.
+- Local ux-review update only; the previous Toss test version has not been replaced.
