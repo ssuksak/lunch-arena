@@ -1,0 +1,38 @@
+[
+  {
+    "function": "submit-review",
+    "status": 400,
+    "error": "INVALID_USER_KEY",
+    "origin": "*"
+  },
+  {
+    "function": "update-review",
+    "status": 400,
+    "error": "INVALID_REVIEW_ID",
+    "origin": "*"
+  },
+  {
+    "function": "delete-review",
+    "status": 400,
+    "error": "INVALID_REVIEW_ID",
+    "origin": "*"
+  },
+  {
+    "function": "react-review",
+    "status": 400,
+    "error": "INVALID_RATING_ID",
+    "origin": "*"
+  },
+  {
+    "function": "set-user-school",
+    "status": 400,
+    "error": "INVALID_USER_KEY",
+    "origin": "*"
+  },
+  {
+    "function": "create-review-photo-upload",
+    "status": 400,
+    "error": "INVALID_USER_KEY",
+    "origin": "*"
+  }
+]

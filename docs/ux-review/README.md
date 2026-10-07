@@ -67,3 +67,18 @@ No master merge, remote push, GitHub Pages deployment or live release was perfor
 - Local ux-review update only; the previous Toss test version has not been replaced.
 
 - Calendar UI revision: selected day is highlighted, today is outlined, weekends can be selected directly, and the chosen date is applied via the bottom confirmation button. Mobile click tests and build passed.
+
+
+## Live database integration verification — 2026-10-07
+
+- Confirmed actual project lunch-arena / puwthqzbounohrdmacgo is ACTIVE_HEALTHY.
+- Snapshot: 13,809 schools, 418,208 meals, 1,312 reviews, 625 reactions, 931 school-ranking rows.
+- Real anon REST review queries and school/meal joins passed.
+- Real browser reads passed: home reviews, school meal, calendar selection for 2026-09-01, 50-review feed with ten banner positions, reaction controls, school/personal/menu rankings.
+- 19 actual browser Supabase responses completed without HTTP errors or uncaught JS errors. Backend read requests were not mocked.
+- Eight Edge Function preflights passed. Six write APIs rejected empty payloads with HTTP 400; Toss production Origin received CORS headers.
+- Anon INSERT/UPDATE/DELETE privileges are false for reviews, reactions, profiles and school memberships. Public review/reaction SELECT is enabled; private profiles/memberships SELECT is disabled.
+- No review, reaction, user-profile or school-membership test records were created. sync-meals retains its ordinary server-side cache refresh behavior.
+- Genuine successful write/edit/delete/reaction/upload flows and native Toss identity/ad delivery were not exercised.
+- A verification-only broad query of la_meals by date ordered by id timed out with Postgres 57014 / HTTP 500. The app's school-specific query path passed; no schema or index changes were made.
+- Evidence: live-db-report.json, live-write-validation.json.

@@ -1,0 +1,97 @@
+{
+  "checks": [
+    "Live review-school-meal join: 3 records",
+    "CORS preflights: eight read/write endpoints",
+    "Live home review cards rendered",
+    "Live cached school meal rendered",
+    "Calendar selection queried and displayed real meal: 2026-09-01",
+    "Live feed and 5-review banner positions: 50 reviews",
+    "Live review reaction controls rendered",
+    "Three live monthly rankings rendered"
+  ],
+  "failures": [],
+  "blockedWrites": [],
+  "responses": [
+    {
+      "path": "/functions/v1/get-user-school",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_reviews",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_reviews",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_review_reactions",
+      "status": 200
+    },
+    {
+      "path": "/functions/v1/review-photo-urls",
+      "status": 200
+    },
+    {
+      "path": "/functions/v1/sync-meals",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_reviews",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_review_reactions",
+      "status": 200
+    },
+    {
+      "path": "/functions/v1/review-photo-urls",
+      "status": 200
+    },
+    {
+      "path": "/functions/v1/sync-meals",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_reviews",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_reviews",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_review_reactions",
+      "status": 200
+    },
+    {
+      "path": "/functions/v1/review-photo-urls",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_reviews",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_reviews",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_review_reactions",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_school_engagement_monthly",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/la_schools",
+      "status": 200
+    }
+  ],
+  "result": "PASS",
+  "limitations": [
+    "Production mutation endpoints were not executed",
+    "Native banner inventory and Toss identity require Toss-device verification"
+  ]
+}
