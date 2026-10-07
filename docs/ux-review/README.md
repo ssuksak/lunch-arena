@@ -50,3 +50,9 @@ No master merge, remote push, GitHub Pages deployment or live release was perfor
 - Verified 0, 4, 5, 10, 12 and 15 review lists; repeated insertion adds no duplicates.
 - Removed double destruction of the first feed advertisement during list refresh.
 - UI and SDK contract browser tests plus SDK 3.6.0 build passed.
+
+## Home review navigation
+
+- Clicking any home meal-talk card opens the feed tab. It does not call openReviewSchool.
+- Mobile browser click test and SDK 3.6.0 bundle build passed.
+- This follow-up is in the local ux-review branch and preview; the previously uploaded Toss test version is unchanged.

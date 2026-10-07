@@ -187,15 +187,14 @@ loadLatestReviews = async function(limit=3,targetId='latest-reviews-wrap',title=
   }catch(e){if(target.dataset.request===request)communityError(target,()=>loadLatestReviews(limit,targetId,title));}
 };
 
-// 홈 급식톡: 옆으로 넘겨 보는 카드. 누르면 그 학교 급식으로 이동한다.
+// 홈 급식톡: 옆으로 넘겨 보는 카드. 누르면 급식톡 탭으로 이동한다.
 function communityRailHtml(reviews){
   if(!reviews.length)return '<div class="empty" style="padding:20px 8px"><div>아직 급식톡이 없어요</div></div>';
   return `<div class="rail">${reviews.map(r=>{
-    const school=r.schools?`openReviewSchool(${JSON.stringify(r.schools).replace(/"/g,'&quot;')})`:'';
     const meal=reviewDisplayMeal(r);
     const menu=String(r.selected_menu_item||'').replace(/[*@#]+/g,'').trim()||reviewMetaText(meal,'');
     const stars=reviewStarsHtml(r.score);
-    return `<button type="button" class="rail-card" onclick="${school}">${stars?`<span class="review-stars" aria-label="${Number(r.score)}점">${stars}</span>`:''}<span class="rail-text">${escapeHtml(r.comment?safeCommunityText(r.comment):menu)}</span><span class="rail-menu">${escapeHtml(menu)}</span><span class="rail-by">${reviewNickname(r)} · ${escapeHtml(r.schools?.name||'')}</span></button>`;
+    return `<button type="button" class="rail-card" onclick="switchTab('feed')">${stars?`<span class="review-stars" aria-label="${Number(r.score)}점">${stars}</span>`:''}<span class="rail-text">${escapeHtml(r.comment?safeCommunityText(r.comment):menu)}</span><span class="rail-menu">${escapeHtml(menu)}</span><span class="rail-by">${reviewNickname(r)} · ${escapeHtml(r.schools?.name||'')}</span></button>`;
   }).join('')}</div>`;
 }
 // ===== 배너 광고 (앱인토스 TossAds) =====
