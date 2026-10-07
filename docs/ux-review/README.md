@@ -82,3 +82,14 @@ No master merge, remote push, GitHub Pages deployment or live release was perfor
 - Genuine successful write/edit/delete/reaction/upload flows and native Toss identity/ad delivery were not exercised.
 - A verification-only broad query of la_meals by date ordered by id timed out with Postgres 57014 / HTTP 500. The app's school-specific query path passed; no schema or index changes were made.
 - Evidence: live-db-report.json, live-write-validation.json.
+
+
+## Final UI release candidate — 2026-10-07
+
+- User authorized applying the current UI to master and requesting an AIT release.
+- Candidate deployment: 01a114bf-dbbb-7ccc-b707-d06f310150b2; SDK 3.6.0.
+- Final bundle source bytes match the tested index.html, community.js and community.css.
+- Includes the monthly calendar, home review-to-feed navigation and banners after every five feed reviews.
+- Source and artifact are being published to origin/master for Pages.
+- Actual device test confirmation is required before bundle_submit_review.
+- Previous candidate 20261007-19 is already REVIEWING; no existing review was canceled.
