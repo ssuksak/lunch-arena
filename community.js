@@ -180,7 +180,6 @@ loadLatestReviews = async function(limit=3,targetId='latest-reviews-wrap',title=
     if(!Array.isArray(data))throw new Error('Feed query failed');
     const enriched=await enrichReviews(data);
     if(target.dataset.request===request){
-      target.querySelector('.ad-slot')?._ad?.destroy?.();
       target.querySelectorAll('.ad-slot').forEach(communityUnmountAd);
       target.innerHTML=targetId==='latest-reviews-wrap'?communityRailHtml(enriched):latestReviewsHtml(enriched,title);
       if(targetId==='feed-reviews-wrap')communityInsertFeedAd(target);
@@ -256,10 +255,12 @@ function communitySyncAds(){
 window.addEventListener('pagehide',()=>{for(const el of communityAdSlots)communityUnmountAd(el);});
 window.addEventListener('pageshow',communitySyncAds);
 function communityInsertFeedAd(target){
+  target.querySelectorAll('.ad-slot[data-ad-slot="feed"]').forEach(el=>{communityUnmountAd(el);el.remove();});
   const items=target.querySelectorAll('.review-item');
-  if(!items.length)return;
-  items[Math.min(AD_FEED_AFTER,items.length)-1].insertAdjacentHTML('afterend','<div class="ad-slot" data-ad-slot="feed" hidden></div>');
-  communityMountAd(target.querySelector('.ad-slot'));
+  for(let i=AD_FEED_AFTER-1;i<items.length;i+=AD_FEED_AFTER){
+    items[i].insertAdjacentHTML('afterend','<div class="ad-slot" data-ad-slot="feed" hidden></div>');
+    communityMountAd(items[i].nextElementSibling);
+  }
 }
 function communityFilterBar(target) {
   const bar=document.createElement('div');bar.className='community-filters';

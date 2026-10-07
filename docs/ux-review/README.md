@@ -37,9 +37,16 @@ No master merge, remote push, GitHub Pages deployment or live release was perfor
 - Test deployment: 01a1144d-99d7-7c82-960c-a653451deee6 / 20261007-20 / SDK 3.6.0.
 - AIT upload returned HTTP 200; console compilation requested.
 - Home slot: between popular menus and the meal-talk section.
-- Feed slot: after the fifth review, or after the final review when fewer exist.
+- Feed slots: after every fifth review (5, 10, 15, ...). No slot is added for fewer than five reviews.
 - Ranking slot: below the ranking card rail.
 - Only active-page native banners are mounted. Tab changes, feed rerenders and pagehide destroy obsolete instances.
 - Initialization, rendering and no-fill failures hide the slot. Unsupported environments hide it too.
 - SDK contract tests passed for all three group bindings, one initialization, lifecycle cleanup and failure paths. SDK calls and backend requests were mocked; no real ad impressions occurred in automation.
 - Actual Toss-device ad delivery is still pending. Keep using the test bundle until device checks are complete.
+
+## Repeated feed banners
+
+- New test bundle: 20261007-21 / 01a114a4-05f7-7d5a-bf51-22850ef75992.
+- Verified 0, 4, 5, 10, 12 and 15 review lists; repeated insertion adds no duplicates.
+- Removed double destruction of the first feed advertisement during list refresh.
+- UI and SDK contract browser tests plus SDK 3.6.0 build passed.
