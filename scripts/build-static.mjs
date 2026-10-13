@@ -8,6 +8,8 @@ const files = [
   'index.html',
   'community.css',
   'community.js',
+  'playground.js',
+  'playground.css',
   'lucide.min.js',
   'ait-bridge.js',
   'privacy.html',
@@ -35,3 +37,5 @@ for (const file of files) {
 }
 
 cpSync(join(root, 'migrations'), join(outDir, 'migrations'), { recursive: true });
+
+cpSync(join(root, 'assets'), join(outDir, 'assets'), { recursive: true });

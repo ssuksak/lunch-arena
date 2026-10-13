@@ -1,0 +1,40 @@
+const assert=require('node:assert/strict');
+const {create,validate,leadersOf}=require('../playground-store.js');
+const values=new Map();const storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v)};
+const store=create(storage);
+assert.throws(()=>validate(['돈','가나다','스마일']));
+assert.throws(()=>validate(['돈가스','잘못된 첫글자','스마일']));
+assert.throws(()=>validate(['돈'.repeat(61),'가나다','스마일']));
+assert.throws(()=>validate(['돈\n가스','가나다','스마일']));
+store.react('example-1','funny');assert.equal(store.list()[0].counts.funny,29);
+store.react('example-1','like');assert.equal(store.list()[0].counts.funny,28);assert.equal(store.list()[0].counts.like,13);
+store.react('example-1','like');assert.equal(store.list()[0].counts.like,12);assert.equal(store.list()[0].selected,null);
+assert.throws(()=>store.react('example-1','comment'));
+const p=store.submit(['돈가스 먹고','가뿐해진','스쿨 라이프'],'급식러');
+assert.equal(create(storage).list()[0].id,p.id);
+assert.throws(()=>store.submit(['돈가스 먹고','가뿐해진','스쿨 라이프'],'다른닉네임'));
+assert.equal(leadersOf(store.list())[0].id,'example-1');
+assert.equal(store.list()[0].id,p.id); // Leader selection must not reorder latest feed.
+assert.deepEqual(leadersOf([]),[]);
+assert.deepEqual(leadersOf([{id:'no-votes',counts:{funny:0}}]),[]);
+const tied=[{id:'older',counts:{funny:4}},{id:'newer',counts:{funny:4}},{id:'third',counts:{funny:3}}];
+assert.deepEqual(leadersOf(tied).map(p=>p.id),['older','newer']);
+const rankValues=new Map();const rankStorage={getItem:k=>rankValues.get(k)||null,setItem:(k,v)=>rankValues.set(k,v)};
+rankStorage.setItem('la_playground_demo_v1',JSON.stringify({posts:[{id:'a',lines:['돈가스','가나다','스마일'],created_at:'2026-10-13T00:00:00Z',base:{funny:2}},{id:'b',lines:['돈까스','가나다','스쿨'],created_at:'2026-10-13T01:00:00Z',base:{funny:1}}],reactions:{}}));
+const rankStore=create(rankStorage);rankStore.react('b','funny');assert.equal(leadersOf(rankStore.list()).length,2);
+rankStore.react('b','like');assert.equal(leadersOf(rankStore.list())[0].id,'a');assert.equal(leadersOf(rankStore.list()).length,1);
+assert.equal(rankStore.list()[0].id,'b');
+const blocked=create({getItem:()=>null,setItem:()=>{throw Error('quota');}});
+assert.throws(()=>blocked.submit(['돈가스','가나다','스마일'],'급식러'),/저장/);
+console.log('PASS: three-line validation, exclusive reactions/switch/cancel, persistence, duplicate prevention, latest feed, leaders/ties/zero votes, reaction-driven ranking, storage errors');
+const {pageOf}=require('../playground-store.js');
+const many=Array.from({length:25},(_,i)=>({id:String(i),created_at:new Date(Date.UTC(2026,9,13,0,i)).toISOString(),counts:{funny:i===0?99:i%3}}));
+const first=pageOf(many,'latest',10);assert.equal(first.items.length,10);assert.equal(first.items[0].id,'24');assert.equal(first.hasMore,true);
+const next=pageOf(many,'latest',20);assert.equal(next.items.length,20);assert.deepEqual(next.items.slice(0,10),first.items);
+const final=pageOf(many,'latest',30);assert.equal(final.items.length,25);assert.equal(final.hasMore,false);
+const popular=pageOf(many,'popular',10);assert.equal(popular.items[0].id,'0');assert.equal(popular.items[1].id,'23');
+assert.equal(leadersOf(many)[0].id,'0');assert(!first.items.some(p=>p.id==='0')); // Leader can live beyond the visible latest page.
+assert.deepEqual(pageOf([], 'latest',10),{items:[],hasMore:false,total:0});
+assert.equal(pageOf(many.slice(0,10),'latest',10).hasMore,false);
+assert.equal(many[0].id,'0'); // Sorting must not mutate the source.
+console.log('PASS: latest/popular sorting, stable popularity ties, 10/20/25 pagination, empty/exact page, global winner outside visible page');
