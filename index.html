@@ -567,6 +567,8 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   </div>
 </div>
 
+<section class="page" id="page-playground" aria-label="급식 낙서장"></section>
+
 <!-- ===== 탭바 ===== -->
 <div class="tab-bar">
   <div class="tab-item active" onclick="switchTab('home')">
@@ -574,6 +576,9 @@ body{font-family:'Pretendard Variable',-apple-system,system-ui,sans-serif;backgr
   </div>
   <div class="tab-item" onclick="switchTab('feed')">
     <i class="tab-icon" data-lucide="messages-square" aria-hidden="true"></i><div class="tab-label">급식톡</div>
+  </div>
+  <div class="tab-item" onclick="switchTab('playground')">
+    <i class="tab-icon" data-lucide="gamepad-2" aria-hidden="true"></i><div class="tab-label">놀이터</div>
   </div>
   <div class="tab-item" onclick="switchTab('ranking')">
     <i class="tab-icon" data-lucide="trophy" aria-hidden="true"></i><div class="tab-label">랭킹</div>
@@ -828,7 +833,7 @@ function relativeMealDateLabel(d) {
 }
 
 // ===== TABS =====
-const tabOrder = { home: 0, feed: 1, ranking: 2 };
+const tabOrder = { home: 0, feed: 1, playground: 2, ranking: 3 };
 // 우리학교 탭은 홈으로 통합됨. 예전 ?screen=school 링크는 홈으로 보낸다.
 const appTabs = new Set(Object.keys(tabOrder).concat('battle', 'school'));
 let activeTab = 'home';
@@ -2908,7 +2913,7 @@ async function handleUrlParam() {
     schoolId = location.hash.slice(8);
   }
   if (!schoolId) {
-    if (['home', 'school', 'feed', 'ranking'].includes(screen)) switchTab(screen, { history: 'replace' });
+    if (['home', 'school', 'feed', 'playground', 'ranking'].includes(screen)) switchTab(screen, { history: 'replace' });
     return;
   }
 
@@ -2928,8 +2933,10 @@ async function handleUrlParam() {
 // Runtime initialization follows the community presentation layer below.
 </script>
 <link rel="stylesheet" href="community.css?v=2026091803">
-<script src="ait-bridge.js?v=2026091506"></script>
+<script src="ait-bridge.js?v=2026101304"></script>
 <script src="lucide.min.js?v=2026091506"></script>
 <script src="community.js?v=2026091803"></script>
+<link rel="stylesheet" href="playground.css?v=20261013">
+<script src="playground.js?v=2026101306"></script>
 </body>
 </html>

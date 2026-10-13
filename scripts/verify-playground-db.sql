@@ -1,0 +1,50 @@
+begin;
+set local lock_timeout='3s';
+set local statement_timeout='20s';
+do $$
+declare
+ author uuid; voter uuid; campaign uuid; poem uuid; second_poem uuid;
+ rid uuid:=gen_random_uuid(); other_request uuid:=gen_random_uuid();
+ word_row public.la_poem_words; rejected boolean; current_week uuid;
+begin
+ select * into strict word_row from public.la_poem_words order by id limit 1;
+ insert into public.la_users(primary_user_key,metadata) values('fp_qa_'||gen_random_uuid(),'{"created_by":"rollback-playground-test"}') returning id into author;
+ insert into public.la_users(primary_user_key,metadata) values('fp_qa_'||gen_random_uuid(),'{"created_by":"rollback-playground-test"}') returning id into voter;
+ insert into public.la_poem_campaigns(word_id,word,starts_at,writing_ends_at,voting_ends_at)
+ values(word_row.id,word_row.word,clock_timestamp()-interval '1 hour',clock_timestamp()+interval '1 hour',clock_timestamp()+interval '2 hours') returning id into campaign;
+ poem:=public.la_submit_poem(author,campaign,'검증',array[substring(word_row.word,1,1)||'첫째',substring(word_row.word,2,1)||'둘째',substring(word_row.word,3,1)||'셋째'],rid);
+ assert (select author_id=author from public.la_poems where id=poem),'canonical author link';
+ assert public.la_submit_poem(author,campaign,'검증',array['invalid','invalid','invalid'],rid)=poem,'idempotent retry';
+ rejected:=false;
+ begin perform public.la_submit_poem(author,campaign,'검증',array['wrong','wrong','wrong'],gen_random_uuid()); exception when others then rejected:=sqlerrm like '%INVALID_LINES%'; end;
+ assert rejected,'invalid syllables rejected';
+ second_poem:=public.la_submit_poem(author,campaign,'검증',array[substring(word_row.word,1,1)||'첫째',substring(word_row.word,2,1)||'둘째',substring(word_row.word,3,1)||'셋째'],gen_random_uuid());
+ perform public.la_submit_poem(author,campaign,'검증',array[substring(word_row.word,1,1)||'첫째',substring(word_row.word,2,1)||'둘째',substring(word_row.word,3,1)||'셋째'],gen_random_uuid());
+ rejected:=false;
+ begin perform public.la_submit_poem(author,campaign,'검증',array[substring(word_row.word,1,1)||'첫째',substring(word_row.word,2,1)||'둘째',substring(word_row.word,3,1)||'셋째'],gen_random_uuid()); exception when others then rejected:=sqlerrm like '%DAILY_LIMIT_REACHED%'; end;
+ assert rejected,'three works daily quota';
+ rejected:=false;
+ begin perform public.la_set_poem_reaction(author,poem,'funny'); exception when others then rejected:=sqlerrm like '%SELF_REACTION_NOT_ALLOWED%'; end;
+ assert rejected,'self reaction denied';
+ perform public.la_set_poem_reaction(voter,poem,'funny');
+ perform public.la_set_poem_reaction(voter,poem,'funny');
+ assert (select funny_count=1 from public.la_poems where id=poem),'idempotent reaction set';
+ perform public.la_set_poem_reaction(voter,poem,'like');
+ assert (select funny_count=0 and like_count=1 from public.la_poems where id=poem),'exclusive reaction switch';
+ perform public.la_set_poem_reaction(voter,poem,null);
+ assert (select funny_count=0 and like_count=0 and dislike_count=0 from public.la_poems where id=poem),'cancel restores counters';
+ perform public.la_set_poem_reaction(voter,poem,'funny');
+ perform public.la_set_poem_reaction(voter,second_poem,'funny');
+ update public.la_poem_campaigns set writing_ends_at=clock_timestamp()-interval '2 minutes',voting_ends_at=clock_timestamp()-interval '1 minute' where id=campaign;
+ rejected:=false;
+ begin perform public.la_submit_poem(voter,campaign,'검증',array[substring(word_row.word,1,1)||'첫째',substring(word_row.word,2,1)||'둘째',substring(word_row.word,3,1)||'셋째'],other_request); exception when others then rejected:=sqlerrm like '%WRITING_CLOSED%'; end;
+ assert rejected,'writing deadline enforced';
+ rejected:=false;
+ begin perform public.la_set_poem_reaction(voter,poem,null); exception when others then rejected:=sqlerrm like '%VOTING_CLOSED%'; end;
+ assert rejected,'voting deadline enforced';
+ current_week:=public.la_poem_maintain_week();
+ assert public.la_poem_maintain_week()=current_week,'weekly maintenance idempotent';
+ assert (select finalized_at is not null and jsonb_array_length(final_winners)=2 from public.la_poem_campaigns where id=campaign),'tied final winners recorded';
+end $$;
+select 'PASS: canonical author, retries, validation, daily quota, self-vote, reaction set/switch/cancel, deadlines, weekly idempotency and tied winners; all fixtures rolled back' as verification;
+rollback;

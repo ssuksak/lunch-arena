@@ -1,0 +1,117 @@
+/* Notebook theme is scoped to the playground; artwork is a bundled raster asset. */
+.pg-container{padding:12px 12px 100px!important}
+.pg-hero{background:#fff url('assets/playground-notebook.png') center/100% 100% no-repeat;border-radius:20px;text-align:center;padding:26px 22px 28px;min-height:325px;overflow:hidden}
+.pg-hero h1{font-size:34px;line-height:1.2;letter-spacing:-1.8px;font-weight:850;margin:6px 0 8px;transform:rotate(-2deg)}
+.pg-subtitle{margin:0;color:var(--text3);font-size:15px}
+.pg-prompt{display:inline-block;background:#fff1e6;padding:7px 18px;border-radius:8px;font-size:14px;font-weight:700;margin:24px 0 10px}
+.pg-syllables{display:flex;justify-content:center;gap:9px;margin:0 auto 18px}
+.pg-syllables b{font-size:39px;line-height:1.2;padding:10px 20px;background:#fff1e6;color:var(--brand-ink);border-radius:14px;font-weight:800}
+.pg-write,.pg-submit{border:0;border-radius:24px;background:var(--brand-fill);color:white;padding:14px 24px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;cursor:pointer}
+.pg-write svg{width:21px;height:21px}
+.pg-demo-note{font-size:11px;line-height:1.6;color:var(--text3);margin:12px 4px}
+.pg-sort{display:flex;background:var(--grey-200);border-radius:14px;padding:3px;margin:16px 0;gap:4px}
+.pg-sort button{flex:1;min-height:42px;border:0;background:transparent;color:var(--text3);border-radius:11px;font-size:14px;font-weight:700}
+.pg-sort button[aria-pressed=true]{color:var(--brand-ink);background:white}
+.pg-poem{padding:20px 16px;margin:16px 0;border-radius:20px;background:white url('assets/playground-notebook.png') center/cover no-repeat;background-blend-mode:screen}
+.pg-poem header{display:flex;align-items:center;gap:10px}
+.pg-avatar{width:40px;height:40px;border-radius:50%;background:#fff1e6;display:flex;align-items:center;justify-content:center;color:var(--brand-ink)}
+.pg-avatar svg{width:24px;height:24px}
+.pg-poem header strong{font-size:16px}
+.pg-poem header small{display:block;color:var(--text3);font-size:11px;margin-top:3px}
+.pg-lines{margin:14px 0 16px}
+.pg-lines>div{display:flex;align-items:center;gap:13px;border-bottom:1px solid #e8edf2;min-height:48px;padding:7px 0}
+.pg-lines b{color:var(--brand-ink);font-size:29px;width:32px;flex-shrink:0}
+.pg-lines p{font-size:15px;line-height:1.6;overflow-wrap:anywhere;margin:0;min-width:0}
+.pg-reactions{display:flex;gap:5px}
+.pg-reactions button{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:4px;min-height:44px;border:1px solid var(--grey-200);border-radius:22px;background:white;color:var(--text3);font-size:11px;font-weight:650;padding:7px 3px;white-space:nowrap;cursor:pointer}
+.pg-reactions svg{width:21px;height:21px;flex-shrink:0;stroke-width:1.7}
+.pg-reactions strong{font-size:11px}
+.pg-reactions button.selected{border-color:var(--brand-fill);background:#fff1e6;color:var(--brand-ink);animation:pg-pop .2s ease-out}
+.pg-reactions button:focus-visible{outline:2px solid var(--brand-fill);outline-offset:3px}
+.pg-empty{background:white;border-radius:16px;padding:24px;text-align:center;color:var(--text3);font-size:14px}
+#pg-status{font-size:12px;line-height:1.6;color:var(--text3);min-height:20px;margin:8px}
+.pg-form-note{color:var(--text3);font-size:12px;line-height:1.6}
+.pg-input{display:flex;gap:12px;align-items:center;margin:16px 0}
+.pg-input b{font-size:30px;color:var(--brand-ink)}
+.pg-input input{width:100%;min-width:0;border:1px solid var(--border);border-radius:12px;padding:14px 12px;font-size:14px;background:#fff;color:var(--text)}
+.pg-submit{width:100%;border-radius:12px;margin-top:8px}
+.pg-form-error{font-size:12px;color:var(--red);min-height:18px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.pg-dialog{padding-bottom:max(20px,env(safe-area-inset-bottom));}
+.pg-dialog .dialog-heading h2{font-size:20px}
+@keyframes pg-pop{50%{transform:scale(1.06)}
+}
+@media(max-width:360px){.pg-hero{padding-left:14px;padding-right:14px}
+.pg-hero h1{font-size:30px}
+.pg-syllables b{padding:10px 16px}
+.pg-poem{padding:18px 12px}
+.pg-reactions{gap:4px}
+.pg-reactions svg{width:18px;height:18px}
+.pg-reactions button{gap:3px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.pg-reactions button.selected{animation:none}
+}
+
+
+@font-face{font-family:Gaegu;src:url('assets/Gaegu-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:Gaegu;src:url('assets/Gaegu-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+.pg-brand{display:flex;align-items:center;gap:8px;padding:8px 8px 14px;font-size:20px;font-weight:800;letter-spacing:-.6px}
+.pg-brand img{width:27px;height:27px;border-radius:7px}
+.pg-hero h1{font-family:Gaegu,sans-serif;font-size:43px;font-weight:700;letter-spacing:-1px}
+.pg-subtitle{font-family:Gaegu,sans-serif;font-size:19px}
+.pg-syllables b{font-family:Gaegu,sans-serif;font-size:45px;line-height:1}
+.pg-lines p{font-family:Gaegu,sans-serif;font-size:20px;line-height:1.45}
+.pg-lines b{font-family:Gaegu,sans-serif;font-size:34px}
+.pg-reactions button{min-height:46px}
+.pg-reactions svg{width:23px;height:23px}
+@media(max-width:360px){.pg-hero h1{font-size:39px}
+.pg-lines p{font-size:19px}
+}
+
+/* Keep a complete poem and its reactions within a typical mobile first view. */
+.pg-hero{min-height:0;padding:18px 20px 20px}
+.pg-hero h1{margin:2px 0 4px;font-size:40px}
+.pg-prompt{margin:14px 0 8px;padding:5px 16px}
+.pg-syllables{margin-bottom:12px}
+.pg-syllables b{font-size:40px;padding:8px 19px}
+.pg-write{min-height:44px;padding:12px 22px}
+.pg-demo-note{margin:8px 4px;font-size:10px}
+.pg-sort{margin:12px 0}
+.pg-poem{padding:16px 14px}
+.pg-lines{margin:10px 0 12px}
+.pg-lines>div{min-height:44px;padding:6px 0}
+.pg-lines p{font-size:21px}
+.pg-brand{padding-top:4px;padding-bottom:12px}
+
+/* Match the large notebook lettering while retaining readable editable text. */
+.pg-hero h1{font-size:48px;line-height:1.05}
+.pg-syllables b{font-size:52px;padding:4px 17px}
+.pg-lines b{font-size:42px;line-height:1;width:33px}
+.pg-lines p{font-size:26px;line-height:1.35;letter-spacing:-.7px}
+.pg-reactions button{font-size:12px}
+.pg-reactions svg{width:25px;height:25px}
+.pg-lines>div{min-height:44px}
+.pg-poem{background-image:url('assets/playground-poem-paper.png');background-blend-mode:normal;background-size:100% 100%}
+.pg-hero{padding-top:14px;padding-bottom:16px}
+.pg-subtitle{font-size:21px}
+.pg-syllables b{color:var(--brand-fill)}
+.pg-lines b{color:var(--brand-fill)}
+@media(max-width:360px){.pg-lines p{font-size:24px}
+.pg-reactions button{font-size:10px}
+.pg-reactions svg{width:21px;height:21px}
+.pg-hero h1{font-size:44px}
+}
+
+.pg-poem{position:relative;isolation:isolate;background-image:none;background-color:#fff;overflow:hidden}
+.pg-poem::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:inherit;background:url('assets/playground-poem-paper.png') center/100% 100% no-repeat;opacity:.42}
+.pg-lines b{background:#fff1e6;width:40px;min-width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.pg-lines>div{gap:10px}
+.pg-lines p{font-size:25px}
+.pg-hero h1{letter-spacing:-1.5px}
+.pg-reactions button.selected{color:var(--brand-fill);border-color:var(--brand-fill)}
+
+.pg-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 4px 10px}.pg-section-heading h2{display:flex;align-items:center;gap:7px;margin:0;font-size:17px;font-weight:750;letter-spacing:-.4px}.pg-section-heading h2 svg{width:22px;height:22px;color:var(--brand-fill)}.pg-section-heading span{font-size:11px;color:var(--text3);white-space:nowrap}.pg-poem-leader{border:1px solid var(--brand-200);margin-top:0}.pg-leader{margin-bottom:24px}.pg-latest{border-top:1px solid var(--grey-200);padding-top:2px}.pg-latest .pg-poem{margin-top:10px}
+/* Winning status travels with the work, including its copy in the latest feed. */
+.pg-poem header>div{min-width:0;flex:1}.pg-poem header strong{overflow-wrap:anywhere}.pg-winner-badge{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;background:var(--brand-fill);color:white;border-radius:20px;padding:7px 10px;font-size:11px;font-weight:750;line-height:1.2}.pg-winner-badge svg{width:17px;height:17px;stroke-width:2}.pg-poem-leader{border:2px solid var(--brand);box-shadow:0 4px 12px rgba(232,101,10,.08)}.pg-poem-leader .pg-avatar{color:var(--brand-fill);background:#fff1e6}@media(max-width:360px){.pg-winner-badge{padding:6px 8px;font-size:10px;gap:3px}.pg-winner-badge svg{width:15px;height:15px}}
+.pg-more{width:100%;min-height:46px;border:1px solid var(--grey-200);border-radius:14px;background:white;color:var(--text2);font-size:14px;font-weight:650;padding:12px 16px;cursor:pointer;margin:8px 0 16px}.pg-sort button{cursor:pointer}.pg-sort button:focus-visible,.pg-more:focus-visible{outline:2px solid var(--brand-fill);outline-offset:3px}
+.pg-phase{margin:12px 4px;font-size:12px;line-height:1.6;color:var(--text3)}.pg-write:disabled{opacity:.65;cursor:default}.pg-reactions button:disabled{opacity:.6;cursor:default}.pg-own-note{font-size:11px;color:var(--text3);margin:10px 4px 0}

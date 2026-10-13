@@ -1,0 +1,2 @@
+-- Superseded draft. The applied four-table design is archived in playground-live.sql.
+-- See docs/playground.md for identity, weekly deadlines and deployment details.

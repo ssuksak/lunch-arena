@@ -174,14 +174,38 @@ refreshVisibleReviews = async function(){
 loadLatestReviews = async function(limit=3,targetId='latest-reviews-wrap',title='최신 급식톡') {
   const target=document.getElementById(targetId);if(!target)return;
   const request=String(++communityFeedRequest);target.dataset.request=request;
+  const scope=communityFilter;
+  const school=mySchool?{...mySchool}:null;
+  target.querySelectorAll('.ad-slot').forEach(communityUnmountAd);
+  target.innerHTML='<div class="loading"><div class="loading-text">급식톡 불러오는 중...</div></div>';
   try{
-    const filter=communityFilter==='school'&&mySchool?.id?`&school_id=eq.${mySchool.id}`:'';
-    const data=await sb(`la_reviews?order=created_at.desc&limit=${limit}${filter}&select=${REVIEW_SELECT}`);
+    if(scope!=='all'&&!school?.id){
+      if(target.dataset.request===request)target.innerHTML='<div class="ranking-error">학교를 등록하면 근처 학교와 우리 학교 급식톡을 볼 수 있어요.</div>';
+      return;
+    }
+    let filter='',select=REVIEW_SELECT;
+    if(scope==='school')filter=`&school_id=eq.${encodeURIComponent(school.id)}`;
+    if(scope==='office'){
+      let code=school.atpt_code;
+      if(!code){
+        const schools=await sb(`la_schools?id=eq.${encodeURIComponent(school.id)}&select=atpt_code&limit=1`);
+        if(!Array.isArray(schools))throw new Error('School query failed');
+        code=schools[0]?.atpt_code;
+      }
+      if(!code){
+        if(target.dataset.request===request)target.innerHTML='<div class="ranking-error">등록한 학교의 교육청 정보를 찾지 못했어요. 학교를 다시 선택해 주세요.</div>';
+        return;
+      }
+      select=REVIEW_SELECT.replace('schools:la_schools(', 'schools:la_schools!inner(');
+      filter=`&schools.atpt_code=eq.${encodeURIComponent(code)}`;
+    }
+    const data=await sb(`la_reviews?order=created_at.desc&limit=${limit}${filter}&select=${select}`);
     if(!Array.isArray(data))throw new Error('Feed query failed');
     const enriched=await enrichReviews(data);
+    const scopeTitle=scope==='office'?'근처 학교 급식톡':scope==='school'?'우리 학교 급식톡':title;
     if(target.dataset.request===request){
       target.querySelectorAll('.ad-slot').forEach(communityUnmountAd);
-      target.innerHTML=targetId==='latest-reviews-wrap'?communityRailHtml(enriched):latestReviewsHtml(enriched,title);
+      target.innerHTML=targetId==='latest-reviews-wrap'?communityRailHtml(enriched):latestReviewsHtml(enriched,scopeTitle);
       if(targetId==='feed-reviews-wrap')communityInsertFeedAd(target);
     }
   }catch(e){if(target.dataset.request===request)communityError(target,()=>loadLatestReviews(limit,targetId,title));}
@@ -263,9 +287,9 @@ function communityInsertFeedAd(target){
 }
 function communityFilterBar(target) {
   const bar=document.createElement('div');bar.className='community-filters';
-  for(const [value,label] of [['all','전체'],['school','우리 학교']]){
+  for(const [value,label] of [['all','전체'],['office','근처 학교'],['school','우리 학교']]){
     const button=document.createElement('button');button.textContent=label;button.dataset.filter=value;button.setAttribute('aria-pressed',String(communityFilter===value));
-    button.onclick=()=>{if(value==='school'&&!mySchool){openSchoolSetSheet();return;}communityFilter=value;document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===value)));loadLatestReviews();if(communityTab==='feed')loadFeedReviews();};bar.append(button);
+    button.onclick=()=>{if(value!=='all'&&!mySchool?.id){openSchoolSetSheet();return;}communityFilter=value;document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===value)));loadLatestReviews();if(communityTab==='feed')loadFeedReviews();};bar.append(button);
   }target.before(bar);
 }
 
@@ -357,7 +381,7 @@ async function communityLoadRankingsInner(){
 const communitySwitchTab=switchTab;
 switchTab=function(tab,options={}){communityScroll.set(communityTab,window.scrollY);communityTab=tab;communitySwitchTab(tab,options);document.body.dataset.tab=activeTab;communitySyncAds();if(tab==='ranking')communityLoadRankings();requestAnimationFrame(()=>window.scrollTo(0,communityScroll.get(tab)||0));};
 const communityApplySchool=applyMySchool;
-applyMySchool=function(){document.body.classList.add('has-school');communityApplySchool();};
+applyMySchool=function(){document.body.classList.add('has-school');communityApplySchool();if(communityFilter!=='all'){loadLatestReviews();if(communityTab==='feed')loadFeedReviews();}};
 
 // Remove duplicated discovery sections, retaining original targets for runtime compatibility.
 document.querySelectorAll('#page-home .section-title').forEach(el=>el.hidden=true);
