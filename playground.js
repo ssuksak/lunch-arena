@@ -1,11 +1,11 @@
-// Live playground: public reads, server-issued scoped identity for mutations.
+// Live playground: public reads and the app's existing user identity for mutations.
 (function(){
   const page=document.getElementById('page-playground');
   let sharedIdentityReady=false;
   let campaign=null,participated=false,items=[],leaders=[],cursor=null,hasMore=false,sort='latest',pages=1;
   let draft=['','',''],requestId=crypto.randomUUID(),request=0,busy=false,clockOffset=0;
-  const labels={like:'좋아요',dislike:'싫어요',funny:'재밌어요'};
-  const icons={like:'smile',dislike:'frown',funny:'laugh'};
+  const labels={funny:'재밌어요'};
+  const icons={funny:'laugh'};
   const icon=name=>`<i data-lucide="${name}" aria-hidden="true"></i>`;
   const errors={INVALID_USER_KEY:'사용자 정보를 확인하지 못했어요. 화면을 새로 열어 주세요.',USER_INACTIVE:'현재 참여할 수 없는 사용자예요.',WRITING_CLOSED:'작성 기간이 끝났어요. 평가에 참여해 주세요.',VOTING_CLOSED:'평가 기간이 끝났어요.',SELF_REACTION_NOT_ALLOWED:'내 작품에는 반응할 수 없어요.',ALREADY_PARTICIPATED:'이번 주 삼행시는 이미 등록했어요. 한 사람당 한 작품만 참여할 수 있어요.',INVALID_LINES:'제시어로 시작하는 세 줄을 2~60자로 작성해 주세요.',USER_REQUIRED:'사용자 정보를 확인하지 못했어요. 다시 시도해 주세요.'};
   const safe=text=>escapeHtml(typeof safeCommunityText==='function'?safeCommunityText(text):text);
@@ -35,7 +35,7 @@
     lucide.createIcons();
   }
   function poemHtml(p,placement,rankLabel=''){
-    return `<article class="pg-poem${placement==='leader'?' pg-poem-leader':''}" data-poem="${escapeHtml(p.id)}" data-placement="${placement}" data-own="${p.own}"><header><span class="pg-avatar">${icon('chef-hat')}</span><div><strong>${safe(p.nickname)}</strong><small>${p.own?'내 작품':'급식친구'}</small></div>${rankLabel?`<span class="pg-winner-badge">${icon('crown')}${escapeHtml(rankLabel)}</span>`:''}</header><div class="pg-lines">${p.lines.map((line,i)=>`<div><b>${escapeHtml(campaign.syllables[i])}</b><p>${safe(line)}</p></div>`).join('')}</div><div class="pg-reactions" aria-label="작품 반응">${Object.keys(labels).map(kind=>`<button type="button" data-reaction="${kind}" aria-pressed="${p.selected===kind}" aria-label="${labels[kind]} ${p.counts[kind]}" ${p.selected===kind?'class="selected"':''}>${icon(icons[kind])}<span>${labels[kind]}</span><strong>${p.counts[kind]}</strong></button>`).join('')}</div>${p.own?'<p class="pg-own-note">내 작품에는 반응할 수 없어요.</p>':''}</article>`;
+    return `<article class="pg-poem${placement==='leader'?' pg-poem-leader':''}" data-poem="${escapeHtml(p.id)}" data-placement="${placement}" data-own="${p.own}"><header><span class="pg-avatar">${icon('chef-hat')}</span><div><strong>${safe(p.nickname)}</strong><small>${p.own?'내 작품':'급식친구'}</small></div>${rankLabel?`<span class="pg-winner-badge">${icon('crown')}${escapeHtml(rankLabel)}</span>`:''}</header><div class="pg-lines">${p.lines.map((line,i)=>`<div><b>${escapeHtml(campaign.syllables[i])}</b><p>${safe(line.startsWith(campaign.syllables[i])?line.slice(campaign.syllables[i].length):line)}</p></div>`).join('')}</div><div class="pg-reactions" aria-label="작품 반응">${Object.keys(labels).map(kind=>`<button type="button" data-reaction="${kind}" aria-pressed="${p.selected===kind}" aria-label="${labels[kind]} ${p.counts[kind]}" ${p.selected===kind?'class="selected"':''}>${icon(icons[kind])}<span>${labels[kind]}</span><strong>${p.counts[kind]}</strong></button>`).join('')}</div>${p.own?'<p class="pg-own-note">내 작품에는 반응할 수 없어요.</p>':''}</article>`;
   }
   function render(){
     const joint=leaders.length>1,final=Boolean(campaign?.finalized_at);
@@ -91,13 +91,16 @@
   function openComposer(){
     const writingCampaign=campaign;
     const dialog=communityDialog('나도 한 수 써보기');dialog.classList.add('pg-dialog');const form=document.createElement('form');
-    form.innerHTML=`<p class="pg-form-note">세 줄의 첫 글자는 ${escapeHtml(writingCampaign.syllables.join('·'))}이에요.</p>${writingCampaign.syllables.map((letter,i)=>`<label class="pg-input"><b>${escapeHtml(letter)}</b><span class="sr-only">${escapeHtml(letter)} 글자 다음 내용</span><input name="line${i}" required maxlength="59" value="${escapeHtml(draft[i])}" placeholder="한 줄을 이어 써 주세요" autocomplete="off"></label>`).join('')}<p class="pg-form-error" role="alert"></p><button class="pg-submit" type="submit">삼행시 올리기</button><p class="pg-form-note">이번 주에는 한 사람당 한 작품만 등록할 수 있어요.</p>`;
+    form.innerHTML=`<p class="pg-form-note">첫 글자를 포함해 문장을 입력해 주세요. 첫 글자가 빠지면 자동으로 붙여요.</p>${writingCampaign.syllables.map((letter,i)=>`<label class="pg-input"><b>${escapeHtml(letter)}</b><span class="sr-only">${escapeHtml(letter)} 로 시작하는 문장</span><input name="line${i}" required maxlength="60" value="${escapeHtml(draft[i])}" placeholder="${escapeHtml(letter)}로 시작하는 문장" autocomplete="off"></label>`).join('')}<p class="pg-form-error" role="alert"></p><button class="pg-submit" type="submit">삼행시 올리기</button><p class="pg-form-note">이번 주에는 한 사람당 한 작품만 등록할 수 있어요.</p>`;
     dialog.querySelector('.dialog-body').append(form);
     form.addEventListener('input',()=>{draft=writingCampaign.syllables.map((_,i)=>form.elements[`line${i}`].value);});
     form.onsubmit=async e=>{
       e.preventDefault();const button=form.querySelector('.pg-submit');if(button.disabled)return;button.disabled=true;
       try{
-        const lines=writingCampaign.syllables.map((letter,i)=>letter+form.elements[`line${i}`].value.trim());
+        const lines=writingCampaign.syllables.map((letter,i)=>{
+          const value=form.elements[`line${i}`].value.trim();
+          return value.startsWith(letter)?value:letter+value;
+        });
         if(lines.some(line=>Array.from(line).length>60||Array.from(line).length<2))throw new Error('각 줄은 2~60자로 작성해 주세요.');
         await call({action:'submit',campaign_id:writingCampaign.id,nickname:ensureNickname(),lines,request_id:requestId});
         draft=['','',''];requestId=crypto.randomUUID();sort='latest';pages=1;
