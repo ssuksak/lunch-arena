@@ -115,3 +115,8 @@
 .pg-poem header>div{min-width:0;flex:1}.pg-poem header strong{overflow-wrap:anywhere}.pg-winner-badge{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;background:var(--brand-fill);color:white;border-radius:20px;padding:7px 10px;font-size:11px;font-weight:750;line-height:1.2}.pg-winner-badge svg{width:17px;height:17px;stroke-width:2}.pg-poem-leader{border:2px solid var(--brand);box-shadow:0 4px 12px rgba(232,101,10,.08)}.pg-poem-leader .pg-avatar{color:var(--brand-fill);background:#fff1e6}@media(max-width:360px){.pg-winner-badge{padding:6px 8px;font-size:10px;gap:3px}.pg-winner-badge svg{width:15px;height:15px}}
 .pg-more{width:100%;min-height:46px;border:1px solid var(--grey-200);border-radius:14px;background:white;color:var(--text2);font-size:14px;font-weight:650;padding:12px 16px;cursor:pointer;margin:8px 0 16px}.pg-sort button{cursor:pointer}.pg-sort button:focus-visible,.pg-more:focus-visible{outline:2px solid var(--brand-fill);outline-offset:3px}
 .pg-phase{margin:12px 4px;font-size:12px;line-height:1.6;color:var(--text3)}.pg-write:disabled{opacity:.65;cursor:default}.pg-reactions button:disabled{opacity:.6;cursor:default}.pg-own-note{font-size:11px;color:var(--text3);margin:10px 4px 0}
+
+/* A single reaction keeps participation and the winner criterion aligned. */
+.pg-reactions{justify-content:center}
+.pg-reactions button{flex:0 1 190px;gap:8px;font-size:14px;padding:9px 16px}
+.pg-reactions strong{font-size:14px}
